@@ -1,0 +1,587 @@
+S-Web42
+#######
+
+:Author:    Steffen "Daode" Nurpmeso
+:Contact:   sdaoden@users.sf.net
+:Copyright: ISC license
+:Date:      1997 - 2012
+:Copyright: All rights reserved under the terms of the ISC license.
+:Status:    Yes, batch, they're red hot!
+
+.. _`perl(1)`: http://www.perl.org
+.. _`S-SymObj`: http://sdaoden.users.sourceforge.net/code.html#s-symobj
+
+Overview
+========
+
+S-Web42 is one more option to manage your website.  It offers the
+possibility to expand a directory hierarchy of input files, some of
+which may consist of a mixture of PIs, (uninterpreted) (X)HTML or XML
+markup and normal text.  In those which do, PIs can be defined and
+undefined, they may be defined to take arguments (think format strings),
+which can be, e.g., a handy way to create complex tables; `perl(1)`_
+code can be evaluated, files can be included, also recursively; simple
+control statements can be used to conditionalize file content, and
+some simple MarkLo tags aid in making editing life a bit easier, too.
+
+The ``s-web42`` converter is a `perl(1)`_ script, i.e., it needs an
+installed Perl, version 5.8.1 and above.  It also requires the authors
+`S-SymObj`_ module -- you may install it as a regular part of your
+`perl(1)`_ installation by issuing the command ``$ cpan S-SymObj``.
+Alternatively you may also get it from http://www.CPAN.org, clone the
+git repository from ``git://git.code.sf.net/p/ssymobj/code`` or browse
+it on http://sourceforge.net/p/ssymobj/code).
+
+``s-web42`` also uses the standard POSIX tools ``sed(1)``, ``sh(1)``,
+``uudecode(1)``, ``uuencode(1)`` and, optionally, data compressors
+(one of ``compress(1)``, ``gzip(1)``, ``bzip2(1)`` and ``xz(1)`` may
+be used).
+
+.. contents::
+
+Synopsis
+========
+
+::
+
+   s-web42 [-v[v]]
+   s-web42 [-v[v]] --no-update-cache (or: --nuc)
+   s-web42 [-v[v]] --force-rebuild [--nuc]
+   s-web42 [-v[v]] --expand-one [FILE] (or: --eo [FILE])
+
+   perl -C -I/PATH/TO/SymObj.pm s-web42
+
+   PERL5OPT=-C PERL5LIB=/PATH/TO/SymObj.pm
+   export PERL5OPT PERL5LIB
+   s-web42
+
+The ``--no-update-cache`` option can be used to suppress an update of
+the cache database -- i.e., rerunning ``s-web42`` again will generate
+the very same output.  With the ``--force-rebuild`` option an existing
+cache database can be ignored so that effectively everything is rebuild
+from scratch; this mode may be combined with ``--no-update-cache``.
+
+The ``--expand-one`` option will read the programs standard input or
+``FILE``, if one was specified, expand and filter it just as described
+below, and write the resulting content to the programs standard output.
+This is an isolated and special mode in that none of the described
+website management actions are performed, except of reading in the
+optional configuration file, as described below.
+
+The ``-v`` option can be used to gain some verbosity, using it twice
+will be even more verbose; if used in conjunction with ``--expand-one``
+these messages will go to the standard error instead.  The trailing
+two examples show how to extend the `perl(1)`_ ``@INC`` path so that
+the required `S-SymObj`_ module will be found without installing that
+in a regular place, which is a task that often requires administrator
+privileges.  And please be aware that no effort is put in parsing
+command line arguments: one needs to use the very format shown above.
+
+.. note::
+   S-Web42 is charset agnostic.  It reads and writes files, and simply
+   reuses the actual character encoding that `perl(1)`_ has chosen to
+   use.  It is therefore highly desirable to either use the ``-C``
+   command line option of `perl(1)`_ or to set the ``PERL5OPT``
+   environment variable to this value, because **only like that**
+   `perl(1)`_ tries to reflect the users locale settings in respect
+   to Unicode-awareness of its input and output!  Please see the
+   ``perlrun(1)`` manual for more documentation, and the above examples
+   for how to do that in a POSIX-compatible, Bourne or Korn shell.
+
+   If S-Web42 detects that `perl(1)`_ does not use UTF-8 I/O even
+   though the users locale is UTF-8 aware it'll complain remarkably.
+
+WhatIs?
+=======
+
+S-Web42 consists of only one file: ``s-web42``.  Well, there are
+``header``, ``footer``, ``template.html``, ``hook`` and ``config.rc``,
+but these form a (somewhat primitive and rather identical to the
+authors very own website) usage example only, they are not required
+for operation.
+
+Once invoked, the converter script ``s-web42`` requires the subdirectory
+``site`` to exist in the current working directory, since that is used
+as the input tree.  It'll also assume it can use the filenames
+``cache.dat`` (the cache database), ``cache.old`` (database state
+before last run), and, temporarily, ``work.tmp`` and ``w42-update.tmp``
+in there.  The generated shell archive will always be ``w42-update.sh``,
+and not executable.
+
+If the file ``config.rc`` is also found in the working directory, it
+is read -- the `Assignments`_ of PI variables seen there will form the
+outermost context and will thus be inherited by all files under ``site``
+(PIs can be overridden and undefined for anything *deeper* in the
+hierarchy only).  Here, and *only* here is it possible to specify some
+very `Special PI variables`_.
+
+The presence of a file ``hook`` is also recorded, and it'll be used
+as a per-directory fallback hook in all those ``site`` subdirectories
+which don't provide their own.  The optional per-directory hooks can
+be used to create and/or modify the contents of the directory (and
+subdirectories and only) on the fly.  It is a fatal error if such a
+hook is not an executable program or if it doesn't exit successfully.
+Hooks will be given one command line argument, and that is the current
+working directory from within which the hook is run.
+
+Then the converter will enter the ``site`` directory and recursively
+parse the tree therein.  An existent per-directory hook is run at that
+point, and before deeper levels of the hierarchy are entered.  Note
+that the directory entries ``SCCS``, ``CVS`` and anything which starts
+with a dot (thus also ``.git`` and ``.RCS``) are completely ignored
+by S-Web42.  Also, it is not possible to savely create directories on
+the fly except in deeper, not yet parsed, hierarchy levels.
+
+.. note::
+   S-Web42 won't handle paths with embedded quotation marks, i.e.,
+   neither ``"`` nor ``'`` characters may be used for directory- and
+   filenames.  You should possibly be conservative about filenames in
+   general, mostly in respect to embedded whitespace, as the implemented
+   quoting rules are primitive, yet sufficient.
+
+After the entire tree has been traversed like that once, the content
+of all directories will be reread, and the resultant tree will be
+compared against the version recorded in the cache database.  Anything
+which is missing or which seems to be modified will be rebuild, either
+as a bitwise copy of the source or as the result of S-Web42 filtering,
+as below.  Filtering will be applied to all files which' name includes
+the string ``-w42``, or, to be exact, which name' end with a string
+that matches ``(.*?)(-w42(?:-(x|[icepatsm]+))?(-new)?)$``.
+
+S-Web42 assumes that a file is modified if its modification timestamp
+is different from that recorded in the cache database (but see
+`IGNORE_MODTIME`_) and if its MD5 checksum is different from the
+recorded one.  One can force rebuilding for S-Web42-filtered files on
+a per-file base by using a filename that includes the suffix ``-new``,
+as in ``index.html-w42-new`` -- neither modification time nor input
+checksums will matter for such files, they will *always* be rebuild.
+
+.. note::
+   Files included via the ``<?include?>`` PI are *not* checked, i.e.,
+   no dependency tracking is performed.
+
+Any file rebuild non-bitwise is then checksummed again, and will *only*
+be part of the result if the MD5 checksum of the rebuilt target is
+different from the checksum stored in the cache database, but not
+otherwise.  (The only exception to this rule is the user using the
+``--force-rebuild`` command line option, as that'll rebuild anything
+from scratch.)
+
+So, what will the result look like?  One may be astonished, but the
+result will be generated as a shell archive with ``uuencode(1)``\ d
+(and, optionally, `COMPRESS`_\ ed) members.  These archives can either
+be used to update a local mirror (``$ sh w42-update.sh --local
+TARGET-PATH``) or as a ``sftp(1)`` batchfile (``$ sh w42-update.sh
+--sftp TMP-PATH | sftp -b - user@host[:dir]; rm -rf TMP-PATH``).  In
+the latter case ``TMP-PATH`` must be some temporary path that can be
+used by the archive to unpack its contents therein (it'll issue a
+``mkdir TMP-PATH``, i.e., create that directory as necessary).
+
+During operation, the generated shell archive will try to ignore any
+errors, continuing it's operation until all commands have been issued.
+E.g., in ``sftp(1)`` batch mode, the termination-on-error is suppressed
+by prefixing commands with a hyphen ``-``.  Any error, and some other
+informational messages will be logged to standard error, however.
+
+File and directory removals will also be properly handled.  However,
+if the cache database (a textfile) is lost, then the only solution is
+to delete the target directory manually and to rebuild it with a new
+from-scratch archive.
+
+On filenames and -content
+=========================
+
+S-Web42 doesn't look into files unless their name ends with a special
+suffix.  If that isn't seen, files will be treated as bins of undefined
+binary content and handled bitwise.  If, on the other hand, the filename
+ends with the suffix ``(.*?)(-w42(?:-(x|[icepatsm]+))?(-new)?)$``,
+then it'll be subject to content filtering, as described in the rest
+of this document.  Let's inspect that cryptic expression:
+
+``(.*?)``
+   S-Web42 doesn't care, simply name any file the way you want, with
+   or without a file extension.  It doesn't matter.
+
+``(-w42 ... )$`` -- S-Web42 filter trigger
+   If, after the ignored part, the string ``-w42`` is seen, as in
+   ``index.html-w42``, then this file is flagged to be subject to
+   S-Web42 content filtering.
+
+   .. note::
+      The trailing S-Web42 specific part will be stripped from the
+      filename so that, e.g., an input file ``index.html-w42-new``
+      will produce an output file ``index.html``.
+
+``(?:-(x|[icepatsm]+))?`` -- Mode configuration
+   It is possible to fine tune the behaviour of S-Web42 content filtering
+   and expansion by continuing the ``-w42`` suffix with a hyphen ``-``
+   and then either the letter ``x`` or any combination of the letters
+   ``icepatsm``.  This is described in detail in the section
+   `About.Filter`_.  An example of such a filename would be
+   ``index.html-w42-cea``.
+
+(-new)? -- Forced rebuild trigger
+   If the suffix ends with a trailing ``-new`` part, then both, the
+   modification time and the files input checksum will not be used to
+   decide wether a file has been modified or not.  Instead it'll always
+   be rebuild, and the decision wether to include the file in the
+   result or not is based upon the checksum of the generated file.  A
+   filename example would be ``index.php-w42-x-new``.
+
+Moreover, all files that are subject to S-Web42 content filtering (and
+``config.rc`` but this is a special case in that S-Web42 will complain
+if it contains anything else but the `Assignments`_ part) have to
+comply to a very specific content layout scheme:
+
+   | `Assignments`_
+   | ``<?begin?>``
+   | `Content`_
+   | ``<?end?>``
+   | `Ignored`_
+
+About.Filter
+------------
+
+These filter operations will be performed on the `Assignments`_ part
+of *all* files which are subject to filtering.  They'll also be applied
+on the `Content`_ part unless the mode configuration suffix was ``-x``
+or otherwise excluded these actions:
+
+*Drop of trailing whitespace* (cannot be disabled)
+   A lines' trailing whitespace is discarded.
+
+*Drop of introductional whitespace* (disable mode: ``i``)
+   A lines' leading whitespace is discarded.  This step will always be
+   performed on follow lines after escaped newlines, as below.
+
+*Handling of shell style comments* (disable mode: ``c``)
+   If the first non-whitespace character of a line is a number sign
+   ``#``, then this line is a comment and as such discarded.
+
+*Escaping of newlines* (disable mode: ``e``)
+   If the last character of a non-comment line is a backslash that is
+   not itself escaped by a(n uneven number of) backslash(es), then the
+   next line is joined with the current line after its leading whitespace
+   has been discarded.
+
+These filter operations will be performed on the `Content`_ part unless
+the mode configuration excluded them:
+
+*PI expansion* (disable mode: ``p``)
+   Processing Instructions will be expanded.
+
+These filter operations will be performed on the `Content`_ part unless
+the mode configuration suffix was ``-x`` or otherwise excluded these
+actions:
+
+*Automatic paragraphs* (disable mode: ``a``)
+   If a textblock is surrounded by empty lines it'll be enclosed in
+   a ``<p></p>`` pair (unless the block seems to be enclosed in
+   a tag).
+
+*Tagsoup joining* (disable mode: ``t``)
+   The DOM standard (http://www.w3.org/TR/DOM-Level-3-Core) is used to
+   transform site content to DOM objects.  Unfortunately code like ::
+
+      </p>
+      <p>
+
+   (may) result(s) in a useless DOM object covering the newline in
+   between the two tags.  To circumvent that S-Web42 tries to join
+   tags like these together.
+
+*Whitespace normalization* (disable mode: ``s``)
+   Once the line content is fully expanded leading and trailing
+   whitespace is removed and multiple spaces are squeezed to single
+   ones.
+
+*MarkLo expansion* (disable mode: ``m``)
+   As a last step some *MarkLo* markers will be converted to markup:
+
+   * ``*CONTENT*`` will be ``<it>CONTENT</it>``.
+   * ``**CONTENT**`` will be ``<b>CONTENT</b>``.
+   * ``_CONTENT_`` will be ``<ul>CONTENT</ul>``.
+   * \` ``CONTENT``\ ` will be ``<tt>CONTENT</tt>``.
+
+   To prevent these expansions, escape the (first) trigger character
+   with a backslash -- such a backslash will be removed: to have
+   a backslash in front of one of the trigger characters, escape the
+   backslash with a(n) (uneven number of) backslash(es).
+
+Finally a content example of a ``.w42`` file: ::
+
+   <?begin?>
+
+   Yo S-Web42.
+
+   Ziggy.
+   # This is a comment line.
+      # Yet another comment line
+    This LN \
+      use\
+         s *NL* escaping.\\\\
+
+   <?end?>
+   ->
+   <p>Yo S-Web42.</p><p>Ziggy. This LN uses <it>NL</it> escaping.\\</p>
+
+Assignments
+-----------
+
+The content is prefixed by the (PI) variable assignment block. ::
+
+   var1 = content of var1
+   var2 ?= conditional assignment (if not yet defined)
+   var3 += content (assigned or) added to var3
+   var4 @= var4 will be an array, this is the first value
+   var4 @= the var4 array gains another value
+   var5 ?@= conditional array assignment (if not yet defined)
+   var5 @= append a member to the now anyway existent var5 array
+   var6 = <em>markup</em><?def foo<>stupid example?><?foo?><?undef foo?>
+
+All PI variables defined like that may contain any content, including
+complete PIs and markup.  There is no technical difference in between
+these and stuff defined via ``<?``\ `def`_\ ``?>``, ``<?``\ `defa`_\
+``?>`` and ``<?``\ `defx`_\ ``?>``, except for the possibility to
+include PI closing tags ``?>`` (as shown in the ``var6`` example).
+
+``=``
+   Assignment to variable.
+``+=``
+   Assign to non-existent variable, else append value to it.
+``?=``
+   Assign to variable, but only if that not yet exists.
+``@=``
+   Array assignment -- create array as necessary and push a value onto
+   it.
+``?@=``
+   Push value onto array, but only if that is to be newly created.
+
+Content
+-------
+
+Everything in between the ``<?begin?>`` and ``<?end?>`` PIs is expanded
+and will thus produce real output.  Line content is recursively expanded
+until no further expansion is possible.
+
+.. note::
+   One should be aware that recursion applies whenever it occurs.
+   E.g., if an ``<?include?>`` file includes itself a file, then this
+   is performed recursively, without closing the first file descriptor
+   first.  Running S-Web42 may thus encounter resource limits.
+
+Ignored
+-------
+
+Any content after the ``<?end?>`` PI is not parsed at all.
+
+Special PI variables
+====================
+
+There are a few PI variables which are treated in a special way, either
+because they can only be set in ``config.rc``, or because they are
+used by `Processing Instructions (PIs)`_ as content-injection hooks.
+
+_`COMPRESS`
+   **Only recognized in config.rc**.
+   If used, it can be set to any of ``compress``, ``gzip``, ``bzip2``
+   or ``xz``; it thus specifies a un-/compression method to be used
+   before ``uuencode(1)``\ ing shell archive members.
+
+_`FOREACH_PREHOOK`, _`FOREACH_POSTHOOK`
+   The `foreach`_ and `foreach-if`_ loops will inject the content of
+   those before and after each array member content, respectively.
+   They default to the empty string.
+
+_`IGNORE_MODTIME`
+   **Only recognized in config.rc**.
+   Causes file modification times to be ignored if set.  Maybe necessary
+   if ``git`` is used as a source code control system.
+
+_`MODTIME_AUTC`, _`MODTIME_ALOCAL`, _`MODTIME_SUTC`, _`MODTIME_SLOCAL`
+   Here ``_A`` stands for "array" and ``_S`` for "string".  These are
+   readonly PIs that correspond to the modification time of the currently
+   processed file, in UTC and LOCAL time, respectively.  The order of
+   the arrays is: 0=year, 1=month, 2=day, 3=hour, 4=minute, 5=second.
+   The entry at index 6 is the string "UTC" for the UTC versions and
+   the offset from UTC in the ISO 8601:2000 standard format (+hhmm or
+   -hhmm) otherwise.  The strings use the format "YYYY-MM-DD HH:MM:SS"
+   and, again, the UTC version appends the string " UTC" whereas the
+   local version appends the string " +-ZONEOFFSET".
+
+   .. note::
+      If the ``Time::Piece`` `perl(1)`_ module cannot be loaded (it is
+      believed to be a standard module since Perl version 5.10), then
+      S-Web42 will only provide UTC values, even for the local
+      versions.  I.e., the local ones are only aliases, then.
+
+_`WWW`
+   Will be injected in expansions of `href`_ and `hreft`_.
+   Defaults to the empty string.
+
+Processing Instructions (PIs)
+=============================
+
+It follows the list of predefined processing instructions.  PIs marked
+"multiline" in the list below need a closing end tag, e.g., the PI
+``<?perl?>`` must be finalized via ``<?perl end?>``.
+
+_`at`
+   Takes two arguments, the name of an array and an index, and expands
+   to the contents of the accessed array member.  See `defa`_ for an
+   example.
+
+_`def`
+   Define a PI which expands to it's value part when used.  The value
+   part may contain any content except the PI closing tag ``?>``. ::
+
+      <?def var1<>varcontent, may contain <em>tagsoup</em>?>
+      ...
+      <?var1?>
+      ->
+      varcontent, may contain <em>tagsoup</em>
+
+_`defa`
+   Define or extend a PI that serves as an array.  Separate members
+   are indicated by placing the empty tag ``<>`` in the value content
+   (which is different to ``def``, which would simply write the empty
+   tag).  Also see `at`_ above and `foreach`_ below. ::
+
+      <?defa arrnam<>m 1?>
+      <?defa arrnam<>m 2?>
+      <?defa arrnam<>m 3<>m 4?>
+      ...
+      <p><?at arrnam<>0?><?at arrnam<>1?>\
+         <?at arrnam<>2?><?at arrnam<>3?></p>
+      <p><?def FOREACH_PREHOOK<><b>?>\
+         <?def FOREACH_POSTHOOK<></b>?>\
+         <?foreach arrnam?></p>
+      ->
+      <p>m 1m 2m 3m 4</p><p><b>m 1</b><b>m 2</b><b>m 3</b><b>m 4</b></p>
+
+_`defx`
+   Define a PI which takes arguments (think format strings).  Arguments
+   are indicated by placing the empty tag ``<>`` in the value content
+   -- those tags will be replaced by the corresponding user-supplied
+   argument when used (which is different to ``def``, which would
+   simply write the empty tag). ::
+
+      <?defx var2<>Expanded <> var <> content <>?>
+      ...
+      <?var2 arg1<>arg2<>arg3?>
+      ->
+      Expanded arg1 var arg2 content arg3
+
+_`foreach`, _`foreach-if`
+   Echo all the content of an array (if it exists).  The special PI
+   variables `FOREACH_PREHOOK`_ and `FOREACH_POSTHOOK`_ are checked
+   for existence, and their value content will be written before and
+   after each array member value, respectively.  See `defa`_ for an
+   example.
+
+_`href`, _`hreft`, _`lref`, _`lreft`
+   These purely convenience PIs expand to (X)HTML hyperlinks; the first
+   two should be used to create links which leave the site (see `WWW`_),
+   the other two for site-local ones.  The versions without the ``t``
+   suffix take one argument, the others will also create a ``title``
+   attribute and thus require two arguments. ::
+
+      <?href http://www.freebsd.org?>
+      -> <a href="http://www.freebsd.org>www.freebsd.org</a>
+      <?hreft http://www.opensource.org<><em>Lots</em> of licenses?>
+      -> <a href="http://www.opensource.org" title="Lots of licenses"
+         ><em>Lots</em> of licenses</a>
+
+_`ifdef`, _`ifndef`, _`else`, _`fi`
+   Simple conditional control statements which test for (non)existence
+   of a variable (PI) and process the enclosed block only if the
+   condition is true.  (You may also "test" for ``0``, which evaluates
+   as not defined.) ::
+
+      <p>
+      <?ifndef HOMEPAGE?>
+       <?lreft index.html<>[HOME]?>
+      <?else?>
+       Jo-ho hooo -- welcome on my homepage, dude!
+      <?fi?>
+      </p>
+
+_`include`, _`raw_include`
+   The PI ``<?include?>`` can be used to include a file that itself
+   will be subject to the same expansion and filtering that is in use
+   for the including file, whereas the ``<?raw_include?>`` PI will
+   include the given file raw and **without any** S-Web42 processing.
+   Paths are interpreted relative to the source directory of the file
+   which defines the include directive.
+
+      HOME = ../index.html
+      <?begin?>
+      <?include ../../header?>
+
+      Hello World, v2.
+
+      <pre>
+      <?raw_include /etc/passwd?>
+      </pre>
+
+      <?include ../../footer?>
+      <?end?>
+
+   .. note::
+      If the path starts with a tilde ``~``, that will be replaced by
+      the value of the environment variable ``HOME``.  Likewise, if
+      the path starts with a plus sign ``+``, then that'll be replaced
+      with the content of the environment variable ``WEB42INC``.  Note
+      it is really that simple.
+
+   .. note::
+      By **definition** there is really no notion of a "chroot".  One
+      may leave ``site`` absolutely or relatively, just as desired.
+
+_`perl`
+   This is a multiline statement which can be used to embed ``perl(1)``
+   code that will be evaluated (in a forked subprocess).  The output
+   that is produced on STDOUT will be re-evaluated (as it is produced)
+   and may thus contain more PIs. ::
+
+      <?perl?>
+      my $gmd = gmtime;
+      my $lmd = localtime;
+
+      print '<p>Hi <?USER?>!';
+      print "It is $lmd.<br />";
+      print "That is $gmd UTC!</p>"
+      <?perl end?>
+
+   .. note::
+      Escaped newlines and shell-style comments are not handled while
+      this mode is active.  (It can be used as usual for output that
+      is produced by the perl code, however.)
+
+_`pi-if`
+   If it is unsure wether a PI exists, use this PI to "invoke" it,
+   instead of using the PI itself.  It will not cause errors but only
+   log messages if it does not exist.
+
+_`pre`, _`xpre`
+   The "preformatted" multiline PIs.  By default the converter trims
+   and squeezes whitespace and tries to join the input tagsoup, so as
+   to minimize useless DOM objects and file size.  Inside these
+   preformatted PIs it won't do so.  Since that is mostly of interest
+   inside of HTML ``<pre>`` tags, the expansion of the ``<?xpre?>``
+   PI contains this tag already.
+
+   .. note::
+      Escaped newlines and shell-style comments are not handled while
+      evaluating input from these modes.
+
+_`undef`
+   Undefine an user defined array or PI.
+
+   .. note::
+      This undefines in the current context **only**!  I.e., if ``file1``
+      defines the PI ``DOIT`` and then includes ``file2``, then an
+      ``<?undef DOIT?>`` from within ``file2`` will **not** affect
+      ``file1``, but only ``file2`` and deeper contexts.
+
+.. vim:set fenc=utf-8 filetype=rst syntax=rst ts=8 sts=3 sw=3 et tw=70:
