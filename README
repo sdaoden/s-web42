@@ -10,6 +10,8 @@ S-Web42
 
 .. _`perl(1)`: http://www.perl.org
 .. _`S-SymObj`: http://sdaoden.users.sourceforge.net/code.html#s-symobj
+.. |fextre| replace:: ``(.*?)(-w42(?:-(x|[icepatsm]+))?(-new)?)$``
+.. |checksum| replace:: MD5 checksum
 
 Overview
 ========
@@ -22,7 +24,7 @@ undefined, they may be defined to take arguments (think format strings),
 which can be, e.g., a handy way to create complex tables; `perl(1)`_
 code can be evaluated, files can be included, also recursively; simple
 control statements can be used to conditionalize file content, and
-some simple MarkLo tags aid in making editing life a bit easier, too.
+some simple MarkLo tags aid in make editing life a bit easier, too.
 
 The ``s-web42`` converter is a `perl(1)`_ script, i.e., it needs an
 installed Perl, version 5.8.1 and above.  It also requires the authors
@@ -30,7 +32,7 @@ installed Perl, version 5.8.1 and above.  It also requires the authors
 `perl(1)`_ installation by issuing the command ``$ cpan S-SymObj``.
 Alternatively you may also get it from http://www.CPAN.org, clone the
 git repository from ``git://git.code.sf.net/p/ssymobj/code`` or browse
-it on http://sourceforge.net/p/ssymobj/code).
+it on http://sourceforge.net/p/ssymobj/code.
 
 ``s-web42`` also uses the standard POSIX tools ``sed(1)``, ``sh(1)``,
 ``uudecode(1)``, ``uuencode(1)`` and, optionally, data compressors
@@ -86,7 +88,7 @@ command line arguments: one needs to use the very format shown above.
    `perl(1)`_ tries to reflect the users locale settings in respect
    to Unicode-awareness of its input and output!  Please see the
    ``perlrun(1)`` manual for more documentation, and the above examples
-   for how to do that in a POSIX-compatible, Bourne or Korn shell.
+   on how to do that in a POSIX-compatible, Bourne or Korn shell.
 
    If S-Web42 detects that `perl(1)`_ does not use UTF-8 I/O even
    though the users locale is UTF-8 aware it'll complain remarkably.
@@ -106,10 +108,10 @@ as the input tree.  It'll also assume it can use the filenames
 ``cache.dat`` (the cache database), ``cache.old`` (database state
 before last run), and, temporarily, ``work.tmp`` and ``w42-update.tmp``
 in there.  The generated shell archive will always be ``w42-update.sh``,
-and not executable.
+and it will not have any executable bits set.
 
-If the file ``config.rc`` is also found in the working directory, it
-is read -- the `Assignments`_ of PI variables seen there will form the
+If the file ``config.rc`` is found in the working directory, it'll be
+read -- the `Assignments`_ of PI variables seen there will form the
 outermost context and will thus be inherited by all files under ``site``
 (PIs can be overridden and undefined for anything *deeper* in the
 hierarchy only).  Here, and *only* here is it possible to specify some
@@ -129,8 +131,9 @@ parse the tree therein.  An existent per-directory hook is run at that
 point, and before deeper levels of the hierarchy are entered.  Note
 that the directory entries ``SCCS``, ``CVS`` and anything which starts
 with a dot (thus also ``.git`` and ``.RCS``) are completely ignored
-by S-Web42.  Also, it is not possible to savely create directories on
-the fly except in deeper, not yet parsed, hierarchy levels.
+by S-Web42.  Also it is not possible to savely create directories on
+the fly except in deeper, not yet parsed hierarchy levels below the
+current directory.
 
 .. note::
    S-Web42 won't handle paths with embedded quotation marks, i.e.,
@@ -140,28 +143,28 @@ the fly except in deeper, not yet parsed, hierarchy levels.
    quoting rules are primitive, yet sufficient.
 
 After the entire tree has been traversed like that once, the content
-of all directories will be reread, and the resultant tree will be
+of all directories will be reread, and the resulting tree will be
 compared against the version recorded in the cache database.  Anything
 which is missing or which seems to be modified will be rebuild, either
 as a bitwise copy of the source or as the result of S-Web42 filtering,
 as below.  Filtering will be applied to all files which' name includes
 the string ``-w42``, or, to be exact, which name' end with a string
-that matches ``(.*?)(-w42(?:-(x|[icepatsm]+))?(-new)?)$``.
+that matches |fextre|.
 
 S-Web42 assumes that a file is modified if its modification timestamp
 is different from that recorded in the cache database (but see
-`IGNORE_MODTIME`_) and if its MD5 checksum is different from the
-recorded one.  One can force rebuilding for S-Web42-filtered files on
-a per-file base by using a filename that includes the suffix ``-new``,
-as in ``index.html-w42-new`` -- neither modification time nor input
-checksums will matter for such files, they will *always* be rebuild.
+`IGNORE_MODTIME`_) and if its |checksum| is different from the recorded
+one.  One can force rebuilding for S-Web42-filtered files on a per-file
+base by using a filename that includes the suffix ``-new``, as in
+``index.html-w42-new`` -- neither modification time nor input checksums
+will matter for such files, they will *always* be rebuild.
 
 .. note::
    Files included via the ``<?include?>`` PI are *not* checked, i.e.,
    no dependency tracking is performed.
 
 Any file rebuild non-bitwise is then checksummed again, and will *only*
-be part of the result if the MD5 checksum of the rebuilt target is
+be part of the result if the |checksum| of the rebuilt target is
 different from the checksum stored in the cache database, but not
 otherwise.  (The only exception to this rule is the user using the
 ``--force-rebuild`` command line option, as that'll rebuild anything
@@ -194,9 +197,9 @@ On filenames and -content
 S-Web42 doesn't look into files unless their name ends with a special
 suffix.  If that isn't seen, files will be treated as bins of undefined
 binary content and handled bitwise.  If, on the other hand, the filename
-ends with the suffix ``(.*?)(-w42(?:-(x|[icepatsm]+))?(-new)?)$``,
-then it'll be subject to content filtering, as described in the rest
-of this document.  Let's inspect that cryptic expression:
+ends with the suffix |fextre|, then it'll be subject to content
+filtering, as described in the rest of this document.  Let's inspect
+that cryptic expression:
 
 ``(.*?)``
    S-Web42 doesn't care, simply name any file the way you want, with
@@ -244,7 +247,7 @@ About.Filter
 
 These filter operations will be performed on the `Assignments`_ part
 of *all* files which are subject to filtering.  They'll also be applied
-on the `Content`_ part unless the mode configuration suffix was ``-x``
+to the `Content`_ part unless the mode configuration suffix was ``-x``
 or otherwise excluded these actions:
 
 *Drop of trailing whitespace* (cannot be disabled)
@@ -291,9 +294,9 @@ actions:
    tags like these together.
 
 *Whitespace normalization* (disable mode: ``s``)
-   Once the line content is fully expanded leading and trailing
-   whitespace is removed and multiple spaces are squeezed to single
-   ones.
+   Once the line content is fully expanded (leading and) trailing
+   whitespace is removed (again) and multiple adjacent whitespace
+   characters are squeezed to a single (ASCII) space character.
 
 *MarkLo expansion* (disable mode: ``m``)
    As a last step some *MarkLo* markers will be converted to markup:
@@ -308,7 +311,7 @@ actions:
    a backslash in front of one of the trigger characters, escape the
    backslash with a(n) (uneven number of) backslash(es).
 
-Finally a content example of a ``.w42`` file: ::
+Finally a ``-w42`` file content example::
 
    <?begin?>
 
@@ -341,9 +344,11 @@ The content is prefixed by the (PI) variable assignment block. ::
 
 All PI variables defined like that may contain any content, including
 complete PIs and markup.  There is no technical difference in between
-these and stuff defined via ``<?``\ `def`_\ ``?>``, ``<?``\ `defa`_\
-``?>`` and ``<?``\ `defx`_\ ``?>``, except for the possibility to
-include PI closing tags ``?>`` (as shown in the ``var6`` example).
+these and stuff defined via ``<?``\ `def`_\ ``?>`` and ``<?``\ `defa`_\
+``?>`` except of the possibility to include PI closing tags ``?>`` (as
+shown in the ``var6`` example).  S-Web42 PI and variable names may
+consist of alphabetical characters, digit characters and the hyphen
+(``-``).  Note that the case matters, just as usual for XML processing.
 
 ``=``
    Assignment to variable.
@@ -388,11 +393,6 @@ _`COMPRESS`
    or ``xz``; it thus specifies a un-/compression method to be used
    before ``uuencode(1)``\ ing shell archive members.
 
-_`FOREACH_PREHOOK`, _`FOREACH_POSTHOOK`
-   The `foreach`_ and `foreach-if`_ loops will inject the content of
-   those before and after each array member content, respectively.
-   They default to the empty string.
-
 _`IGNORE_MODTIME`
    **Only recognized in config.rc**.
    Causes file modification times to be ignored if set.  Maybe necessary
@@ -423,13 +423,11 @@ Processing Instructions (PIs)
 =============================
 
 It follows the list of predefined processing instructions.  PIs marked
-"multiline" in the list below need a closing end tag, e.g., the PI
-``<?perl?>`` must be finalized via ``<?perl end?>``.
-
-_`at`
-   Takes two arguments, the name of an array and an index, and expands
-   to the contents of the accessed array member.  See `defa`_ for an
-   example.
+"multiline" in the list below are special in that they need a closing
+``end`` tag and both, the starting and the closing tag, must occur on
+lines of their own.  E.g., to end the multiline PI ``<?perl?>`` the
+PI ``<?perl end?>`` is necessary.  For `def`_, `defa`_ and `defx`_ the
+same name restrictions apply as has been documented for `Assignments`_.
 
 _`def`
    Define a PI which expands to it's value part when used.  The value
@@ -445,19 +443,26 @@ _`defa`
    Define or extend a PI that serves as an array.  Separate members
    are indicated by placing the empty tag ``<>`` in the value content
    (which is different to ``def``, which would simply write the empty
-   tag).  Also see `at`_ above and `foreach`_ below. ::
+   tag).  Individual array members may be accessed by "calling" the
+   array with the desired member index as an argument::
 
       <?defa arrnam<>m 1?>
       <?defa arrnam<>m 2?>
       <?defa arrnam<>m 3<>m 4?>
       ...
-      <p><?at arrnam<>0?><?at arrnam<>1?>\
-         <?at arrnam<>2?><?at arrnam<>3?></p>
-      <p><?def FOREACH_PREHOOK<><b>?>\
-         <?def FOREACH_POSTHOOK<></b>?>\
-         <?foreach arrnam?></p>
+      <p><?arrnam 0?><?arrnam 1?>\
+         <?arrnam 2?><?arrnam 3?></p>
       ->
-      <p>m 1m 2m 3m 4</p><p><b>m 1</b><b>m 2</b><b>m 3</b><b>m 4</b></p>
+      <p>m 1m 2m 3m 4</p>
+
+   One may loop over an entire array by giving *loop* as the first
+   argument.  In this mode two additional, optional arguments may be
+   given; the first will be injected before the value, the second
+   after the value.  E.g.::
+
+      <p><?arrnam loop<><b><></b>?></p>
+      ->
+      <p><b>m 1</b><b>m 2</b><b>m 3</b><b>m 4</b></p>
 
 _`defx`
    Define a PI which takes arguments (think format strings).  Arguments
@@ -472,13 +477,6 @@ _`defx`
       ->
       Expanded arg1 var arg2 content arg3
 
-_`foreach`, _`foreach-if`
-   Echo all the content of an array (if it exists).  The special PI
-   variables `FOREACH_PREHOOK`_ and `FOREACH_POSTHOOK`_ are checked
-   for existence, and their value content will be written before and
-   after each array member value, respectively.  See `defa`_ for an
-   example.
-
 _`href`, _`hreft`, _`lref`, _`lreft`
    These purely convenience PIs expand to (X)HTML hyperlinks; the first
    two should be used to create links which leave the site (see `WWW`_),
@@ -486,8 +484,8 @@ _`href`, _`hreft`, _`lref`, _`lreft`
    suffix take one argument, the others will also create a ``title``
    attribute and thus require two arguments. ::
 
-      <?href http://www.freebsd.org?>
-      -> <a href="http://www.freebsd.org>www.freebsd.org</a>
+      <?href http://www.netbsd.org?>
+      -> <a href="http://www.netbsd.org">www.netbsd.org</a>
       <?hreft http://www.opensource.org<><em>Lots</em> of licenses?>
       -> <a href="http://www.opensource.org" title="Lots of licenses"
          ><em>Lots</em> of licenses</a>
@@ -512,7 +510,7 @@ _`include`, _`raw_include`
    for the including file, whereas the ``<?raw_include?>`` PI will
    include the given file raw and **without any** S-Web42 processing.
    Paths are interpreted relative to the source directory of the file
-   which defines the include directive.
+   which defines the include directive. ::
 
       HOME = ../index.html
       <?begin?>
@@ -538,11 +536,11 @@ _`include`, _`raw_include`
       By **definition** there is really no notion of a "chroot".  One
       may leave ``site`` absolutely or relatively, just as desired.
 
-_`perl`
-   This is a multiline statement which can be used to embed ``perl(1)``
-   code that will be evaluated (in a forked subprocess).  The output
-   that is produced on STDOUT will be re-evaluated (as it is produced)
-   and may thus contain more PIs. ::
+_`perl`, _`shell`
+   These are multiline statement which can be used to embed ``perl(1)``
+   or ``shell(1)`` code that will be evaluated (in a forked subprocess).
+   The output that is produced on STDOUT will be re-evaluated (as it
+   is produced) and may thus contain more PIs.  ::
 
       <?perl?>
       my $gmd = gmtime;
@@ -559,9 +557,12 @@ _`perl`
       is produced by the perl code, however.)
 
 _`pi-if`
-   If it is unsure wether a PI exists, use this PI to "invoke" it,
-   instead of using the PI itself.  It will not cause errors but only
-   log messages if it does not exist.
+   If it is unsure wether a PI (variable) exists, use this PI to
+   "invoke" it, instead of the PI itself.  I.e., pass arguments etc.
+   just as you would do if you would use the PI directly, but give the
+   name of the PI as the first argument.  ``pi-if`` will not cause
+   errors but only produce some log messages if the used PI does not
+   exist.
 
 _`pre`, _`xpre`
    The "preformatted" multiline PIs.  By default the converter trims
@@ -584,4 +585,4 @@ _`undef`
       ``<?undef DOIT?>`` from within ``file2`` will **not** affect
       ``file1``, but only ``file2`` and deeper contexts.
 
-.. vim:set fenc=utf-8 filetype=rst syntax=rst ts=8 sts=3 sw=3 et tw=70:
+.. vim:set fenc=utf-8 syntax=rst ts=8 sts=3 sw=3 et tw=70:
