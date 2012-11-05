@@ -1,0 +1,60 @@
+SCCSID = %Z%%M% %I% %e%T%U%
+# Pack is about heading level (is this file a sub+section?); this value is
+# trimmed and used *directly*, as in '<h<?PACK_LEVEL?>>'!
+PACK_LEVEL = 2
+CHAPTER = Make editors slightly moist!
+TITLE = Qual - Some More
+HEADLINE = Qual
+DESC = A Poem
+KEYWORDS = Qual, Poems
+COPY_DATE_SPEC = 1997 - 2012
+
+# If set, will be used as target files for navigation (header,footer)
+FIRST = .html
+PREV = .html
+UP = .html
+NEXT = .html
+LAST = .html
+
+TOPMENU @= <?lreft xy.html<>Xy?>
+TOPMENU @= <?lreft disccopy.html<>Imprint and Disclaimer?>
+
+#STYLE_INJECT = 
+#SCRIPT_INJECT = 
+#HEAD_INJECT = 
+
+C = <?ac C?>
+CPP = <?ac C++?>
+FREEBSD = <?hreft http://www.freebsd.org<>FreeBSD?>
+NETBSD = <?hreft http://www.netbsd.org<>NetBSD?>
+OPENBSD = <?hreft http://www.openbsd.org<>OpenBSD?>
+<?begin?>
+<?include +header?>
+
+<?NETBSD?>.
+<?FREEBSD?>.
+<?OPENBSD?>.
+
+<?xpre?>
+Everything left unexpanded
+  in here
+With xpre the HTML &lt;pre&gt; stuff is automatically added.
+With pre it is not.
+<?xpre end?>
+
+Navigation bars can be found at the top and the bottom of each page,
+which provide a subset of the following symbols:
+<?NAVI_UP?> loads the parent chapter,
+<?NAVI_FIRST?> and <?NAVI_LAST?> load the first and last page of a section,
+respectively,
+<?NAVI_PREV?> and <?NAVI_NEXT?> load the previous/the next page;
+likewise &uarr; and &darr; can be used to scroll to the top and the bottom of
+the currently loaded page.
+Hyperlinks which refer to other sites on the internet are
+*explicitly* marked (preceeded) with <?WWW?>.
+As you can see UNICODE characters are used instead of images -
+try an UTF-8 aware locale/console/browser if you have display problems.
+
+<?include +footer?>
+<?end?>
+# vim:set fenc=utf-8 nomod syntax=xml ts=1 sts=1 sw=1 et tw=79:
