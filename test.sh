@@ -28,6 +28,60 @@ tcase() {
 
 ##
 
+# def/defa/defx
+tcase 0001-w42-atm \
+'<?begin?>
+
+<?def def1<><p>def1-content</p>?>
+<?defa defa1<><p>defa1-c1<>defa1-c2</p>?>
+<?defx defx1<><p>defx1-c1</p><><p>defx1-c2</p><><p>defx1-c3</p>?>
+
+<?def1?>
+<?defa1 0?>
+<?defa1 1?>
+<?defx1 defx1-arg1<>defx1-arg2?>
+# ERROR
+<?defa1 2?>
+# ERROR
+<?defx1 defx1-arg1<>defx1-arg2<>defx1-arg3?>
+
+<?def def2<>def2-content?>
+<?defa defa2<>defa2-c1<>defa2-c2<>defa2-c3?>
+<?defx defx2<><p>defx2-c1<>defx2-c2<>defx2-c3</p><>?>
+
+<?def2?>
+<?defa2 0?>
+<?defa2 1?>
+<?defa2 loop<>-<><br>?>
+<?defx2 defx2-arg1<>defx2-arg2<>defx2-arg3?>
+
+<?defa arrnam<>m 1?>
+<?defa arrnam<>m 2?>
+<?defa arrnam<>m 3<>m 4?>
+
+<p><?arrnam 0?><?arrnam 1?>\
+         <?arrnam 2?><?arrnam 3?></p>
+
+<p><?arrnam loop<><b><></b>?></p>
+<p><?arrnam loop<><><br>?></p>
+
+<?end?>' \
+\
+'<p>def1-content</p>
+<p>defa1-c1
+defa1-c2</p>
+<p>defx1-c1</p>defx1-arg1<p>defx1-c2</p>defx1-arg2<p>defx1-c3</p>
+def2-content
+defa2-c1
+defa2-c2
+-defa2-c1<br>-defa2-c2<br>-defa2-c3<br>
+<p>defx2-c1defx2-arg1defx2-c2defx2-arg2defx2-c3</p>defx2-arg3
+<p>m 1m 2m 3m 4</p>
+<p><b>m 1</b><b>m 2</b><b>m 3</b><b>m 4</b></p>
+<p>m 1<br>m 2<br>m 3<br>m 4<br></p>' \
+\
+"ERR 'test-0001-w42-atm':12: defa1: 2 is not a valid array index
+ERR 'test-0001-w42-atm':14: defx1 takes 2 argument(s)"
 
 
 ##

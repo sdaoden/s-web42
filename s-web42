@@ -111,7 +111,7 @@ our %UNCOMPRESS = (
 # with 0 meaning no arguments and <0 meaning a variable amount; however,
 # treat the negated number as a minimum argument-count requirement
 our %PIS = (
-   def      => 1,    defa        => -1,   defx     => -2,
+   def      => -2,   defa        => -2,   defx     => -2,
    href     => 1,    hreft       => 2,    lref     => 1,    lreft => 2,
    ifdef    => 1,    ifndef      => 1,    'else'   => 0,    fi    => 0,
    include  => 1,    raw_include => 1,
@@ -395,7 +395,7 @@ sub checksum_path {
    # Handle a complete(d!) ASSIGNMENTS line
    sub handle_assignment {
       my ($ctxmode, $line) = @_;
-      unless ($line =~ /^(\w+)\s*(\?)?(@)?(\+)?=\s*(.+?)$/) {
+      unless ($line =~ /^([-\w]+)\s*(\?)?(@)?(\+)?=\s*(.+?)$/) {
          ::e('Ignoring non-interpretable assignment line:', $line);
          return;
       }
@@ -455,7 +455,8 @@ sub checksum_path {
 jresetarr:  $current->{$key} = [];
          }
          push @{$current->{$key}}, $value;
-         ::vv("Array create/extend ok <$key = $value>");
+         ::vv("Array create/extend ok <$key = " .
+            (length ref $value ? '('.join(', ', @$value).')' : $value) . '>');
       }
    }
 
@@ -1127,10 +1128,10 @@ jresetarr:  $current->{$key} = [];
 
    sub _expand_pis {
       my ($self, $l) = @_;
-      while ($l =~ /(.*?)<\?(\w+)(?:\s+(.+?))?\s*\?>(.*)/) {
+      while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\s*\?>(.*)/) {
          push @{$self->data}, $1 if defined $1 && length $1 > 0;
          $l = defined $4 ? $4 : '';
-         my ($pi, $valarr) = (lc $2, defined $3 ? [split '<>', $3] : undef);
+         my ($pi, $valarr) = ($2, defined $3 ? [split '<>', $3, -1] : undef);
 
          if (exists $PIS{$pi}) {
             $self->_pi_comm($pi, $valarr);
@@ -1150,17 +1151,17 @@ jresetarr:  $current->{$key} = [];
    }
 
 
-   sub _pi_comm {
+   sub _pi_comm { # {{{
       my ($self, $pi, $valarr) = @_;
       my $i = $PIS{$pi};
 
+      # Check argument count
       if (exists $MULTILINE_PIS{$pi}) {
          if (($i = defined $valarr)) {
             if (@$valarr > 1 || $valarr->[0] ne 'end') {
                ::e("$pi is multiline PI, it may only be given 'end' argument");
                goto jleave;
             }
-            $i = 'end';
          }
       } elsif ($i == 0) {
          if (defined $valarr) {
@@ -1168,7 +1169,7 @@ jresetarr:  $current->{$key} = [];
             goto jleave;
          }
       } elsif ($i < 0) {
-         if (@$valarr < 1 + -$i) {
+         if (@$valarr < -$i) {
             ::e("$pi (presumably) needs (at least) " . -$i . ' argument(s)');
             goto jleave;
          }
@@ -1177,25 +1178,98 @@ jresetarr:  $current->{$key} = [];
          goto jleave;
       }
 
+      # Then a large block that actually handles the builtins XXX &{HASH->CODE}
+      $i = undef;
+      $i = $valarr->[0] if defined $valarr;
+
+      if ($pi eq 'def' || $pi eq 'defa' || $pi eq 'defx') {
+         shift @$valarr;
+         if (exists $PIS{$i} || exists $PIVars::builtin{$i}) {
+            ::e("$pi: cannot overwrite builtin PI (variable): $i");
+         } elsif ($pi eq 'def') {
+            PIVars::assign($i, join('<>', @$valarr)); # Need to re-join value
+         } elsif ($pi eq 'defa') {
+            PIVars::assign($i, $_, 1, 1) foreach (@$valarr); # Maybe empty?
+         } else {
+            PIVars::assign($i, $valarr, undef, 1); # Maybe empty?
+         }
+         goto jleave;
+      }
 
       push @{$self->data}, "<<COMMAND:$pi||" .
          (defined $valarr ? join(';',@$valarr) : 'NOVAL') . ">>";
 
 jleave:
       $self
-   }
+   } # }}}
 
-   sub _pi_var {
+   sub _pi_var { # {{{
       my ($self, $pi, $valarr) = @_;
+      my $v = $PIVars::current->{$pi};
 
+      # def?
+      if (ref $v ne 'ARRAY') {
+         push @{$self->data}, $v;
+         goto jleave;
+      }
 
+      # defx?
+      if (ref $v->[0] eq 'ARRAY') {
+         $v = $v->[0];
+         if (0 != @$v - 1 - (defined $valarr ? @$valarr : 0)) {
+            ::e("$pi takes " . scalar(@$v - 1) . ' argument(s)');
+         } else {
+            foreach (@$v) {
+               push @{$self->data}, $_ if length;
+               next unless @$valarr;
+               my $i = shift @$valarr;
+               push @{$self->data}, $i if length $i;
+            }
+         }
+         goto jleave;
+      }
 
-      push @{$self->data}, "<<VARIABLE:$pi||" .
-         (defined $valarr ? join(';',@$valarr) : 'NOVAL') . ">>";
-
+      # defa
+      if (! defined $valarr) {
+         ::e("$pi is an array and requires arguments");
+         goto jleave;
+      }
+      # Member access?
+      if ($valarr->[0] =~ /\d+/) {
+         if (@$valarr > 1) {
+            ::e("$pi: array index access takes only one argument: the index");
+           goto jleave;
+         }
+         my $i = int $valarr->[0];
+         if ($i >= @$v) {
+            ::e("$pi: $i is not a valid array index");
+           goto jleave;
+         }
+         $i = $v->[$i];
+         push @{$self->data}, $i if length $i;
+        goto jleave;
+      }
+      # Loop mode
+      if ($valarr->[0] ne 'loop') {
+         ::e("$pi: array argument 1 is neither index nor \"loop\"");
+         goto jleave;
+      }
+      shift @$valarr;
+      if (@$valarr > 2) {
+         ::e("$pi: array loop mode takes max. 3 arguments: \"loop\",pre,post");
+        goto jleave;
+      }
+      my ($pre, $post) = (shift @$valarr, shift @$valarr);
+      $pre = undef unless defined $pre && length $pre;
+      $post = undef unless defined $post && length $post;
+      foreach (@$v) {
+         push @{$self->data}, $pre if defined $pre;
+         push @{$self->data}, $_ if length;
+         push @{$self->data}, $post if defined $post;
+      }
 jleave:
       $self
-   }
+   } # }}}
 } # }}}
 
 # (Last because of the unindented perl(1) HERE docs..)
