@@ -442,7 +442,7 @@ sub create_modtime_pis {
    }
 
    # Handle a complete(d!) ASSIGNMENTS line
-   sub handle_assignment { # {{{
+   sub handle_assignment {
       my ($ctxmode, $line) = @_;
       unless ($line =~ /^(\w+)\s*(\?)?(@)?(\+)?=\s*(.+?)$/) {
          ::e('Ignoring non-interpretable assignment line:', $line);
@@ -470,12 +470,24 @@ sub create_modtime_pis {
          return;
       }
 
-      unless (defined $arr) {
+      PIVars::assign($key, $value, defined $add || defined $arr, defined $arr);
+   }
+
+   sub assign {
+      my ($key, $value, $doappend, $isarray) = @_;
+      $doappend = 0 unless defined $doappend;
+      $isarray = 0 unless defined $isarray;
+
+      if ($key !~ /^[-\w]+$/) {
+            ::e("$key: PI/variables may consist only of alphanumerics and -");
+            return;
+      }
+      unless ($isarray) {
          if (exists $current->{$key} && ref $current->{$key} eq 'ARRAY') {
-            ::e("$key: non-array array assignment to array key", $line);
+            ::e("$key: non-array assignment to array key");
             return;
          }
-         if (exists $current->{$key} && defined $add) {
+         if (exists $current->{$key} && $doappend) {
             $current->{$key} .= $value;
          } else {
             $current->{$key} = $value;
@@ -484,16 +496,17 @@ sub create_modtime_pis {
       } else {
          if (exists $current->{$key}) {
             if (ref $current->{$key} ne 'ARRAY') {
-               ::e("$key: array assignment to non-array key", $line);
+               ::e("$key: array assignment to non-array key");
                return;
             }
+            goto jresetarr unless $doappend;
          } else {
-            $current->{$key}= [];
+jresetarr:  $current->{$key} = [];
          }
          push @{$current->{$key}}, $value;
          ::vv("Array create/extend ok <$key = $value>");
       }
-   } # }}}
+   }
 } # }}}
 
 {package Filter; # {{{
