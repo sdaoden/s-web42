@@ -1224,6 +1224,29 @@ jresetarr:  $current->{$key} = [];
          goto jleave;
       }
 
+      elsif ($pi eq 'href' || $pi eq 'lref') {
+         $pi = ($pi eq 'href');
+         my $w;
+         $w = $PIVars::current->{WWW} if $pi;
+         $w = '' unless defined $w;
+         $w .= '&nbsp;' if length $w;
+         $i = '<a href="' . $i . '">' . $w . $i . '</a>';
+         push @{$self->data}, $i;
+         goto jleave;
+      } elsif ($pi eq 'hreft' || $pi eq 'lreft') {
+         $pi = ($pi eq 'hreft');
+         my ($w, $t, $tm);
+         $w = $PIVars::current->{WWW} if $pi;
+         $w = '' unless defined $w;
+         $w .= '&nbsp;' if length $w;
+         $i = Markup::link($i);
+         $tm = $valarr->[1];
+         $t = Markup::attribute($tm);
+         $i = '<a href="' . $i . '" title="' . $t . '">' . $w . $tm . '</a>';
+         push @{$self->data}, $i;
+         goto jleave;
+      }
+
 
       push @{$self->data}, "<<COMMAND:$pi||" .
          (defined $valarr ? join(';',@$valarr) : 'NOVAL') . ">>";

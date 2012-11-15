@@ -139,4 +139,46 @@ ERR 'test-0003-w42-atm':16: undef: no such variable: defx2"
 
 ##
 
+# lref,lreft, href,hreft
+tcase 0004-w42-atm \
+'<?begin?>
+
+<?lref http://www.netbsd.org?>
+<?lreft http://www.netbsd.org<><em>NetBSD</em>?>
+
+<?href http://www.freebsd.org?>
+<?hreft http://www.freebsd.org<>FreeBSD?>
+
+<?def WWW<><strong>WWW!</strong>?>
+<?href http://www.freebsd.org?>
+<?hreft http://www.freebsd.org<>FreeBSD?>
+
+<?def WWW<>"au"?>
+<?href nope?>
+<?hreft nope<><em title="SUB">FreeBSD</em>?>
+
+## ERROR
+<?lref a<>b?>
+<?lreft a<>b<>c?>
+<?href a<>b?>
+<?hreft a<>b<>c?>
+
+<?end?>' \
+\
+'<a href="http://www.netbsd.org">http://www.netbsd.org</a>
+<a href="http://www.netbsd.org" title="NetBSD"><em>NetBSD</em></a>
+<a href="http://www.freebsd.org">http://www.freebsd.org</a>
+<a href="http://www.freebsd.org" title="FreeBSD">FreeBSD</a>
+<a href="http://www.freebsd.org"><strong>WWW!</strong>&nbsp;http://www.freebsd.org</a>
+<a href="http://www.freebsd.org" title="FreeBSD"><strong>WWW!</strong>&nbsp;FreeBSD</a>
+<a href="nope">"au"&nbsp;nope</a>
+<a href="nope" title="FreeBSD">"au"&nbsp;<em title="SUB">FreeBSD</em></a>' \
+\
+"ERR 'test-0004-w42-atm':18: lref takes 1 argument(s)
+ERR 'test-0004-w42-atm':19: lreft takes 2 argument(s)
+ERR 'test-0004-w42-atm':20: href takes 1 argument(s)
+ERR 'test-0004-w42-atm':21: hreft takes 2 argument(s)"
+
+##
+
 [ ${errs} -eq 0 ] && exit 0 || exit 42
