@@ -1196,6 +1196,20 @@ jresetarr:  $current->{$key} = [];
          goto jleave;
       }
 
+      elsif ($pi eq 'pi-if') {
+         shift @$valarr;
+         $pi = $i;
+         if (exists $PIS{$pi}) {
+            $self->_pi_comm($pi, $valarr);
+         } elsif (exists $PIVars::current->{$pi}) {
+            $self->_pi_var($pi, $valarr);
+         } else {
+            ::vv("pi-if: unknown PI: $pi");
+         }
+         goto jleave;
+      }
+
+
       push @{$self->data}, "<<COMMAND:$pi||" .
          (defined $valarr ? join(';',@$valarr) : 'NOVAL') . ">>";
 

@@ -83,6 +83,29 @@ defa2-c2
 "ERR 'test-0001-w42-atm':12: defa1: 2 is not a valid array index
 ERR 'test-0001-w42-atm':14: defx1 takes 2 argument(s)"
 
+##
+
+# pi-if
+tcase 0002-w42-atm \
+'<?begin?>
+
+<?def def1<><p>def1-content</p>?>
+<?defx defx1<><p>defx1-c1 <> defx1-c2 <></p>?>
+
+<?pi-if def1?>
+<?pi-if defx1<>defx1-arg1<>defx1-arg2?>
+
+# ERROR (silent)
+<?pi-if def2?>
+# ERROR (silent)
+<?pi-if defx2<>defx2-arg2<>defx2-arg2?>
+
+<?end?>' \
+\
+'<p>def1-content</p>
+<p>defx1-c1 defx1-arg1 defx1-c2 defx1-arg2</p>' \
+\
+''
 
 ##
 
