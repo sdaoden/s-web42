@@ -1131,7 +1131,7 @@ jresetarr:  $current->{$key} = [];
       while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\s*\?>(.*)/) {
          push @{$self->data}, $1 if defined $1 && length $1 > 0;
          $l = defined $4 ? $4 : '';
-         my ($pi, $valarr) = ($2, defined $3 ? [split '<>', $3, -1] : undef);
+         my ($pi, $valarr) = ($2, (defined $3 ? [split '<>', $3, -1] : []));
 
          if (exists $PIS{$pi}) {
             $self->_pi_comm($pi, $valarr);
@@ -1156,15 +1156,13 @@ jresetarr:  $current->{$key} = [];
       my $i = $PIS{$pi};
 
       # Check argument count
-      if (exists $MULTILINE_PIS{$pi}) {
-         if (($i = defined $valarr)) {
-            if (@$valarr > 1 || $valarr->[0] ne 'end') {
-               ::e("$pi is multiline PI, it may only be given 'end' argument");
-               goto jleave;
-            }
+      if (defined $MULTILINE_PIS{$pi}) {
+         if (@$valarr > 1 || (@$valarr == 1 && $valarr->[0] ne 'end')) {
+            ::e("$pi is multiline PI, it may only be given 'end' argument");
+            goto jleave;
          }
       } elsif ($i == 0) {
-         if (defined $valarr) {
+         if (@$valarr != 0) {
             ::e("$pi doesn't take any arguments");
             goto jleave;
          }
@@ -1180,7 +1178,11 @@ jresetarr:  $current->{$key} = [];
 
       # Then a large block that actually handles the builtins XXX &{HASH->CODE}
       $i = undef;
-      $i = $valarr->[0] if defined $valarr;
+      $i = $valarr->[0];
+      if (@$valarr && ! length $i) {
+         ::e("$pi: (first) argument may not be empty");
+         goto jleave;
+      }
 
       if ($pi eq 'def' || $pi eq 'defa' || $pi eq 'defx') {
          shift @$valarr;
@@ -1230,7 +1232,7 @@ jleave:
       # defx?
       if (ref $v->[0] eq 'ARRAY') {
          $v = $v->[0];
-         if (0 != @$v - 1 - (defined $valarr ? @$valarr : 0)) {
+         if (0 != @$v - 1 - @$valarr) {
             ::e("$pi takes " . scalar(@$v - 1) . ' argument(s)');
          } else {
             foreach (@$v) {
@@ -1244,7 +1246,7 @@ jleave:
       }
 
       # defa
-      if (! defined $valarr) {
+      if (! @$valarr) {
          ::e("$pi is an array and requires arguments");
          goto jleave;
       }
