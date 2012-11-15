@@ -1225,7 +1225,6 @@ jresetarr:  $current->{$key} = [];
       }
 
 
-
       push @{$self->data}, "<<COMMAND:$pi||" .
          (defined $valarr ? join(';',@$valarr) : 'NOVAL') . ">>";
 
@@ -1300,6 +1299,29 @@ jleave:
 jleave:
       $self
    } # }}}
+
+{package Expander::Markup; # {{{ TODO too naive
+   sub link {
+      my $t = shift;
+      $t =~ s/"/\"/g;
+      $t =~ s/&/&amp;/g;
+      $t
+   }
+
+   sub clean_tags {
+      my $t = shift;
+      while ($t =~ s/(.*?)<\/?[^>]+>(.*)/$1$2/)
+         {}
+      $t
+   }
+
+   sub attribute {
+      my $t = shift;
+      $t = clean_tags($t);
+      $t =~ s/"/\"/g;
+      $t
+   }
+} # }}}
 } # }}}
 
 # (Last because of the unindented perl(1) HERE docs..)
