@@ -109,4 +109,34 @@ tcase 0002-w42-atm \
 
 ##
 
+# undef
+tcase 0003-w42-atm \
+'<?begin?>
+
+<?def def1<><p>def1-content</p>?>
+<?defx defx1<><p>defx1-c1 <> defx1-c2 <></p>?>
+
+<?undef def1?>
+<?undef defx1?>
+
+# ERROR
+<?undef?>
+# ERROR
+<?undef undef?>
+# ERROR
+<?undef def2?>
+# ERROR
+<?undef defx2?>
+
+<?end?>' \
+\
+'' \
+\
+"ERR 'test-0003-w42-atm':10: undef takes 1 argument(s)
+ERR 'test-0003-w42-atm':12: undef: cannot undef builtin PI (variable): undef
+ERR 'test-0003-w42-atm':14: undef: no such variable: def2
+ERR 'test-0003-w42-atm':16: undef: no such variable: defx2"
+
+##
+
 [ ${errs} -eq 0 ] && exit 0 || exit 42

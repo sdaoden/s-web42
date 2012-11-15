@@ -1211,6 +1211,20 @@ jresetarr:  $current->{$key} = [];
          goto jleave;
       }
 
+      elsif ($pi eq 'undef') {
+         shift @$valarr;
+         if (exists $PIS{$i} || exists $PIVars::builtin{$i}) {
+            ::e("undef: cannot undef builtin PI (variable): $i");
+         } elsif (exists $PIVars::current->{$i}) {
+            ::vv("undef: deleting $i");
+            delete $PIVars::current->{$i};
+         } else {
+            ::e("undef: no such variable: $i");
+         }
+         goto jleave;
+      }
+
+
 
       push @{$self->data}, "<<COMMAND:$pi||" .
          (defined $valarr ? join(';',@$valarr) : 'NOVAL') . ">>";
