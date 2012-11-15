@@ -1092,7 +1092,7 @@ jresetarr:  $current->{$key} = [];
       _ctx        => undef,   # Ctx object we're exploding
       _mode       => 0,       # ->ctx->mode
       _data       => [],      # Not yet expanded line data
-      _seen_data  => 0
+      _seen_end   => 0
    });
 
    sub _consume {
@@ -1100,6 +1100,7 @@ jresetarr:  $current->{$key} = [];
 
       while (defined(my $l = $self->ctx->readline_full)) {
          if ($l eq '<?end?>') {
+            $self->seen_end(1);
             $self->_emit();
             last;
          }
@@ -1109,7 +1110,7 @@ jresetarr:  $current->{$key} = [];
          }
 
       }
-      ::e('Premature file exit') unless $self->seen_data;
+      ::e('Premature file exit') unless $self->seen_end;
       $self
    }
 
@@ -1122,7 +1123,6 @@ jresetarr:  $current->{$key} = [];
       }
       ::panic("Failed to perform output: $^E")
          unless print {$self->ctx->outfh} "\n";
-      $self->seen_data(1);
       $self
    }
 
