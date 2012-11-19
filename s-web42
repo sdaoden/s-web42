@@ -1093,7 +1093,8 @@ jresetarr:  $current->{$key} = [];
    SymObj::sym_create(SymObj::NONE, {
       _ctx        => undef,   # Ctx object we're exploding
       _mode       => 0,       # ->ctx->mode
-      _data       => [],      # Not yet expanded line data
+      _data       => [],      # Expanded line data
+      _rest_data  => undef,   # Line data for re-evaluation
       _seen_end   => 0
    });
 
@@ -1130,7 +1131,7 @@ jresetarr:  $current->{$key} = [];
 
    sub _expand_pis {
       my ($self, $l) = @_;
-      while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\s*\?>(.*)/) {
+      while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/) {
          push @{$self->data}, $1 if defined $1 && length $1 > 0;
          $l = defined $4 ? $4 : '';
          my ($pi, $valarr) = ($2, (defined $3 ? [split '<>', $3, -1] : []));
@@ -1143,9 +1144,12 @@ jresetarr:  $current->{$key} = [];
             ::e("Unknown PI: $pi");
             next;
          }
-
-
-
+         # Integrate expanded content so that it gets re-evaluated, which is
+         # necessary since it may contain PIs itself
+         if (defined(my $reeval = $self->rest_data)) {
+            $l = $reeval . $l;
+            $self->rest_data(undef);
+         }
       }
       push @{$self->data}, $l if length $l;
       $self->_emit();
@@ -1233,7 +1237,7 @@ jresetarr:  $current->{$key} = [];
          $w = '' unless defined $w;
          $w .= '&nbsp;' if length $w;
          $i = '<a href="' . $i . '">' . $w . $i . '</a>';
-         push @{$self->data}, $i;
+         if ($pi) { $self->rest_data($i); } else { $self->data($i); }
          goto jleave;
       } elsif ($pi eq 'hreft' || $pi eq 'lreft') {
          $pi = ($pi eq 'hreft');
@@ -1241,11 +1245,11 @@ jresetarr:  $current->{$key} = [];
          $w = $PIVars::current->{WWW} if $pi;
          $w = '' unless defined $w;
          $w .= '&nbsp;' if length $w;
-         $i = Markup::link($i);
+         $i = Expander::Markup::link($i);
          $tm = $valarr->[1];
-         $t = Markup::attribute($tm);
+         $t = Expander::Markup::attribute($tm);
          $i = '<a href="' . $i . '" title="' . $t . '">' . $w . $tm . '</a>';
-         push @{$self->data}, $i;
+         if ($pi) { $self->rest_data($i); } else { $self->data($i); }
          goto jleave;
       }
 
@@ -1261,33 +1265,34 @@ jleave:
       my ($self, $pi, $valarr) = @_;
       my $v = $PIVars::current->{$pi};
 
-      # def?
+      ## def?
       if (ref $v ne 'ARRAY') {
-         push @{$self->data}, $v;
+         $self->rest_data($v);
          goto jleave;
       }
 
-      # defx?
+      ## defx?
       if (ref $v->[0] eq 'ARRAY') {
          $v = $v->[0];
          if (0 != @$v - 1 - @$valarr) {
             ::e("$pi takes " . scalar(@$v - 1) . ' argument(s)');
          } else {
+            my @dat;
             foreach (@$v) {
-               push @{$self->data}, $_ if length;
-               next unless @$valarr;
-               my $i = shift @$valarr;
-               push @{$self->data}, $i if length $i;
+               push @dat, $_ if length;
+               push @dat, shift @$valarr if @$valarr;
             }
+            $self->rest_data(join '', @dat) if @dat;
          }
          goto jleave;
       }
 
-      # defa
+      ## defa
       if (! @$valarr) {
          ::e("$pi is an array and requires arguments");
          goto jleave;
       }
+
       # Member access?
       if ($valarr->[0] =~ /\d+/) {
          if (@$valarr > 1) {
@@ -1297,12 +1302,13 @@ jleave:
          my $i = int $valarr->[0];
          if ($i >= @$v) {
             ::e("$pi: $i is not a valid array index");
-           goto jleave;
+            goto jleave;
          }
          $i = $v->[$i];
-         push @{$self->data}, $i if length $i;
+         $self->rest_data($i) if length $i;
         goto jleave;
       }
+
       # Loop mode
       if ($valarr->[0] ne 'loop') {
          ::e("$pi: array argument 1 is neither index nor \"loop\"");
@@ -1313,14 +1319,15 @@ jleave:
          ::e("$pi: array loop mode takes max. 3 arguments: \"loop\",pre,post");
         goto jleave;
       }
-      my ($pre, $post) = (shift @$valarr, shift @$valarr);
+      my ($pre, $post, @dat) = (shift @$valarr, shift @$valarr);
       $pre = undef unless defined $pre && length $pre;
       $post = undef unless defined $post && length $post;
       foreach (@$v) {
-         push @{$self->data}, $pre if defined $pre;
-         push @{$self->data}, $_ if length;
-         push @{$self->data}, $post if defined $post;
+         push @dat, $pre if defined $pre;
+         push @dat, $_ if length;
+         push @dat, $post if defined $post;
       }
+      $self->rest_data(join '', @dat) if @dat;
 jleave:
       $self
    } # }}}
