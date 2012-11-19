@@ -91,7 +91,7 @@ BEGIN {
 # }}}
 
 # Variables {{{
-our ($FORCE_REBUILD, $NO_UPDATE_CACHE, $LOGFH) = (0, 0, *STDOUT);
+our ($NO_RC, $FORCE_REBUILD, $NO_UPDATE_CACHE, $LOGFH) = (0, 0, 0, *STDOUT);
 my ($VERBOSE, $DELETE_OK, $ERRORS) = (0, 0, 0);
 
 our %COMPRESS = (
@@ -151,6 +151,8 @@ __EOT__
    while (defined (my $a = shift @ARGV)) {
       if ($a =~ /^-(v+)$/) {
          $VERBOSE += length $1;
+      } elsif ($a eq '--no-rc') {
+         $NO_RC = 1;
       } elsif ($a eq '--force-rebuild') {
          $FORCE_REBUILD = 1;
       } elsif ($a eq '--no-update-cache' || $a eq '--nuc') {
@@ -164,9 +166,9 @@ __EOT__
 jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
             "Synopsis:\n",
             "  s-web42 [-v[v]]\n",
-            "  s-web42 [-v[v]] --no-update-cache|--nuc\n",
-            "  s-web42 [-v[v]] --force-rebuild [--nuc]\n",
-            "  s-web42 [-v[v]] --expand-one|--eo\n",
+            "  s-web42 [-v[v]] [--no-rc] --no-update-cache|--nuc\n",
+            "  s-web42 [-v[v]] [--no-rc] --force-rebuild [--nuc]\n",
+            "  s-web42 [-v[v]] [--no-rc] --expand-one|--eo\n",
             "Please see the documentation for more.\n";
          goto jEXIT;
       }
@@ -190,7 +192,7 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
    }
 
    # Read the global $CONFIG
-   if (-f $CONFIG) {
+   if (-f $CONFIG && ! $NO_RC) {
       Ctx->new(mode => &Ctx::MODE_CONFIGRC, sumup => $CONFIG)
          ->open->read_assignments->close;
       if (length(my $a = $PIVars::outermost->{COMPRESS})) {

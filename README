@@ -4,7 +4,7 @@ S-Web42
 :Author:    Steffen "Daode" Nurpmeso
 :Contact:   sdaoden@users.sf.net
 :Copyright: ISC license
-:Date:      1997 - 2012
+:Date:      1997 - 2005, 2010, 2012
 :Copyright: All rights reserved under the terms of the ISC license.
 :Status:    Yes, batch, they're red hot!
 
@@ -47,9 +47,9 @@ Synopsis
 ::
 
    s-web42 [-v[v]]
-   s-web42 [-v[v]] --no-update-cache (or: --nuc)
-   s-web42 [-v[v]] --force-rebuild [--nuc]
-   s-web42 [-v[v]] --expand-one [FILE] (or: --eo [FILE])
+   s-web42 [-v[v]] [--no-rc] --no-update-cache (or: --nuc)
+   s-web42 [-v[v]] [--no-rc] --force-rebuild [--nuc]
+   s-web42 [-v[v]] [--no-rc] --expand-one [FILE] (or: --eo [FILE])
 
    perl -C -I/PATH/TO/SymObj.pm s-web42
 
@@ -57,6 +57,7 @@ Synopsis
    export PERL5OPT PERL5LIB
    s-web42
 
+Use ``--no-rc`` to suppress reading of an existent ``config.rc`` file.
 The ``--no-update-cache`` option can be used to suppress an update of
 the cache database -- i.e., rerunning ``s-web42`` again will generate
 the very same output.  With the ``--force-rebuild`` option an existing
@@ -110,12 +111,13 @@ before last run), and, temporarily, ``work.tmp`` and ``w42-update.tmp``
 in there.  The generated shell archive will always be ``w42-update.sh``,
 and it will not have any executable bits set.
 
-If the file ``config.rc`` is found in the working directory, it'll be
-read -- the `Assignments`_ of PI variables seen there will form the
-outermost context and will thus be inherited by all files under ``site``
-(PIs can be overridden and undefined for anything *deeper* in the
-hierarchy only).  Here, and *only* here is it possible to specify some
-very `Special PI variables`_.
+If the file ``config.rc`` is found in the working directory, and the
+``--no-rc`` command line option has not been used, it'll be read --
+the `Assignments`_ of PI variables seen there will form the outermost
+context and will thus be inherited by all files under ``site`` (PIs
+can be overridden and undefined for anything *deeper* in the hierarchy
+only).  Here, and *only* here is it possible to specify some very
+`Special PI variables`_.
 
 The presence of a file ``hook`` is also recorded, and it'll be used
 as a per-directory fallback hook in all those ``site`` subdirectories
