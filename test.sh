@@ -24,6 +24,188 @@ tcase() {
 
 ##
 
+# >> Assignment test series >>
+
+# Variable
+tcase 1000-w42-atm \
+'X = one
+<?begin?>
+<?X?>
+<?end?>' \
+\
+'one' \
+\
+''
+
+tcase 1001-w42-atm \
+'X = <em>two</em>
+<?begin?>
+<?X?>
+<?end?>' \
+\
+'<em>two</em>' \
+\
+''
+
+tcase 1002-w42-atm \
+'X = <?def Y<>three?><?Y?><?undef Y?>
+<?begin?>
+<?X?>
+<?end?>' \
+\
+'three' \
+\
+''
+
+tcase 1003-w42-atm \
+'X = <?def Y<><em>four</em>?><?Y?><?undef Y?>
+<?begin?>
+<?X?>
+<?end?>' \
+\
+'<em>four</em>' \
+\
+''
+
+tcase 1004-w42-atm \
+'X = <?def Y<><em>five</em>?><?Y?><?undef Y?><?Y?>
+<?begin?>
+<?X?>
+<?end?>' \
+\
+'<em>five</em>' \
+\
+"ERROR 'test-1004-w42-atm':3: Unknown PI: Y"
+
+tcase 1005-w42-atm \
+'X = <?def Y<><em>six</em>?>
+X += <?Y?>
+X += <?undef Y?>
+X += <?Y?>
+<?begin?>
+<?X?>
+<?end?>' \
+\
+'<em>six</em>' \
+\
+"ERROR 'test-1005-w42-atm':6: Unknown PI: Y"
+
+tcase 1006-w42-atm \
+'X = <?def Y<><em>seven</em>?>
+X ?= <?def Y<><em>NOOHNOOHNO</em>?>
+X += <?Y?>
+X ?= <?Y?>
+X += <?undef Y?>
+X += <?Y?>
+Z ?= virgin
+Z ?= bob
+<?begin?>
+<?X?>
+<?Z?>
+<?end?>' \
+\
+'<em>seven</em>
+virgin' \
+\
+"ERROR 'test-1006-w42-atm':10: Unknown PI: Y"
+
+# Array
+tcase 2000-w42-atm \
+'X @= one
+<?begin?>
+<?X 0?>
+<?end?>' \
+\
+'one' \
+\
+''
+
+tcase 2001-w42-atm \
+'X @= one
+X @= <em>two</em>
+<?begin?>
+<?X 0?><?X 1?>
+<?end?>' \
+\
+'one<em>two</em>' \
+\
+''
+
+tcase 2002-w42-atm \
+'X @= one
+X @= two
+X @= three
+<?begin?>
+<?X loop?>
+<?end?>' \
+\
+'onetwothree' \
+\
+''
+
+tcase 2003-w42-atm \
+'X @= one
+X @= two
+X @= three
+X @= four
+<?begin?>
+<?X loop<> ?>
+<?end?>' \
+\
+' one two three four' \
+\
+''
+
+tcase 2004-w42-atm \
+'X @= one
+X @= two
+X @= three
+X @= four
+<?begin?>
+<?X loop<><> ?>
+<?end?>' \
+\
+'one two three four ' \
+\
+''
+
+tcase 2005-w42-atm \
+'X @= one
+X @= two
+X @= three
+X @= four
+X @= five
+<?begin?>
+<?X loop<><em><></em>?>
+<?end?>' \
+\
+'<em>one</em><em>two</em><em>three</em><em>four</em><em>five</em>' \
+\
+''
+
+tcase 2006-w42-atm \
+'X @= <?def Y<>a?><?Y?><?Y?><?Y?><?undef Y?>
+X ?@= <?def Y<>z?><?Y?><?Y?><?Y?><?undef Y?>
+X @= <?lref http://www.netbsd.org?>
+Z ?@= virgin
+Z ?@= bob
+Z @= femme
+<?begin?>
+<?X 0?><?X 1?>
+<?X loop<><p><></p>?>
+<?Z loop<> <> ?>
+<?end?>' \
+\
+'aaa<a href="http://www.netbsd.org">http://www.netbsd.org</a>
+<p>aaa</p><p><a href="http://www.netbsd.org">http://www.netbsd.org</a></p>
+ virgin  femme ' \
+\
+''
+
+# << Assignment test series <<
+
+##
+
 # def/defa/defx
 tcase 0001-w42-atm \
 '<?begin?>
@@ -61,6 +243,9 @@ tcase 0001-w42-atm \
 <p><?arrnam loop<><b><></b>?></p>
 <p><?arrnam loop<><><br>?></p>
 
+<?defx defxx<><><>TRAIL?>
+<p><?defxx ARG1<>arg2?></p>
+
 <?end?>' \
 \
 '<p>def1-content</p>
@@ -74,10 +259,11 @@ defa2-c2
 <p>defx2-c1defx2-arg1defx2-c2defx2-arg2defx2-c3</p>defx2-arg3
 <p>m 1m 2m 3m 4</p>
 <p><b>m 1</b><b>m 2</b><b>m 3</b><b>m 4</b></p>
-<p>m 1<br>m 2<br>m 3<br>m 4<br></p>' \
+<p>m 1<br>m 2<br>m 3<br>m 4<br></p>
+<p>ARG1arg2TRAIL</p>' \
 \
-"ERR 'test-0001-w42-atm':12: defa1: 2 is not a valid array index
-ERR 'test-0001-w42-atm':14: defx1 takes 2 argument(s)"
+"ERROR 'test-0001-w42-atm':12: defa1: 2 is not a valid array index
+ERROR 'test-0001-w42-atm':14: defx1 takes 2 argument(s)"
 
 ##
 
@@ -128,10 +314,10 @@ tcase 0003-w42-atm \
 \
 '' \
 \
-"ERR 'test-0003-w42-atm':10: undef takes 1 argument(s)
-ERR 'test-0003-w42-atm':12: undef: cannot undef builtin PI (variable): undef
-ERR 'test-0003-w42-atm':14: undef: no such variable: def2
-ERR 'test-0003-w42-atm':16: undef: no such variable: defx2"
+"ERROR 'test-0003-w42-atm':10: undef takes 1 argument(s)
+ERROR 'test-0003-w42-atm':12: undef: cannot undef builtin PI (variable): undef
+ERROR 'test-0003-w42-atm':14: undef: no such variable: def2
+ERROR 'test-0003-w42-atm':16: undef: no such variable: defx2"
 
 ##
 
@@ -170,10 +356,10 @@ tcase 0004-w42-atm \
 <a href="nope">"au"&nbsp;nope</a>
 <a href="nope" title="FreeBSD">"au"&nbsp;<em title="SUB">FreeBSD</em></a>' \
 \
-"ERR 'test-0004-w42-atm':18: lref takes 1 argument(s)
-ERR 'test-0004-w42-atm':19: lreft takes 2 argument(s)
-ERR 'test-0004-w42-atm':20: href takes 1 argument(s)
-ERR 'test-0004-w42-atm':21: hreft takes 2 argument(s)"
+"ERROR 'test-0004-w42-atm':18: lref takes 1 argument(s)
+ERROR 'test-0004-w42-atm':19: lreft takes 2 argument(s)
+ERROR 'test-0004-w42-atm':20: href takes 1 argument(s)
+ERROR 'test-0004-w42-atm':21: hreft takes 2 argument(s)"
 
 ##
 
