@@ -1,11 +1,7 @@
 #!/bin/sh -
 #@ S-Web42 unit test
 
-mkdir t && cd t || {
-	echo >&2 'Cannot create and chdir into t estdir'
-	exit 1
-}
-trap "cd .. ; rm -rf t" 0 1 2 15
+trap "rm -rf test-*" 0 1 2 15
 
 errs=0
 terr() {
@@ -18,7 +14,7 @@ tcase() {
 	echo "${2}" > test-${1}
 	[ -n "${3}" ] && echo "${3}" > test-eout || :> test-eout
 	[ -n "${4}" ] && echo "${4}" > test-eerr || :> test-eerr
-	../s-web42 --eo test-${1} > test-out 2> test-err
+	./s-web42 --no-rc --eo test-${1} > test-out 2> test-err
 	cmp -s test-out test-eout
 	[ $? -ne 0 ] && o='STDOUT ' || o=
 	cmp -s test-err test-eerr
