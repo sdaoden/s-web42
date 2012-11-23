@@ -358,55 +358,6 @@ sub checksum_path {
    close(F) || xe("Failed to close '$path' after checksum calculation: $^E");
    $cksum->b64digest;
 }
-
-sub create_modtime_pis {
-   my $secs = shift;
-   $secs = time unless defined $secs;
-   my (@a, @la, $s);
-   unless ($HAVE_TIMEPIECE) {
-      $s = [gmtime $secs];
-      $a[0] = $s->[5] + 1900;
-      $a[1] = $s->[4] + 1;
-      $a[2] = $s->[3];
-      $a[3] = $s->[2];
-      $a[4] = $s->[1];
-      $a[5] = $s->[0];
-      @la = @a;
-      $a[6] = 'UTC';
-      $la[6] = '+0000';
-      $PIVars::current->{MODTIME_AUTC} = \@a;
-      $PIVars::current->{MODTIME_ALOCAL} = \@la;
-      $s = sprintf "%04d-%02d-%02dT%02d:%02d:%02d ",
-         $a[0], $a[1], $a[2], $a[3], $a[4], $a[5];
-      $PIVars::current->{MODTIME_SUTC} = $s . $a[6];
-      $PIVars::current->{MODTIME_SLOCAL} = $s . $la[6];
-   } else {
-      sub __fill {
-         my ($r, $t, $utc) = @_;
-         $r->[0] = $t->year;
-         $r->[1] = $t->mon;
-         $r->[2] = $t->day;
-         $r->[3] = $t->hour;
-         $r->[4] = $t->min;
-         $r->[5] = $t->sec;
-         if ($utc) {
-            $r->[6] = 'UTC';
-         } else {
-            $t = $t->tzoffset->seconds / 60;
-            $utc = '+';
-            $utc = '-', $t = -$t if $t < 0;
-            $r->[6] = sprintf "%1s%02d%02d", $utc, $t / 60, $t % 60;
-         }
-         $r;
-      }
-      $s = Time::Piece::gmtime($secs);
-      $PIVars::current->{MODTIME_AUTC} = __fill(\@a, $s, 1);
-      $PIVars::current->{MODTIME_SUTC} = $s->datetime . ' UTC';
-      $s = Time::Piece::localtime($secs);
-      $PIVars::current->{MODTIME_ALOCAL} = __fill(\@la, $s, 0);
-      $PIVars::current->{MODTIME_SLOCAL} = $s->datetime . ' ' . $la[6];
-   }
-}
 # }}}
 
 {package PIVars; # {{{
@@ -505,6 +456,55 @@ jresetarr:  $current->{$key} = [];
          }
          push @{$current->{$key}}, $value;
          ::vv("Array create/extend ok <$key = $value>");
+      }
+   }
+
+   sub create_modtime_pis {
+      my $secs = shift;
+      $secs = time unless defined $secs;
+      my (@a, @la, $s);
+      unless ($HAVE_TIMEPIECE) {
+         $s = [gmtime $secs];
+         $a[0] = $s->[5] + 1900;
+         $a[1] = $s->[4] + 1;
+         $a[2] = $s->[3];
+         $a[3] = $s->[2];
+         $a[4] = $s->[1];
+         $a[5] = $s->[0];
+         @la = @a;
+         $a[6] = 'UTC';
+         $la[6] = '+0000';
+         $current->{MODTIME_AUTC} = \@a;
+         $current->{MODTIME_ALOCAL} = \@la;
+         $s = sprintf "%04d-%02d-%02dT%02d:%02d:%02d ",
+            $a[0], $a[1], $a[2], $a[3], $a[4], $a[5];
+         $current->{MODTIME_SUTC} = $s . $a[6];
+         $current->{MODTIME_SLOCAL} = $s . $la[6];
+      } else {
+         sub __fill {
+            my ($r, $t, $utc) = @_;
+            $r->[0] = $t->year;
+            $r->[1] = $t->mon;
+            $r->[2] = $t->day;
+            $r->[3] = $t->hour;
+            $r->[4] = $t->min;
+            $r->[5] = $t->sec;
+            if ($utc) {
+               $r->[6] = 'UTC';
+            } else {
+               $t = $t->tzoffset->seconds / 60;
+               $utc = '+';
+               $utc = '-', $t = -$t if $t < 0;
+               $r->[6] = sprintf "%1s%02d%02d", $utc, $t / 60, $t % 60;
+            }
+            $r;
+         }
+         $s = Time::Piece::gmtime($secs);
+         $current->{MODTIME_AUTC} = __fill(\@a, $s, 1);
+         $current->{MODTIME_SUTC} = $s->datetime . ' UTC';
+         $s = Time::Piece::localtime($secs);
+         $current->{MODTIME_ALOCAL} = __fill(\@la, $s, 0);
+         $current->{MODTIME_SLOCAL} = $s->datetime . ' ' . $la[6];
       }
    }
 } # }}}
