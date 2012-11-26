@@ -387,6 +387,7 @@ sub checksum_path {
       my %nenv = %$current;
       unshift @stack, $current;
       $current = \%nenv;
+      create_modtime_pis($_[0]) if defined $_[0];
    }
 
    sub unwind {
@@ -978,12 +979,14 @@ jresetarr:  $current->{$key} = [];
       _line          => '',      # Current input line
       _infh          => undef,   # for reading
       _outfh         => undef,   # for writing
+      _mtime         => undef,   # Modification time (outermost level only)
       _empties_seen  => 0,       # No. of empty lines last readline() skipped
       _expander      => undef    # Expander:: cookie
    }, sub {
       if ($_[0]->outer($curr)) {
          ${$_[0]->__mode} |= MODE_OUTFH;
          $_[0]->outfh($curr->outfh);
+         $_[0]->mtime($curr->mtime);
       }
       $curr = $_[0];
    });
@@ -991,7 +994,7 @@ jresetarr:  $current->{$key} = [];
    sub full_expand_lifecycle {
       my ($self) = @_;
       $self->open;
-      PIVars::twist();
+      PIVars::twist($self->outer ? undef : $self->mtime);
       $self->read_assignments;
       Expander::explode($self);
       PIVars::unwind();
@@ -1015,6 +1018,7 @@ jresetarr:  $current->{$key} = [];
       } else {
          $self->outfh(*STDOUT) unless $self->outfh;
       }
+      $self->mtime((stat($self->infh))[9]) unless $self->outer;
       ::vv('Opened context, mode: ' .
          Filter::filters_to_string($self->mode & FILTER_MASK));
       $self;
