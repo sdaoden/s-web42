@@ -207,14 +207,14 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
 
    # The very special case..
    if (defined $eo) {
-      my $m = &Filter::CONTENT_FILTERS | &Ctx::MODE_STDOUT;
+      my $m = &Filter::CONTENT_FILTERS | &Ctx::MODE_OUTFH;
       if (length $eo) {
          my $cf = Filter::classify_filename($eo);
          xe("File '$eo' doesn't seem to be an expandable S-Web42 file!")
             unless exists $cf->{EXPANDABLE};
-         $m = $cf->{FILTERS} | &Ctx::MODE_STDOUT if exists $cf->{FILTERS};
+         $m = $cf->{FILTERS} | &Ctx::MODE_OUTFH if exists $cf->{FILTERS};
       } else {
-         $m |= &Ctx::MODE_STDIN;
+         $m |= &Ctx::MODE_INFH;
          $eo = 'STDIN';
       }
       Ctx->new(mode => $m, sumup => $eo)->full_expand_lifecycle;
@@ -965,53 +965,55 @@ jresetarr:  $current->{$key} = [];
 
 {package Ctx; # {{{
    sub FILTER_MASK()    { (1<<(Filter::MAXSHIFT + 1)) - 1 }
-   sub MODE_STDIN()     { 1<<(Filter::MAXSHIFT + 1) }
-   sub MODE_STDOUT()    { 1<<(Filter::MAXSHIFT + 2) }
+   sub MODE_INFH()      { 1<<(Filter::MAXSHIFT + 1) }
+   sub MODE_OUTFH()     { 1<<(Filter::MAXSHIFT + 2) }
    sub MODE_CONFIGRC()  { 1<<(Filter::MAXSHIFT + 3) }
 
    our $curr = undef;
    SymObj::sym_create(SymObj::NONE, {
       _outer         => undef,   # <?include?> support (Expander:: recursion)
       _mode          => 0,
-      _sumup         => '',      # Filename (or mode description)
+      _sumup         => '',      # Input filename or mode description
       _lineno        => 0,       # Current input line number
       _line          => '',      # Current input line
       _infh          => undef,   # for reading
       _outfh         => undef,   # for writing
-      _empties_seen  => 0,       # Number that last readline() skipped
+      _empties_seen  => 0,       # No. of empty lines last readline() skipped
       _expander      => undef    # Expander:: cookie
    }, sub {
-      $_[0]->outer($curr);
+      if ($_[0]->outer($curr)) {
+         ${$_[0]->__mode} |= MODE_OUTFH;
+         $_[0]->outfh($curr->outfh);
+      }
       $curr = $_[0];
    });
 
    sub full_expand_lifecycle {
       my ($self) = @_;
-      unless ($self->outer) {
-         if ($self->open->mode & MODE_STDOUT) {
-            $self->outfh(*STDOUT);
-         } else {
-            ::panic("Failed to open '$TMP_WORK' for writing: $^E")
-               unless open ${$self->__outfh}, '>', $TMP_WORK;
-         }
-      }
+      $self->open;
       PIVars::twist();
       $self->read_assignments;
       Expander::explode($self);
       PIVars::unwind();
       ::e("Failed to close '$TMP_WORK': $^E")
-         unless ($self->outer || ($self->mode & MODE_STDOUT) ||
+         unless ($self->outer || ($self->mode & MODE_OUTFH) ||
             close $self->outfh);
       $self->close;
    }
 
    sub open {
       my $self = shift;
-      if ($self->mode & MODE_STDIN) {
-         $self->infh(*STDIN);
-      } else {
+      unless ($self->mode & MODE_INFH) {
          ::panic("Failed to open for reading: $^E")
             unless open ${$self->__infh}, '<', $self->{_sumup};
+      } else {
+         $self->infh(*STDIN) unless $self->infh;
+      }
+      unless ($self->mode & (MODE_OUTFH|MODE_CONFIGRC)) {
+         ::panic("Failed to open '$TMP_WORK' for writing: $^E")
+            unless open ${$self->__outfh}, '>', $TMP_WORK;
+      } else {
+         $self->outfh(*STDOUT) unless $self->outfh;
       }
       ::vv('Opened context, mode: ' .
          Filter::filters_to_string($self->mode & FILTER_MASK));
@@ -1021,7 +1023,7 @@ jresetarr:  $current->{$key} = [];
    sub close {
       my $self = shift;
       ::e("Can't close file: $^E")
-         unless ($self->mode & MODE_STDIN) || close $self->infh;
+         unless ($self->mode & MODE_INFH) || close $self->infh;
       ::vv("Closed context");
       $curr = $self->outer;
       $self;
