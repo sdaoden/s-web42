@@ -124,6 +124,9 @@ our %MULTILINE_PIS = (
    perl  => 0,
    pre   => 0,       xpre        => 0
 );
+our %ALWAYS_REEVAL_PIS = (
+   ifdef    => 0,    ifndef      => 0,    'else'   => 0,    fi    => 0
+);
 # }}}
 
 sub main_fun { # {{{
@@ -1101,7 +1104,9 @@ jresetarr:  $current->{$key} = [];
       _mode       => 0,       # ->ctx->mode
       _data       => [],      # Expanded line data
       _rest_data  => undef,   # Line data for re-evaluation
-      _seen_end   => 0
+      _discard    => 0,       # Discard data, don't output (?ifdef? etc.)
+      _ifdefs     => [],      # Ifdef:: stack
+      _seen_end   => 0        # Seen <?end?>?
    });
 
    sub _consume {
@@ -1120,28 +1125,37 @@ jresetarr:  $current->{$key} = [];
 
       }
       ::e('Premature file exit') unless $self->seen_end;
+      Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
+
+
       $self
    }
 
    sub _emit {
       my $self = shift;
-      return unless @{$self->data};
+      return $self unless @{$self->data};
+      if ($self->discard) {
+         @{$self->data} = ();
+         return $self;
+      }
       while (defined(my $d = shift @{$self->data})) {
          ::panic("Failed to perform output: $^E")
             unless print {$self->ctx->outfh} $d;
       }
-      ::panic("Failed to perform output: $^E")
-         unless print {$self->ctx->outfh} "\n";
+#      ::panic("Failed to perform output: $^E")
+#         unless print {$self->ctx->outfh} "\n";
       $self
    }
 
    sub _expand_pis {
       my ($self, $l) = @_;
       while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/) {
-         push @{$self->data}, $1 if defined $1 && length $1 > 0;
+         push @{$self->data}, $1
+            if defined $1 && length $1 > 0 && ! $self->discard;
          $l = defined $4 ? $4 : '';
          my ($pi, $valarr) = ($2, (defined $3 ? [split '<>', $3, -1] : []));
 
+         next if $self->discard && ! exists $ALWAYS_REEVAL_PIS{$pi};
          if (exists $PIS{$pi}) {
             $self->_pi_comm($pi, $valarr);
          } elsif (exists $PIVars::current->{$pi}) {
@@ -1157,7 +1171,9 @@ jresetarr:  $current->{$key} = [];
             $self->rest_data(undef);
          }
       }
-      push @{$self->data}, $l if length $l;
+
+      push @{$self->data}, $l if length $l && ! $self->discard;
+      push @{$self->data}, "\n" if @{$self->data};
       $self->_emit();
       $self
    }
@@ -1259,6 +1275,14 @@ jresetarr:  $current->{$key} = [];
          goto jleave;
       }
 
+      elsif ($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
+            $pi eq 'fi') {
+         $self->_emit;
+         $pi = Expander::Ifdef::handle_pi(scalar $self->ifdefs, $self->ctx,
+               $pi, $i);
+         $self->discard($pi) if $pi >= 0;
+         goto jleave;
+      }
 
       push @{$self->data}, "<<COMMAND:$pi||" .
          (defined $valarr ? join(';',@$valarr) : 'NOVAL') . ">>";
@@ -1337,6 +1361,62 @@ jleave:
 jleave:
       $self
    } # }}}
+
+{package Expander::Ifdef; # {{{
+   sub handle_pi {
+      my ($stack, $ctx, $pi, $arg) = @_;
+      my $self;
+
+      if ($pi eq 'ifdef' || $pi eq 'ifndef') {
+         $self = $stack->[0] if @$stack;
+         my $ow = $self ? ($self->outer_won ? 1 : $self->discard) : 0;
+         my $d;
+         if (! ($d = $ow)) {
+            $d = ($arg eq '0' || ! exists $PIVars::current->{$arg}) ? 1 : 0;
+            $d = ! $d if $pi eq 'ifndef';
+         }
+         $self = Expander::Ifdef->new(ctx => $ctx, outer_won => $ow,
+               discard => $d);
+         unshift @$stack, $self;
+      } elsif ($pi eq 'else') {
+         if (@$stack == 0) {
+            ::e("else: no ifn?def to continue around here");
+            return -1;
+         }
+         $self = $stack->[0];
+         if ($self->if_then_else) {
+            ::e("else: else was already seen for current ifn?def");
+         } else {
+            $self->if_then_else(1);
+            $self->discard(! $self->discard) unless $self->outer_won;
+         }
+      } else { #if ($pi eq 'fi') {
+         if (@$stack == 0) {
+            ::e("fi: no ifn?def..else to be closed around here");
+            return -1;
+         }
+         shift @$stack;
+         return 0 unless @$stack;
+         $self = $stack->[0];
+      }
+      $self->discard;
+   }
+
+   sub check_ctx {
+      my ($stack, $ctx) = @_;
+      foreach my $self (@$stack) {
+         next unless $self->ctx == $ctx;
+         ::e("ifn?def: was started here, but where's the <?fi?>?");
+      }
+   }
+
+   SymObj::sym_create(SymObj::NONE, {
+      _ctx           => undef,
+      _outer_won     => 0,
+      _discard       => 0,
+      _if_then_else  => 0
+   });
+} # }}}
 
 {package Expander::Markup; # {{{ TODO too naive
    sub link {

@@ -22,9 +22,7 @@ tcase() {
 	[ -z "${o}${e}" ] && echo "OK: ${tno}" || terr ${tno} "${o}${e}"
 }
 
-##
-
-# >> Assignment test series >>
+## Assignment test series {{{
 
 # Variable
 tcase 1000-w42-atm \
@@ -202,11 +200,9 @@ Z @= femme
 \
 ''
 
-# << Assignment test series <<
+## }}}
+## def/defa/defx {{{
 
-##
-
-# def/defa/defx
 tcase 0001-w42-atm \
 '<?begin?>
 
@@ -265,9 +261,9 @@ defa2-c2
 "ERROR 'test-0001-w42-atm':12: defa1: 2 is not a valid array index
 ERROR 'test-0001-w42-atm':14: defx1 takes 2 argument(s)"
 
-##
+## }}}
+## pi-if {{{
 
-# pi-if
 tcase 0002-w42-atm \
 '<?begin?>
 
@@ -289,9 +285,9 @@ tcase 0002-w42-atm \
 \
 ''
 
-##
+## }}}
+## undef {{{
 
-# undef
 tcase 0003-w42-atm \
 '<?begin?>
 
@@ -319,9 +315,9 @@ ERROR 'test-0003-w42-atm':12: undef: cannot undef builtin PI (variable): undef
 ERROR 'test-0003-w42-atm':14: undef: no such variable: def2
 ERROR 'test-0003-w42-atm':16: undef: no such variable: defx2"
 
-##
+## }}}
+## lref,lreft, href,hreft {{{
 
-# lref,lreft, href,hreft
 tcase 0004-w42-atm \
 '<?begin?>
 
@@ -361,6 +357,133 @@ ERROR 'test-0004-w42-atm':19: lreft takes 2 argument(s)
 ERROR 'test-0004-w42-atm':20: href takes 1 argument(s)
 ERROR 'test-0004-w42-atm':21: hreft takes 2 argument(s)"
 
-##
+## }}}
+## ?ifdef?.. {{{
+
+tcase 0005-w42-atm \
+'<?begin?>
+
+<?ifdef 0?>
+no.1
+<?fi?>
+<?ifdef 0?>
+no.2
+<?else?>
+yes.1
+<?fi?>
+<?ifndef 0?>
+yes.2
+<?fi?>
+<?ifndef 0?>
+yes.3
+<?else?>
+no.3
+<?fi?>
+
+<?ifdef xYz?>
+no.4
+<?fi?>
+<?ifdef xYz?>
+no.5
+<?else?>
+yes.4
+<?fi?>
+<?ifndef xYz?>
+yes.5
+<?fi?>
+<?ifndef xYz?>
+yes.6
+<?else?>
+no.6
+<?fi?>
+
+<?def xYz<>it is defined now?>
+<?ifdef xYz?>
+yes.7
+<?fi?>
+<?ifdef xYz?>
+yes.8
+<?else?>
+no.7
+<?fi?>
+<?ifndef xYz?>
+no.8
+<?fi?>
+<?ifndef xYz?>
+no.9
+<?else?>
+yes.9
+<?fi?>
+
+<?ifdef 0?>
+no.10
+ <?ifndef 0?>
+no.11
+  <?ifndef xYz?>
+no.12
+  <?else?>
+no.13
+  <?fi?>
+no.14
+ <?else?>
+no.15
+ <?fi?>
+no.16
+<?else?>
+yes.10
+<?fi?>
+
+<?ifndef 0?>
+yes.11
+ <?ifdef 0?>
+no.17
+  <?ifdef xYz?>
+no.18
+   <?ifdef xYz?>
+no.19
+   <?else?>
+no.20
+   <?fi?>
+no.21
+  <?else?>
+no.22
+  <?fi?>
+no.23
+ <?else?>
+yes.12
+ <?fi?>
+yes.13
+<?else?>
+no.24
+<?fi?>
+
+<?ifdef 0?>1<?else?>2<?fi?><?ifndef 0?>3<?else?>4<?fi?><?ifndef 0?>5<?ifdef 0?>6<?else?>7<?fi?>8<?else?>9<?fi?>:)
+
+<?ifdef 0?>
+ <?NON-EXISTENT-PI?>
+ <?ifdef 0?>
+ <?else?>
+
+<?end?>' \
+\
+'yes.1
+yes.2
+yes.3
+yes.4
+yes.5
+yes.6
+yes.7
+yes.8
+yes.9
+yes.10
+yes.11
+yes.12
+yes.13
+23578:)' \
+\
+"ERROR 'test-0005-w42-atm':104: ifn?def: was started here, but where's the <?fi?>?
+ERROR 'test-0005-w42-atm':104: ifn?def: was started here, but where's the <?fi?>?"
+
+## }}}
 
 [ ${errs} -eq 0 ] && exit 0 || exit 42
