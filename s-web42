@@ -204,10 +204,6 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
       }
    }
 
-   # At this point, "freeze" the outermost PI variable context.
-   # (Redundant since all contexts should ensure this FIXME)
-   PIVars::twist();
-
    # The very special case..
    if (defined $eo) {
       my $m = &Filter::CONTENT_FILTERS | &Ctx::MODE_OUTFH;
@@ -382,25 +378,10 @@ sub checksum_path {
       %$builtin,
       WWW               => ''
    };
-   our $current = $outermost;
-
-   my @stack;
-
-   sub twist {
-      my %nenv = %$current;
-      unshift @stack, $current;
-      $current = \%nenv;
-      create_modtime_pis($_[0]) if defined $_[0];
-   }
-
-   sub unwind {
-      die unless @stack; # FIXME
-      $current = shift @stack;
-   }
 
    # Handle a complete(d!) ASSIGNMENTS line
    sub handle_assignment {
-      my ($ctxmode, $line) = @_;
+      my ($pivars, $ctxmode, $line) = @_;
       unless ($line =~ /^([-\w]+)\s*(\?)?(@)?(\+)?=\s*(.+?)$/) {
          ::e('Ignoring non-interpretable assignment line:', $line);
          return;
@@ -422,16 +403,17 @@ sub checksum_path {
          ::e("Builtin PI variable can only be handled in $CONFIG", $line);
          return;
       }
-      if (defined $noovw && exists $current->{$key}) {
+      if (defined $noovw && exists $pivars->{$key}) {
          ::vv('No-overwrite set, variable exists, skip', $line);
          return;
       }
 
-      PIVars::assign($key, $value, defined $add || defined $arr, defined $arr);
+      PIVars::assign($pivars, $key, $value, defined $add || defined $arr,
+         defined $arr);
    }
 
    sub assign {
-      my ($key, $value, $doappend, $isarray) = @_;
+      my ($pivars, $key, $value, $doappend, $isarray) = @_;
       $doappend = 0 unless defined $doappend;
       $isarray = 0 unless defined $isarray;
 
@@ -440,34 +422,34 @@ sub checksum_path {
             return;
       }
       unless ($isarray) {
-         if (exists $current->{$key} && ref $current->{$key} eq 'ARRAY') {
+         if (exists $pivars->{$key} && ref $pivars->{$key} eq 'ARRAY') {
             ::e("$key: non-array assignment to array key");
             return;
          }
-         if (exists $current->{$key} && $doappend) {
-            $current->{$key} .= $value;
+         if (exists $pivars->{$key} && $doappend) {
+            $pivars->{$key} .= $value;
          } else {
-            $current->{$key} = $value;
+            $pivars->{$key} = $value;
          }
          ::vv("Assign/Append ok <$key = $value>");
       } else {
-         if (exists $current->{$key}) {
-            if (ref $current->{$key} ne 'ARRAY') {
+         if (exists $pivars->{$key}) {
+            if (ref $pivars->{$key} ne 'ARRAY') {
                ::e("$key: array assignment to non-array key");
                return;
             }
             goto jresetarr unless $doappend;
          } else {
-jresetarr:  $current->{$key} = [];
+jresetarr:  $pivars->{$key} = [];
          }
-         push @{$current->{$key}}, $value;
+         push @{$pivars->{$key}}, $value;
          ::vv("Array create/extend ok <$key = " .
             (length ref $value ? '('.join(', ', @$value).')' : $value) . '>');
       }
    }
 
    sub create_modtime_pis {
-      my $secs = shift;
+      my ($pivars, $secs) = @_;
       $secs = time unless defined $secs;
       my (@a, @la, $s);
       unless ($HAVE_TIMEPIECE) {
@@ -481,12 +463,12 @@ jresetarr:  $current->{$key} = [];
          @la = @a;
          $a[6] = 'UTC';
          $la[6] = '+0000';
-         $current->{MODTIME_AUTC} = \@a;
-         $current->{MODTIME_ALOCAL} = \@la;
+         $pivars->{MODTIME_AUTC} = \@a;
+         $pivars->{MODTIME_ALOCAL} = \@la;
          $s = sprintf "%04d-%02d-%02dT%02d:%02d:%02d ",
             $a[0], $a[1], $a[2], $a[3], $a[4], $a[5];
-         $current->{MODTIME_SUTC} = $s . $a[6];
-         $current->{MODTIME_SLOCAL} = $s . $la[6];
+         $pivars->{MODTIME_SUTC} = $s . $a[6];
+         $pivars->{MODTIME_SLOCAL} = $s . $la[6];
       } else {
          sub __fill {
             my ($r, $t, $utc) = @_;
@@ -507,11 +489,11 @@ jresetarr:  $current->{$key} = [];
             $r;
          }
          $s = Time::Piece::gmtime($secs);
-         $current->{MODTIME_AUTC} = __fill(\@a, $s, 1);
-         $current->{MODTIME_SUTC} = $s->datetime . ' UTC';
+         $pivars->{MODTIME_AUTC} = __fill(\@a, $s, 1);
+         $pivars->{MODTIME_SUTC} = $s->datetime . ' UTC';
          $s = Time::Piece::localtime($secs);
-         $current->{MODTIME_ALOCAL} = __fill(\@la, $s, 0);
-         $current->{MODTIME_SLOCAL} = $s->datetime . ' ' . $la[6];
+         $pivars->{MODTIME_ALOCAL} = __fill(\@la, $s, 0);
+         $pivars->{MODTIME_SLOCAL} = $s->datetime . ' ' . $la[6];
       }
    }
 } # }}}
@@ -982,25 +964,30 @@ jresetarr:  $current->{$key} = [];
       _line          => '',      # Current input line
       _infh          => undef,   # for reading
       _outfh         => undef,   # for writing
+      '%_pivars'     => undef,   # Ctx-local PIVars:: environment
       _mtime         => undef,   # Modification time (outermost level only)
       _empties_seen  => 0,       # No. of empty lines last readline() skipped
       _expander      => undef    # Expander:: cookie
    }, sub {
-      if ($_[0]->outer($curr)) {
-         ${$_[0]->__mode} |= MODE_OUTFH;
-         $_[0]->outfh($curr->outfh);
-         $_[0]->mtime($curr->mtime);
+      my $self = $_[0];
+      if ($self->mode & MODE_CONFIGRC) {
+         $self->{_pivars} = $PIVars::outermost;
+      } elsif ($self->outer($curr)) {
+         ${$self->__mode} |= MODE_OUTFH;
+         $self->outfh($curr->outfh);
+         $self->mtime($curr->mtime);
+         $self->pivars($curr->pivars);
+      } else {
+         $self->pivars($PIVars::outermost);
       }
-      $curr = $_[0];
+      $curr = $self;
    });
 
    sub full_expand_lifecycle {
       my ($self) = @_;
       $self->open;
-      PIVars::twist($self->outer ? undef : $self->mtime);
       $self->read_assignments;
       Expander::explode($self);
-      PIVars::unwind();
       ::e("Failed to close '$TMP_WORK': $^E")
          unless ($self->outer || ($self->mode & MODE_OUTFH) ||
             close $self->outfh);
@@ -1021,7 +1008,10 @@ jresetarr:  $current->{$key} = [];
       } else {
          $self->outfh(*STDOUT) unless $self->outfh;
       }
-      $self->mtime((stat($self->infh))[9]) unless $self->outer;
+      unless ($self->outer || ($self->mode & MODE_CONFIGRC)) {
+         $self->mtime((stat($self->infh))[9]);
+         PIVars::create_modtime_pis(scalar $self->pivars, $self->mtime);
+      }
       ::vv('Opened context, mode: ' .
          Filter::filters_to_string($self->mode & FILTER_MASK));
       $self;
@@ -1042,7 +1032,8 @@ jresetarr:  $current->{$key} = [];
       $self->mode(Filter::ASSIGNMENTS_FILTERS);
       while (defined($l = $self->readline_assignments)) {
          last if $l eq '<?begin?>';
-         PIVars::handle_assignment($saved_mode & MODE_CONFIGRC, $l);
+         PIVars::handle_assignment(scalar $self->pivars,
+            $saved_mode & MODE_CONFIGRC, $l);
       }
       $self->mode($saved_mode);
       if ($saved_mode & MODE_CONFIGRC) {
@@ -1158,7 +1149,7 @@ jresetarr:  $current->{$key} = [];
          next if $self->discard && ! exists $ALWAYS_REEVAL_PIS{$pi};
          if (exists $PIS{$pi}) {
             $self->_pi_comm($pi, $valarr);
-         } elsif (exists $PIVars::current->{$pi}) {
+         } elsif (exists $self->ctx->pivars->{$pi}) {
             $self->_pi_var($pi, $valarr);
          } else {
             ::e("Unknown PI: $pi");
@@ -1217,11 +1208,12 @@ jresetarr:  $current->{$key} = [];
          if (exists $PIS{$i} || exists $PIVars::builtin{$i}) {
             ::e("$pi: cannot overwrite builtin PI (variable): $i");
          } elsif ($pi eq 'def') {
-            PIVars::assign($i, join('<>', @$valarr)); # Need to re-join value
+            PIVars::assign(scalar $self->ctx->pivars, $i, join('<>', @$valarr));
          } elsif ($pi eq 'defa') {
-            PIVars::assign($i, $_, 1, 1) foreach (@$valarr); # Maybe empty?
+            PIVars::assign(scalar $self->ctx->pivars, $i, $_, 1, 1)
+               foreach (@$valarr);
          } else {
-            PIVars::assign($i, $valarr, undef, 1); # Maybe empty?
+            PIVars::assign(scalar $self->ctx->pivars, $i, $valarr, undef, 1);
          }
          goto jleave;
       }
@@ -1231,7 +1223,7 @@ jresetarr:  $current->{$key} = [];
          $pi = $i;
          if (exists $PIS{$pi}) {
             $self->_pi_comm($pi, $valarr);
-         } elsif (exists $PIVars::current->{$pi}) {
+         } elsif (exists $self->ctx->pivars->{$pi}) {
             $self->_pi_var($pi, $valarr);
          } else {
             ::vv("pi-if: unknown PI: $pi");
@@ -1243,9 +1235,9 @@ jresetarr:  $current->{$key} = [];
          shift @$valarr;
          if (exists $PIS{$i} || exists $PIVars::builtin{$i}) {
             ::e("undef: cannot undef builtin PI (variable): $i");
-         } elsif (exists $PIVars::current->{$i}) {
+         } elsif (exists $self->ctx->pivars->{$i}) {
             ::vv("undef: deleting $i");
-            delete $PIVars::current->{$i};
+            delete $self->ctx->pivars->{$i};
          } else {
             ::e("undef: no such variable: $i");
          }
@@ -1255,7 +1247,7 @@ jresetarr:  $current->{$key} = [];
       elsif ($pi eq 'href' || $pi eq 'lref') {
          $pi = ($pi eq 'href');
          my $w;
-         $w = $PIVars::current->{WWW} if $pi;
+         $w = $self->ctx->pivars->{WWW} if $pi;
          $w = '' unless defined $w;
          $w .= '&nbsp;' if length $w;
          $i = '<a href="' . $i . '">' . $w . $i . '</a>';
@@ -1264,7 +1256,7 @@ jresetarr:  $current->{$key} = [];
       } elsif ($pi eq 'hreft' || $pi eq 'lreft') {
          $pi = ($pi eq 'hreft');
          my ($w, $t, $tm);
-         $w = $PIVars::current->{WWW} if $pi;
+         $w = $self->ctx->pivars->{WWW} if $pi;
          $w = '' unless defined $w;
          $w .= '&nbsp;' if length $w;
          $i = Expander::Markup::link($i);
@@ -1293,7 +1285,7 @@ jleave:
 
    sub _pi_var { # {{{
       my ($self, $pi, $valarr) = @_;
-      my $v = $PIVars::current->{$pi};
+      my $v = $self->ctx->pivars->{$pi};
 
       ## def?
       if (ref $v ne 'ARRAY') {
@@ -1372,7 +1364,7 @@ jleave:
          my $ow = $self ? ($self->outer_won ? 1 : $self->discard) : 0;
          my $d;
          if (! ($d = $ow)) {
-            $d = ($arg eq '0' || ! exists $PIVars::current->{$arg}) ? 1 : 0;
+            $d = ($arg eq '0' || ! exists $ctx->pivars->{$arg}) ? 1 : 0;
             $d = ! $d if $pi eq 'ifndef';
          }
          $self = Expander::Ifdef->new(ctx => $ctx, outer_won => $ow,
