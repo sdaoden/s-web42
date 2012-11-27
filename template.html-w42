@@ -15,6 +15,9 @@ PREV = .html
 UP = .html
 NEXT = .html
 LAST = .html
+# And this links to the homepage; on the homepage itself define HOMEPAGE
+# instead, in which case this is supressed (why not in config.rc?)
+HOME = .html
 
 TOPMENU @= <?lreft xy.html<>Xy?>
 TOPMENU @= <?lreft disccopy.html<>Imprint and Disclaimer?>

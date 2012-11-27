@@ -4,8 +4,6 @@
 
 COMPRESS = gzip
 IGNORE_MODTIME = 1
-#FOREACH_PREHOOK = 
-#FOREACH_POSTHOOK = 
 WWW = <strong class="_web" title="WEB!">&infin;</strong>
 
 ## Example navigation for interaction with example header/footer
@@ -17,15 +15,15 @@ NAVI_PREV   = &larr;
 NAVI_NEXT   = &rarr;
 NAVI_PTOP   = <a class="_top" href="#_top" title="Page-Top">&uarr;</a>
 
-# <?ev PTOP_NAVI?> can then be used in between sections or whatever on
+# <?PTOP_NAVI?> can then be used in between sections or whatever on
 # a page to go to the top and bottom of the page (if desired)
 PTOP_NAVI   = <div class="_topdown"><p><a class="_topdownmove" \
             href="#_top" title="Page-Top">&uarr;</a>&nbsp;&nbsp;\
             <a class="_topdownmove" href="#_bottom" \
             title="Page-Bottom">&darr;</a></p></div>
-TOPMENU @= <li><?lreft "disccopy.html;Imprint/Disclaimer"?>&nbsp;&nbsp;</li>
-TOPMENU @= <li><?lreft "person.html;Self"?>&nbsp;&nbsp;</li>
-TOPMENU @= <li><?lreft "code.html;Code"?>&nbsp;&nbsp;</li>
+TOPMENU @= <?lreft disccopy.html<>Imprint/Disclaimer?>
+TOPMENU @= <?lreft person.html<>I?>
+TOPMENU @= <?lreft code.html<>Code?>
 
 ## Contact information
 
@@ -38,7 +36,7 @@ COPY_DATE_SPEC = 1972 - 2012
 
 ## Don't touch the rest directly, use file-local assignments instead
 
-#SCCSID         = I like original SCCS <br />
+#SCCSID         = I like original SCCS
 #TITLE          = undef
 #DESC           = undef
 #KEYWORDS       = undef

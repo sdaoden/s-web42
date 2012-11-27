@@ -1,87 +1,75 @@
+# (Optimized for stripping down even without tagsoup joining)
+TITLE ?= TITLE not set
+PACK_LEVEL ?= 1
 <?begin?>
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" \
- "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<title><?TITLE?></title>
-
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="Author" content="<?AUTHOR_AND_EMAIL_RAW?>" />
-<meta name="generator" content="vim and convert.pl" />
-<?ifdef DESC?>
-<meta name="Description" content="<?DESC?>" />
-<?fi?>
-<?ifdef KEYWORDS?>
-<meta name="Keywords" content="<?KEYWORDS?>" />
-<?fi?>
-<meta name="Date" content="<?LAST_MODIFIED?>" />
-
-<link rel="stylesheet" type="text/css" href="style.css" />
-<?ifdef STYLE_INJECT?>
-<style rel="stylesheet" type="text/css">/* <![CDATA[ */\
- <?STYLE_INJECT?>/* ]]> */</style>
-<?fi?>
-
-<script type="text/javascript" src="script.js"></script>
-<?ifdef SCRIPT_INJECT?>
-<script type="text/javascript">/* <![CDATA[ */\
- <?SCRIPT_INJECT?>/* ]]> */</script>
-<?fi?>
-
-<?HEAD_INJECT?></head>
-<body>
-<div id="_top">
-
-<?ifdef CHAPTER?>
-<div id="_toptitle"><?CHAPTER?></div>
-<?else?>
-<div id="_toptitle"><?TITLE?></div>
-<?fi?>
-
-<div id="_topmenu"><ul>
-<?ifdef FIRST?>
-<li><a class="_first" href="<?FIRST?>" title="First page"><?NAVI_FIRST?></a>\
- &nbsp;&nbsp;</li>
-<?fi?>
-<?ifdef PREV?>
-<li><a class="_prev" href="<?PREV?>" title="Previous page"><?NAVI_PREV?></a>\
- &nbsp;&nbsp;</li>
-<?fi?>
-<?ifdef UP?>
-<li><a class="_up" href="<?UP?>" title="Up to higher level"><?NAVI_UP?></a>\
- &nbsp;&nbsp;</li>
-<?fi?>
-<?ifdef NEXT?>
-<li><a class="_next" href="<?NEXT?>" title="Next page"><?NAVI_NEXT?></a>\
- &nbsp;&nbsp;</li>
+<?ifndef HOMEPAGE?>
+ <?TOPMENU unshift<>\
+  <a class="_home" href="<^HOME^>" title="Homepage">Home</a>?>
 <?fi?>
 <?ifdef LAST?>
-<li><a class="_last" href="<?LAST?>" title="Last page"><?NAVI_LAST?></a>\
- &nbsp;&nbsp;</li>
+ <?TOPMENU unshift<>\
+  <a class="_last" href="<^LAST^>" title="Last page"><^NAVI_LAST^></a>?>
 <?fi?>
-<?ifndef HOMEPAGE?>
-<li><a class="_home" href="index.html" title="Homepage">Home</a>\
- &nbsp;&nbsp;</li>
+<?ifdef NEXT?>
+ <?TOPMENU unshift<>\
+  <a class="_next" href="<^NEXT^>" title="Next page"><^NAVI_NEXT^></a>?>
 <?fi?>
-<?ifdef TOPMENU?>
-<?def FOREACH_PREHOOK<><li>?>
-<?def FOREACH_POSTHOOK<>&nbsp;&nbsp;</li>?>
-<?foreach-ev TOPMENU?>
-<?undef FOREACH_PREHOOK?>
-<?undef FOREACH_POSTHOOK?>
+<?ifdef UP?>
+ <?TOPMENU unshift<>\
+  <a class="_up" href="<^UP^>" title="Up to higher level"><^NAVI_UP^></a>?>
 <?fi?>
-</ul>
-</div>
+<?ifdef PREV?>
+ <?TOPMENU unshift<>\
+  <a class="_prev" href="<^PREV^>" title="Previous page"><^NAVI_PREV^></a>?>
+<?fi?>
+<?ifdef FIRST?>
+ <?TOPMENU unshift<>\
+  <a class="_first" href="<^FIRST^>" title="First page"><^NAVI_FIRST^></a>?>
+<?fi?>
 
-</div><div id="_body">
-
-<div id="_title"><h<?PACK_LEVEL?>>
-<?ifdef HEADLINE?>
-<?HEADLINE?>
-<?else?>
-<?TITLE?>
-<?fi?>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" \
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\
+<html xmlns="http://www.w3.org/1999/xhtml">\
+<head>\
+<title><?TITLE?></title>\
+\
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />\
+<meta name="Author" content="<?AUTHOR_AND_EMAIL_RAW?>" />\
+<meta name="Generator" content="vim and S-Web42" />\
+<?ifdef DESC?>\
+ <meta name="Description" content="<?DESC?>" />\
+<?fi?>\
+<?ifdef KEYWORDS?>\
+ <meta name="Keywords" content="<?KEYWORDS?>" />\
+<?fi?>\
+<meta name="Date" content="<?MODTIME_SLOCAL?>" />\
+\
+<link rel="stylesheet" type="text/css" href="style.css" />\
+<?ifdef STYLE_INJECT?>\
+ <style rel="stylesheet" type="text/css">/* <![CDATA[ */\
+ <?STYLE_INJECT?>/* ]]> */</style>\
+<?fi?>\
+\
+<script type="text/javascript" src="script.js"></script>\
+<?ifdef SCRIPT_INJECT?>\
+ <script type="text/javascript">/* <![CDATA[ */\
+ <?SCRIPT_INJECT?>/* ]]> */</script>\
+<?fi?>\
+\
+<?pi-if HEAD_INJECT?></head>\
+<body>\
+<div id="_top">\
+\
+<div id="_toptitle"><?ifdef CHAPTER?><?CHAPTER?><?else?><?TITLE?><?fi?></div>\
+<div id="_topmenu"><ul>\
+<?pi-if TOPMENU<>loop<><li><>&nbsp;&nbsp;</li>?>\
+</ul></div>\
+\
+</div><div id="_body">\
+\
+<div id="_title"><h<?PACK_LEVEL?>>\
+<?ifdef HEADLINE?><?HEADLINE?><?else?><?TITLE?><?fi?>\
 </h<?PACK_LEVEL?>></div>
 <?end?>
 # vim:set fenc=utf-8 syntax=xml ts=1 sts=1 sw=1 et tw=79:

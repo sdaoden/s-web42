@@ -1,42 +1,23 @@
+# (Optimized for stripping down even without tagsoup joining)
 <?begin?>
-</div><div id="_bottom">
-
-<div id="_bottommenu"><ul>
-<li><?NAVI_PTOP?>&nbsp;&nbsp;</li>
-<?ifdef FIRST?>
-<li><a class="_first" href="<?FIRST?>" title="First page"><?NAVI_FIRST?></a>\
- &nbsp;&nbsp;</li>
-<?fi?>
-<?ifdef PREV?>
-<li><a class="_prev" href="<?PREV?>" title="Previous page"><?NAVI_PREV?></a>\
- &nbsp;&nbsp;</li>
-<?fi?>
-<?ifdef UP?>
-<li><a class="_up" href="<?UP?>" title="Up to higher level"><?NAVI_UP?></a>\
- &nbsp;&nbsp;</li>
-<?fi?>
-<?ifdef NEXT?>
-<li><a class="_next" href="<?NEXT?>" title="Next page"><?NAVI_NEXT?></a>\
- &nbsp;&nbsp;</li>
-<?fi?>
-<?ifdef LAST?>
-<li><a class="_last" href="<?LAST?>" title="Last page"><?NAVI_LAST?></a>\
- &nbsp;&nbsp;</li>
-<?fi?>
-<?ifndef HOMEPAGE?>
-<li><a class="_home" href="index.html" title="Homepage">Home</a>\
- &nbsp;&nbsp;</li>
-<?fi?>
-</ul></div>
-
-<div id="_copycontact"><p>
-Copyright (c) <?COPY_DATE_SPEC?>,
-&nbsp;<a href="mailto:<?MAIL?>" title="E-Mail to <?MAIL?>">\
- <?AUTHOR_AND_EMAIL?></a><?pi-if SCCSID?>
-</p></div>
-
-</div>
-</body>
+</div><div id="_bottom">\
+\
+<div id="_bottommenu"><ul>\
+<?TOPMENU unshift<><^NAVI_PTOP^>?>\
+<?TOPMENU loop<><li><>&nbsp;&nbsp;</li>?>\
+</ul></div>\
+\
+<div id="_copycontact"><p>\
+Copyright (c) <?COPY_DATE_SPEC?>,\
+&nbsp;<a href="mailto:<?MAIL?>" title="E-mail to <?MAIL?>">\
+ <?AUTHOR_AND_EMAIL?></a>\
+<?ifdef SCCSID?>\
+ <br /><?SCCSID?>\
+<?fi?>\
+</p></div>\
+\
+</div>\
+</body>\
 </html>
 <?end?>
 # vim:set fenc=utf-8 syntax=xml ts=1 sts=1 sw=1 et tw=79:
