@@ -291,8 +291,8 @@ sub xpanic {
    exit 21;
 }
 sub panic {
-   print STDERR "PANIC '", $Ctx::curr->sumup, "':", $Ctx::curr->lineno,
-      ': ', shift, "\n";
+   my $ctx = shift;
+   print STDERR "PANIC '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
    while (@_ != 0) { print STDERR 'PANIC ++ ', shift, "\n" };
    exit 21;
 }
@@ -305,8 +305,8 @@ sub xe {
 }
 sub e {
    ++$ERRORS;
-   print STDERR "ERROR '", $Ctx::curr->sumup, "':", $Ctx::curr->lineno,
-      ': ', shift, "\n";
+   my $ctx = shift;
+   print STDERR "ERROR '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
    while (@_ != 0) { print STDERR 'ERROR ++ ', shift, "\n" };
    1;
 }
@@ -319,8 +319,8 @@ sub xv {
 }
 sub v {
    return unless $VERBOSE > 0;
-   print $LOGFH "V  '", $Ctx::curr->sumup, "':", $Ctx::curr->lineno,
-      ': ', shift, "\n";
+   my $ctx = shift;
+   print $LOGFH "V  '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
    while (@_ != 0) { print $LOGFH 'V  ++ ', shift, "\n" };
    1;
 }
@@ -333,8 +333,8 @@ sub xvv {
 }
 sub vv {
    return unless $VERBOSE > 1;
-   print $LOGFH "VV '", $Ctx::curr->sumup, "':", $Ctx::curr->lineno,
-      ': ', shift, "\n";
+   my $ctx = shift;
+   print $LOGFH "VV '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
    while (@_ != 0) { print $LOGFH 'VV ++ ', shift, "\n" };
    1;
 }
@@ -381,49 +381,53 @@ sub checksum_path {
 
    # Handle a complete(d!) ASSIGNMENTS line
    sub handle_assignment {
-      my ($pivars, $ctxmode, $line) = @_;
+      my ($ctx, $ctxmode, $line) = @_;
       unless ($line =~ /^([-\w]+)\s*(\?)?(@)?(\+)?=\s*(.+?)$/) {
-         ::e('Ignoring non-interpretable assignment line:', $line);
+         ::e($ctx, 'Ignoring non-interpretable assignment line:', $line);
          return;
       }
       my ($key, $noovw, $arr, $add, $value) = ($1, $2, $3, $4, $5);
 
       if (defined $noovw && defined $add) {
-         ::e('Cannot use KEY?+= or KEY?@+= (no-overwrite and append?)', $line);
+         ::e($ctx, 'Cannot use KEY?+= or KEY?@+= (no-overwrite and append?)',
+            $line);
          return;
       }
-      ::e('Array assignment (KEY@=) *always* appends, but ok, continue', $line)
-         if defined $arr && defined $add;
+      ::e($ctx, 'Array assignment (KEY@=) *always* appends, but ok, continue',
+         $line) if defined $arr && defined $add;
 
       if (exists $PIS{$key}) {
-         ::e('Cannot overwrite builtin PI', $line);
+         ::e($ctx, 'Cannot overwrite builtin PI', $line);
          return;
       }
       if (! ($ctxmode & &Ctx::MODE_CONFIGRC) && exists $builtin->{$key}) {
-         ::e("Builtin PI variable can only be handled in $CONFIG", $line);
+         ::e($ctx, "Builtin PI variable can only be handled in $CONFIG", $line);
          return;
       }
-      if (defined $noovw && exists $pivars->{$key}) {
-         ::vv('No-overwrite set, variable exists, skip', $line);
+      if (defined $noovw && exists $ctx->pivars->{$key}) {
+         ::vv($ctx, 'No-overwrite set, variable exists, skip', $line);
          return;
       }
 
-      PIVars::assign($pivars, $key, $value, defined $add || defined $arr,
+      PIVars::assign($ctx, $key, $value, defined $add || defined $arr,
          defined $arr);
    }
 
    sub assign {
-      my ($pivars, $key, $value, $doappend, $isarray) = @_;
+      my ($ctx, $key, $value, $doappend, $isarray) = @_;
       $doappend = 0 unless defined $doappend;
       $isarray = 0 unless defined $isarray;
 
       if ($key !~ /^[-\w]+$/) {
-            ::e("$key: PI/variables may consist only of alphanumerics and -");
+            ::e($ctx,
+               "$key: PI/variables may consist only of alphanumerics and -");
             return;
       }
+      my $pivars = $ctx->pivars;
+
       unless ($isarray) {
          if (exists $pivars->{$key} && ref $pivars->{$key} eq 'ARRAY') {
-            ::e("$key: non-array assignment to array key");
+            ::e($ctx, "$key: non-array assignment to array key");
             return;
          }
          if (exists $pivars->{$key} && $doappend) {
@@ -431,11 +435,11 @@ sub checksum_path {
          } else {
             $pivars->{$key} = $value;
          }
-         ::vv("Assign/Append ok <$key = $value>");
+         ::vv($ctx, "Assign/Append ok <$key = $value>");
       } else {
          if (exists $pivars->{$key}) {
             if (ref $pivars->{$key} ne 'ARRAY') {
-               ::e("$key: array assignment to non-array key");
+               ::e($ctx, "$key: array assignment to non-array key");
                return;
             }
             goto jresetarr unless $doappend;
@@ -443,7 +447,7 @@ sub checksum_path {
 jresetarr:  $pivars->{$key} = [];
          }
          push @{$pivars->{$key}}, $value;
-         ::vv("Array create/extend ok <$key = " .
+         ::vv($ctx, "Array create/extend ok <$key = " .
             (length ref $value ? '('.join(', ', @$value).')' : $value) . '>');
       }
    }
@@ -863,13 +867,14 @@ jresetarr:  $pivars->{$key} = [];
          return;
       }
 
-      Ctx->new(sumup => $CACHE)->open;
+      my $ctx = Ctx->new(sumup => $CACHE);
+      $ctx->open;
       my $dnode = $Node::root;
-      while (defined(my $l = $Ctx::curr->readline_assignments)) {
+      while (defined(my $l = $ctx->readline_assignments)) {
          my $lim = ($l =~ /^\//) ? 2 : 5;
          my @e = split / /, substr($l, 1), $lim;
          if (@e != $lim || grep { ! length } @e) {
-            ::e('ignoring corrupted line!', $l);
+            ::e($ctx, 'ignoring corrupted line!', $l);
             next;
          }
 
@@ -895,7 +900,7 @@ jresetarr:  $pivars->{$key} = [];
             }
          }
       }
-      $Ctx::curr->close;
+      $ctx->close;
 
       ::xpanic('The cache was corrupted.',
          'Please use the --force-rebuild option to forcefully ignore it.',
@@ -955,7 +960,17 @@ jresetarr:  $pivars->{$key} = [];
    sub MODE_OUTFH()     { 1<<(Filter::MAXSHIFT + 2) }
    sub MODE_CONFIGRC()  { 1<<(Filter::MAXSHIFT + 3) }
 
-   our $curr = undef;
+   sub full_expand_lifecycle {
+      my ($self) = @_;
+      $self->open;
+      $self->read_assignments;
+      Expander::explode($self);
+      ::e($self, "Failed to close '$TMP_WORK': $^E")
+         unless ($self->outer || ($self->mode & MODE_OUTFH) ||
+            close $self->outfh);
+      $self->close;
+   }
+
    SymObj::sym_create(SymObj::NONE, {
       _outer         => undef,   # <?include?> support (Expander:: recursion)
       _mode          => 0,
@@ -970,9 +985,10 @@ jresetarr:  $pivars->{$key} = [];
       _expander      => undef    # Expander:: cookie
    }, sub {
       my $self = $_[0];
+      my $curr = $self->outer;
       if ($self->mode & MODE_CONFIGRC) {
          $self->{_pivars} = $PIVars::outermost;
-      } elsif ($self->outer($curr)) {
+      } elsif ($curr) {
          ${$self->__mode} |= MODE_OUTFH;
          $self->outfh($curr->outfh);
          $self->mtime($curr->mtime);
@@ -980,30 +996,18 @@ jresetarr:  $pivars->{$key} = [];
       } else {
          $self->pivars($PIVars::outermost);
       }
-      $curr = $self;
    });
-
-   sub full_expand_lifecycle {
-      my ($self) = @_;
-      $self->open;
-      $self->read_assignments;
-      Expander::explode($self);
-      ::e("Failed to close '$TMP_WORK': $^E")
-         unless ($self->outer || ($self->mode & MODE_OUTFH) ||
-            close $self->outfh);
-      $self->close;
-   }
 
    sub open {
       my $self = shift;
       unless ($self->mode & MODE_INFH) {
-         ::panic("Failed to open for reading: $^E")
+         ::panic($self, "Failed to open for reading: $^E")
             unless open ${$self->__infh}, '<', $self->{_sumup};
       } else {
          $self->infh(*STDIN) unless $self->infh;
       }
       unless ($self->mode & (MODE_OUTFH|MODE_CONFIGRC)) {
-         ::panic("Failed to open '$TMP_WORK' for writing: $^E")
+         ::panic($self, "Failed to open '$TMP_WORK' for writing: $^E")
             unless open ${$self->__outfh}, '>', $TMP_WORK;
       } else {
          $self->outfh(*STDOUT) unless $self->outfh;
@@ -1012,17 +1016,16 @@ jresetarr:  $pivars->{$key} = [];
          $self->mtime((stat($self->infh))[9]);
          PIVars::create_modtime_pis(scalar $self->pivars, $self->mtime);
       }
-      ::vv('Opened context, mode: ' .
+      ::vv($self, 'Opened context, mode: ' .
          Filter::filters_to_string($self->mode & FILTER_MASK));
       $self;
    }
 
    sub close {
       my $self = shift;
-      ::e("Can't close file: $^E")
+      ::e($self, "Can't close file: $^E")
          unless ($self->mode & MODE_INFH) || close $self->infh;
-      ::vv("Closed context");
-      $curr = $self->outer;
+      ::vv($self, "Closed context");
       $self;
    }
 
@@ -1032,14 +1035,13 @@ jresetarr:  $pivars->{$key} = [];
       $self->mode(Filter::ASSIGNMENTS_FILTERS);
       while (defined($l = $self->readline_assignments)) {
          last if $l eq '<?begin?>';
-         PIVars::handle_assignment(scalar $self->pivars,
-            $saved_mode & MODE_CONFIGRC, $l);
+         PIVars::handle_assignment($self, $saved_mode & MODE_CONFIGRC, $l);
       }
       $self->mode($saved_mode);
       if ($saved_mode & MODE_CONFIGRC) {
-         ::v("'$CONFIG' file contains non-Assignments") if defined $l;
+         ::v($self, "'$CONFIG' file contains non-Assignments") if defined $l;
       } else {
-         ::e('Premature file exit') unless defined $l;
+         ::e($self, 'Premature file exit') unless defined $l;
       }
       $self;
    }
@@ -1115,7 +1117,7 @@ jresetarr:  $pivars->{$key} = [];
          }
 
       }
-      ::e('Premature file exit') unless $self->seen_end;
+      ::e($self->ctx, 'Premature file exit') unless $self->seen_end;
       Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
 
 
@@ -1130,10 +1132,10 @@ jresetarr:  $pivars->{$key} = [];
          return $self;
       }
       while (defined(my $d = shift @{$self->data})) {
-         ::panic("Failed to perform output: $^E")
+         ::panic($self->ctx, "Failed to perform output: $^E")
             unless print {$self->ctx->outfh} $d;
       }
-#      ::panic("Failed to perform output: $^E")
+#      ::panic($self->ctx, "Failed to perform output: $^E")
 #         unless print {$self->ctx->outfh} "\n";
       $self
    }
@@ -1152,7 +1154,7 @@ jresetarr:  $pivars->{$key} = [];
          } elsif (exists $self->ctx->pivars->{$pi}) {
             $self->_pi_var($pi, $valarr);
          } else {
-            ::e("Unknown PI: $pi");
+            ::e($self->ctx, "Unknown PI: $pi");
             next;
          }
          # Integrate expanded content so that it gets re-evaluated, which is
@@ -1177,21 +1179,23 @@ jresetarr:  $pivars->{$key} = [];
       # Check argument count
       if (defined $MULTILINE_PIS{$pi}) {
          if (@$valarr > 1 || (@$valarr == 1 && $valarr->[0] ne 'end')) {
-            ::e("$pi is multiline PI, it may only be given 'end' argument");
+            ::e($self->ctx,
+               "$pi is multiline PI, it may only be given 'end' argument");
             goto jleave;
          }
       } elsif ($i == 0) {
          if (@$valarr != 0) {
-            ::e("$pi doesn't take any arguments");
+            ::e($self->ctx, "$pi doesn't take any arguments");
             goto jleave;
          }
       } elsif ($i < 0) {
          if (@$valarr < -$i) {
-            ::e("$pi (presumably) needs (at least) " . -$i . ' argument(s)');
+            ::e($self->ctx, "$pi (presumably) needs (at least) " . -$i .
+               ' argument(s)');
             goto jleave;
          }
       } elsif ($i != @$valarr) {
-         ::e("$pi takes " . $i . ' argument(s)');
+         ::e($self->ctx, "$pi takes " . $i . ' argument(s)');
          goto jleave;
       }
 
@@ -1199,21 +1203,20 @@ jresetarr:  $pivars->{$key} = [];
       $i = undef;
       $i = $valarr->[0];
       if (@$valarr && ! length $i) {
-         ::e("$pi: (first) argument may not be empty");
+         ::e($self->ctx, "$pi: (first) argument may not be empty");
          goto jleave;
       }
 
       if ($pi eq 'def' || $pi eq 'defa' || $pi eq 'defx') {
          shift @$valarr;
          if (exists $PIS{$i} || exists $PIVars::builtin{$i}) {
-            ::e("$pi: cannot overwrite builtin PI (variable): $i");
+            ::e($self->ctx, "$pi: cannot overwrite builtin PI (variable): $i");
          } elsif ($pi eq 'def') {
-            PIVars::assign(scalar $self->ctx->pivars, $i, join('<>', @$valarr));
+            PIVars::assign($self->ctx, $i, join('<>', @$valarr));
          } elsif ($pi eq 'defa') {
-            PIVars::assign(scalar $self->ctx->pivars, $i, $_, 1, 1)
-               foreach (@$valarr);
+            PIVars::assign($self->ctx, $i, $_, 1, 1) foreach (@$valarr);
          } else {
-            PIVars::assign(scalar $self->ctx->pivars, $i, $valarr, undef, 1);
+            PIVars::assign($self->ctx, $i, $valarr, undef, 1);
          }
          goto jleave;
       }
@@ -1226,7 +1229,7 @@ jresetarr:  $pivars->{$key} = [];
          } elsif (exists $self->ctx->pivars->{$pi}) {
             $self->_pi_var($pi, $valarr);
          } else {
-            ::vv("pi-if: unknown PI: $pi");
+            ::vv($self->ctx, "pi-if: unknown PI: $pi");
          }
          goto jleave;
       }
@@ -1234,12 +1237,12 @@ jresetarr:  $pivars->{$key} = [];
       elsif ($pi eq 'undef') {
          shift @$valarr;
          if (exists $PIS{$i} || exists $PIVars::builtin{$i}) {
-            ::e("undef: cannot undef builtin PI (variable): $i");
+            ::e($self->ctx, "undef: cannot undef builtin PI (variable): $i");
          } elsif (exists $self->ctx->pivars->{$i}) {
-            ::vv("undef: deleting $i");
+            ::vv($self->ctx, "undef: deleting $i");
             delete $self->ctx->pivars->{$i};
          } else {
-            ::e("undef: no such variable: $i");
+            ::e($self->ctx, "undef: no such variable: $i");
          }
          goto jleave;
       }
@@ -1297,7 +1300,7 @@ jleave:
       if (ref $v->[0] eq 'ARRAY') {
          $v = $v->[0];
          if (0 != @$v - 1 - @$valarr) {
-            ::e("$pi takes " . scalar(@$v - 1) . ' argument(s)');
+            ::e($self->ctx, "$pi takes " . scalar(@$v - 1) . ' argument(s)');
          } else {
             my @dat;
             foreach (@$v) {
@@ -1311,19 +1314,20 @@ jleave:
 
       ## defa
       if (! @$valarr) {
-         ::e("$pi is an array and requires arguments");
+         ::e($self->ctx, "$pi is an array and requires arguments");
          goto jleave;
       }
 
       # Member access?
       if ($valarr->[0] =~ /\d+/) {
          if (@$valarr > 1) {
-            ::e("$pi: array index access takes only one argument: the index");
+            ::e($self->ctx, "$pi: array index access takes only one " .
+               'argument: the index');
            goto jleave;
          }
          my $i = int $valarr->[0];
          if ($i >= @$v) {
-            ::e("$pi: $i is not a valid array index");
+            ::e($self->ctx, "$pi: $i is not a valid array index");
             goto jleave;
          }
          $i = $v->[$i];
@@ -1333,12 +1337,13 @@ jleave:
 
       # Loop mode
       if ($valarr->[0] ne 'loop') {
-         ::e("$pi: array argument 1 is neither index nor \"loop\"");
+         ::e($self->ctx, "$pi: array argument 1 is neither index nor \"loop\"");
          goto jleave;
       }
       shift @$valarr;
       if (@$valarr > 2) {
-         ::e("$pi: array loop mode takes max. 3 arguments: \"loop\",pre,post");
+         ::e($self->ctx, "$pi: array loop mode takes max. 3 arguments: " .
+            '"loop", pre, post');
         goto jleave;
       }
       my ($pre, $post, @dat) = (shift @$valarr, shift @$valarr);
@@ -1372,19 +1377,19 @@ jleave:
          unshift @$stack, $self;
       } elsif ($pi eq 'else') {
          if (@$stack == 0) {
-            ::e("else: no ifn?def to continue around here");
+            ::e($ctx, "else: no ifn?def to continue around here");
             return -1;
          }
          $self = $stack->[0];
          if ($self->if_then_else) {
-            ::e("else: else was already seen for current ifn?def");
+            ::e($ctx, "else: else was already seen for current ifn?def");
          } else {
             $self->if_then_else(1);
             $self->discard(! $self->discard) unless $self->outer_won;
          }
       } else { #if ($pi eq 'fi') {
          if (@$stack == 0) {
-            ::e("fi: no ifn?def..else to be closed around here");
+            ::e($ctx, "fi: no ifn?def..else to be closed around here");
             return -1;
          }
          shift @$stack;
@@ -1398,7 +1403,7 @@ jleave:
       my ($stack, $ctx) = @_;
       foreach my $self (@$stack) {
          next unless $self->ctx == $ctx;
-         ::e("ifn?def: was started here, but where's the <?fi?>?");
+         ::e($ctx, "ifn?def: was started here, but where's the <?fi?>?");
       }
    }
 
