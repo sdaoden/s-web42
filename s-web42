@@ -1148,7 +1148,7 @@ jresetarr:  $pivars->{$key} = [];
       while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/) {
          push @{$self->data}, $1
             if defined $1 && length $1 > 0 && ! $self->discard;
-         $l = defined $4 ? $4 : '';
+         $self->ctx->line($l = defined $4 ? $4 : '');
          my ($pi, $valarr) = ($2, (defined $3 ? [split '<>', $3, -1] : []));
 
          next if $self->discard && ! exists $ALWAYS_REEVAL_PIS{$pi};
@@ -1162,8 +1162,10 @@ jresetarr:  $pivars->{$key} = [];
             ::e($self->ctx, "Unknown PI: $pi" . (defined $3 ? ", $3" : ''));
             next;
          }
+
          # Integrate expanded content so that it gets re-evaluated, which is
          # necessary since it may contain PIs itself
+         $l = $self->ctx->line;
          if (defined(my $reeval = $self->rest_data)) {
             $l = $reeval . $l;
             $self->rest_data(undef);
@@ -1284,6 +1286,18 @@ jresetarr:  $pivars->{$key} = [];
          goto jleave;
       }
 
+      elsif ($pi eq 'include') {
+         $self->_emit();
+         $i = Expander::_expand_include_path($i);
+         my $ctx = Ctx->new(outer => $self->ctx, mode => $self->mode,
+               sumup => $i);
+         $self->ctx($ctx->open)->read_assignments;
+         $self->_consume->ctx($ctx->close->outer);
+         $self->seen_end(0);
+         goto jleave;
+      }
+
+
       push @{$self->data}, "<<COMMAND:$pi||" .
          (defined $valarr ? join(';',@$valarr) : 'NOVAL') . ">>";
 
@@ -1362,6 +1376,19 @@ jleave:
       $self->rest_data(join '', @dat) if @dat;
 jleave:
       $self
+   } # }}}
+
+   sub _expand_include_path { # {{{
+      my ($path) = @_;
+      my $l = '';
+      if ($path =~ /^~(.*)$/) {
+         $l = $ENV{HOME} . '/' if $ENV{HOME};
+         goto jset;
+      } elsif ($path =~ /^\+(.*)$/) {
+         $l = $ENV{WEB42INC} . '/' if $ENV{WEB42INC};
+jset:    $path = $l . $1;
+      }
+      $path
    } # }}}
 
 {package Expander::Ifdef; # {{{
