@@ -439,7 +439,7 @@ sub checksum_path {
          } else {
             $pivars->{$key} = $value;
          }
-         ::vv($ctx, "Assign/Append ok <$key = $value>");
+         #::vv($ctx, "Assign/Append ok <$key = $value>");
       } else {
          if (exists $pivars->{$key}) {
             if (ref $pivars->{$key} ne 'ARRAY') {
@@ -451,8 +451,8 @@ sub checksum_path {
 jresetarr:  $pivars->{$key} = [];
          }
          push @{$pivars->{$key}}, $value;
-         ::vv($ctx, "Array create/extend ok <$key = " .
-            (length ref $value ? '('.join(', ', @$value).')' : $value) . '>');
+         #::vv($ctx, "Array create/extend ok <$key = " .
+         #   (length ref $value ? '('.join(', ', @$value).')' : $value) . '>');
       }
    }
 
@@ -1155,9 +1155,14 @@ jresetarr:  $pivars->{$key} = [];
          if (exists $PIS{$pi}) {
             $self->_pi_comm($pi, $valarr);
          } elsif (exists $self->ctx->pivars->{$pi}) {
-            $self->_pi_var($pi, $valarr);
+jpivar:     $self->_pi_var($pi, $valarr);
          } elsif (exists $IGNORE_PIS{$pi}) {
             push @{$self->data}, '<?' . $pi . (defined $3 ? " $3" : '') . '?>';
+         } elsif (@$valarr >= 2 && ($valarr->[0] eq 'unshift' ||
+               $valarr->[0] eq 'push')) {
+            $self->ctx->pivars->{$pi} = [];
+            #::vv($self->ctx, "Array $pi has been auto-vivified");
+            goto jpivar;
          } else {
             ::e($self->ctx, "Unknown PI: $pi" . (defined $3 ? ", $3" : ''));
             next;
@@ -1218,7 +1223,7 @@ jresetarr:  $pivars->{$key} = [];
 
       if ($pi eq 'def' || $pi eq 'defa' || $pi eq 'defx') {
          shift @$valarr;
-         if (exists $PIS{$i} || exists $PIVars::builtin{$i}) {
+         if (exists $PIS{$i} || exists $PIVars::builtin->{$i}) {
             ::e($self->ctx, "$pi: cannot overwrite builtin PI (variable): $i");
          } elsif ($pi eq 'def') {
             PIVars::assign($self->ctx, $i, join('<>', @$valarr));
@@ -1245,7 +1250,7 @@ jresetarr:  $pivars->{$key} = [];
 
       elsif ($pi eq 'undef') {
          shift @$valarr;
-         if (exists $PIS{$i} || exists $PIVars::builtin{$i}) {
+         if (exists $PIS{$i} || exists $PIVars::builtin->{$i}) {
             ::e($self->ctx, "undef: cannot undef builtin PI (variable): $i");
          } elsif (exists $self->ctx->pivars->{$i}) {
             ::vv($self->ctx, "undef: deleting $i");
@@ -1311,9 +1316,13 @@ jleave:
       my ($self, $pi, $valarr) = @_;
       my $v = $self->ctx->pivars->{$pi};
 
-      ## def?
+      ## =/def?
       if (ref $v ne 'ARRAY') {
-         $self->rest_data($v);
+         if (@$valarr) {
+            ::e($self->ctx, "$pi does not take any argument(s)");
+         } else {
+            $self->rest_data($v);
+         }
          goto jleave;
       }
 
@@ -1333,49 +1342,69 @@ jleave:
          goto jleave;
       }
 
-      ## defa
+      ## @/defa/auto-vivified (array handling .)
+      ## (Auto-vivification has been handled by _expand_pis(), array exists.)
       if (! @$valarr) {
          ::e($self->ctx, "$pi is an array and requires arguments");
          goto jleave;
       }
+      my $i = shift @$valarr;
 
-      # Member access?
-      if ($valarr->[0] =~ /\d+/) {
-         if (@$valarr > 1) {
+      if ($i =~ /\d+/) {
+         if (@$valarr) {
             ::e($self->ctx, "$pi: array index access takes only one " .
                'argument: the index');
-           goto jleave;
+            goto jleave;
          }
-         my $i = int $valarr->[0];
+         $i = int $i;
          if ($i >= @$v) {
             ::e($self->ctx, "$pi: $i is not a valid array index");
             goto jleave;
          }
          $i = $v->[$i];
          $self->rest_data($i) if length $i;
-        goto jleave;
-      }
-
-      # Loop mode
-      if ($valarr->[0] ne 'loop') {
-         ::e($self->ctx, "$pi: array argument 1 is neither index nor \"loop\"");
+         goto jleave;
+      } elsif ($i eq 'loop') {
+         if (@$valarr > 2) {
+            ::e($self->ctx, "$pi: array loop mode takes max. 3 arguments: " .
+               '"loop", pre-hook, post-hook');
+            goto jleave;
+         }
+         my ($pre, $post, @dat) = (shift @$valarr, shift @$valarr);
+         $pre = undef unless defined $pre && length $pre;
+         $post = undef unless defined $post && length $post;
+         foreach (@$v) {
+            push @dat, $pre if defined $pre;
+            push @dat, $_ if length;
+            push @dat, $post if defined $post;
+         }
+         $self->rest_data(join '', @dat) if @dat;
+      } elsif ($i eq 'unshift' || $i eq 'push' || $i eq 'shift' ||
+            $i eq 'pop' || $i eq 'undef-empty') {
+         if (exists $PIVars::builtin->{$pi}) {
+            ::e($self->ctx, "$pi: cannot modify builtin PI (variable) via $i");
+         } elsif ($i eq 'unshift') {
+            unshift @$v, join('<>', @$valarr);
+         } elsif ($i eq 'push') {
+            push @$v, join('<>', @$valarr);
+         } elsif ($i eq 'shift' || $i eq 'pop') {
+            if (@$v == 0) {
+               ::v($self->ctx, "$pi: $i request on empty array");
+            } elsif ($i eq 'shift') {
+               shift @$v;
+            } else {
+               pop @$v;
+            }
+         } elsif (@$v == 0) { #if ($i eq 'undef-empty' && @$v == 0) {
+            ::vv($self->ctx, "$pi: deleting after undef-empty request");
+            delete $self->ctx->pivars->{$pi};
+         }
+      } else {
+         ::e($self->ctx, "$pi: array argument 1 is neither an index nor " .
+            'one of loop/unshift/push/shift/pop/undef-empty.');
          goto jleave;
       }
-      shift @$valarr;
-      if (@$valarr > 2) {
-         ::e($self->ctx, "$pi: array loop mode takes max. 3 arguments: " .
-            '"loop", pre, post');
-        goto jleave;
-      }
-      my ($pre, $post, @dat) = (shift @$valarr, shift @$valarr);
-      $pre = undef unless defined $pre && length $pre;
-      $post = undef unless defined $post && length $post;
-      foreach (@$v) {
-         push @dat, $pre if defined $pre;
-         push @dat, $_ if length;
-         push @dat, $post if defined $post;
-      }
-      $self->rest_data(join '', @dat) if @dat;
+
 jleave:
       $self
    } # }}}

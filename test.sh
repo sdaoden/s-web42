@@ -240,12 +240,22 @@ tcase 0001-w42-atm \
 
 REE<?def reeval1<><^def reeval2<>reeval-output-ok^><^reeval2^><^undef reeval2^>?><?reeval1?><?pi-if reeval2?>VAL
 
+<?tonga push<>entry 1?><?tonga unshift<>entry 0?><?tonga push<>entry 2?>
+<?tonga loop<><> ?><br />
+<?tonga pop?><?tonga shift?>
+<?tonga loop<><> ?><br />
+<?tonga pop?>
+<?tonga loop<><> ?><br />
+<?tonga undef-empty?><?ifdef tonga?>tonga should not be there<?fi?>
+
 # ERROR(S)
 <?def error?>
 <?defa error?>
 <?defx error?>
 <?defa1 2?>
 <?defx1 defx1-arg1<>defx1-arg2<>defx1-arg3?>
+<?MODTIME_SLOCAL push<>this is a variable and does not take arguments?>
+<?MODTIME_ALOCAL push<>this is a builtin variable and cannot be modified?>
 <?end?>' \
 \
 '<p>def1-cont<>ent</p>
@@ -261,13 +271,18 @@ defa2-c2
 <p><b>m 1</b><b>m 2</b><b>m 3</b><b>m 4</b></p>
 <p>m 1<br>m 2<br>m 3<br>m 4<br></p>
 <p>ARG1arg2TRAIL</p>
-REEreeval-output-okVAL' \
+REEreeval-output-okVAL
+entry 0 entry 1 entry 2 <br />
+entry 1 <br />
+<br />' \
 \
-"ERROR 'test-0001-w42-atm':38: def (presumably) needs (at least) 2 argument(s)
-ERROR 'test-0001-w42-atm':39: defa (presumably) needs (at least) 2 argument(s)
-ERROR 'test-0001-w42-atm':40: defx (presumably) needs (at least) 2 argument(s)
-ERROR 'test-0001-w42-atm':41: defa1: 2 is not a valid array index
-ERROR 'test-0001-w42-atm':42: defx1 takes 2 argument(s)"
+"ERROR 'test-0001-w42-atm':46: def (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atm':47: defa (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atm':48: defx (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atm':49: defa1: 2 is not a valid array index
+ERROR 'test-0001-w42-atm':50: defx1 takes 2 argument(s)
+ERROR 'test-0001-w42-atm':51: MODTIME_SLOCAL does not take any argument(s)
+ERROR 'test-0001-w42-atm':52: MODTIME_ALOCAL: cannot modify builtin PI (variable) via push"
 
 ## }}}
 ## pi-if {{{
