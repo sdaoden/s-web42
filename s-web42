@@ -107,21 +107,25 @@ our %UNCOMPRESS = (
    xz       => '| xz --decompress --stdout'
 );
 
+# PIs that are passed through unchanged (XXX make configurable?)
+our %IGNORE_PIS = ( xml => 0 );
+
 # Supported ProcessingInstructions; value describes number of arguments,
 # with 0 meaning no arguments and <0 meaning a variable amount; however,
 # treat the negated number as a minimum argument-count requirement
 our %PIS = (
    def      => -2,   defa        => -2,   defx     => -2,
+   end      => 0,
    href     => 1,    hreft       => 2,    lref     => 1,    lreft => 2,
    ifdef    => 1,    ifndef      => 1,    'else'   => 0,    fi    => 0,
    include  => 1,    raw_include => 1,
-   perl     => 0,
+   perl     => 0,    sh          => 0,
    'pi-if'  => -1,
    pre      => 0,    xpre        => 0,
    'undef'  => 1
 );
 our %MULTILINE_PIS = (
-   perl  => 0,
+   perl  => 0,       sh          => 0,
    pre   => 0,       xpre        => 0
 );
 our %ALWAYS_REEVAL_PIS = (
@@ -1120,7 +1124,6 @@ jresetarr:  $pivars->{$key} = [];
       ::e($self->ctx, 'Premature file exit') unless $self->seen_end;
       Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
 
-
       $self
    }
 
@@ -1153,8 +1156,10 @@ jresetarr:  $pivars->{$key} = [];
             $self->_pi_comm($pi, $valarr);
          } elsif (exists $self->ctx->pivars->{$pi}) {
             $self->_pi_var($pi, $valarr);
+         } elsif (exists $IGNORE_PIS{$pi}) {
+            push @{$self->data}, '<?' . $pi . (defined $3 ? " $3" : '') . '?>';
          } else {
-            ::e($self->ctx, "Unknown PI: $pi");
+            ::e($self->ctx, "Unknown PI: $pi" . (defined $3 ? ", $3" : ''));
             next;
          }
          # Integrate expanded content so that it gets re-evaluated, which is
