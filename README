@@ -27,7 +27,7 @@ control statements can be used to conditionalize file content, and
 some simple MarkLo tags aid in make editing life a bit easier, too.
 
 The ``s-web42`` converter is a `perl(1)`_ script, i.e., it needs an
-installed Perl, version 5.8.1 and above.  It also requires the authors
+installed Perl, version 5.8.1 or above.  It also requires the authors
 `S-SymObj`_ module -- you may install it as a regular part of your
 `perl(1)`_ installation by issuing the command ``$ cpan S-SymObj``.
 Alternatively you may also get it from http://www.CPAN.org, clone the
@@ -76,9 +76,9 @@ will be even more verbose; if used in conjunction with ``--expand-one``
 these messages will go to the standard error instead.  The trailing
 two examples show how to extend the `perl(1)`_ ``@INC`` path so that
 the required `S-SymObj`_ module will be found without installing that
-in a regular place, which is a task that often requires administrator
-privileges.  And please be aware that no effort is put in parsing
-command line arguments: one needs to use the very format shown above.
+in a regular place, a task that often requires administrator privileges.
+And please be aware that no effort is put in parsing command line
+arguments: one needs to use the very format shown above.
 
 .. note::
    S-Web42 is charset agnostic.  It reads and writes files, and simply
@@ -133,9 +133,9 @@ parse the tree therein.  An existent per-directory hook is run at that
 point, and before deeper levels of the hierarchy are entered.  Note
 that the directory entries ``SCCS``, ``CVS`` and anything which starts
 with a dot (thus also ``.git`` and ``.RCS``) are completely ignored
-by S-Web42.  Also it is not possible to savely create directories on
-the fly except in deeper, not yet parsed hierarchy levels below the
-current directory.
+by S-Web42.  It is not possible to savely create directories on the
+fly except in deeper, not yet parsed hierarchy levels below the current
+directory, too.
 
 .. note::
    S-Web42 won't handle paths with embedded quotation marks, i.e.,
@@ -156,7 +156,7 @@ that matches |fextre|.
 S-Web42 assumes that a file is modified if its modification timestamp
 is different from that recorded in the cache database (but see
 `IGNORE_MODTIME`_) and if its |checksum| is different from the recorded
-one.  One can force rebuilding for S-Web42-filtered files on a per-file
+one.  One can force rebuilding of S-Web42-filtered files on a per-file
 base by using a filename that includes the suffix ``-new``, as in
 ``index.html-w42-new`` -- neither modification time nor input checksums
 will matter for such files, they will *always* be rebuild.
@@ -168,7 +168,7 @@ will matter for such files, they will *always* be rebuild.
 Any file rebuild non-bitwise is then checksummed again, and will *only*
 be part of the result if the |checksum| of the rebuilt target is
 different from the checksum stored in the cache database, but not
-otherwise.  (The only exception to this rule is the user using the
+otherwise.  (The only exception to this rule is if the user uses the
 ``--force-rebuild`` command line option, as that'll rebuild anything
 from scratch.)
 
@@ -209,7 +209,7 @@ that cryptic expression:
 
 ``(-w42 ... )$`` -- S-Web42 filter trigger
    If, after the ignored part, the string ``-w42`` is seen, as in
-   ``index.html-w42``, then this file is flagged to be subject to
+   ``index.html-w42``, then this file is flagged as being subject of
    S-Web42 content filtering.
 
    .. note::
@@ -346,11 +346,12 @@ The content is prefixed by the (PI) variable assignment block. ::
 
 All PI variables defined like that may contain any content, including
 complete PIs and markup.  There is no technical difference in between
-these and stuff defined via ``<?``\ `def`_\ ``?>`` and ``<?``\ `defa`_\
-``?>`` except of the possibility to include PI closing tags ``?>`` (as
-shown in the ``var6`` example).  S-Web42 PI and variable names may
-consist of alphabetical characters, digit characters and the hyphen
-(``-``).  Note that the case matters, just as usual for XML processing.
+these and stuff defined via `def`_ and `defa`_ (and `defx`_) with the
+exceptional possibility to include the PI start and close tags ``<?``
+and ``?>``, respectively (as shown in the ``var6`` example).  S-Web42
+PI and variable names may consist of alphabetical characters, digit
+characters and the hyphen (``-``).  Note that the case matters, just
+as usual for XML processing.
 
 ``=``
    Assignment to variable.
@@ -428,18 +429,31 @@ It follows the list of predefined processing instructions.  PIs marked
 "multiline" in the list below are special in that they need a closing
 ``end`` tag and both, the starting and the closing tag, must occur on
 lines of their own.  E.g., to end the multiline PI ``<?perl?>`` the
-PI ``<?perl end?>`` is necessary.  For `def`_, `defa`_ and `defx`_ the
-same name restrictions apply as has been documented for `Assignments`_.
+PI ``<?perl end?>`` is necessary.
+
+For `def`_, `defa`_ (also via implicit array vivification) and `defx`_
+the same name restrictions apply to the introduced PI variable name
+as has been documented for `Assignments`_.  Note that the content that
+is assigned to PI variables created by those PIs may not contain PIs
+themselves, of course.  It is however possible to use the pseudo-tags
+``<^`` and ``^>`` as aliases, which will be automatically converted
+to ``<?`` and ``?>``, respectively, and via a simple regular expression,
+once the PI variable is expanded.  See `def`_ for an example.
 
 _`def`
-   Define a PI which expands to it's value part when used.  The value
-   part may contain any content except the PI closing tag ``?>``. ::
+   Define a PI which expands to it's value part when used. ::
 
       <?def var1<>varcontent, may contain <em>tagsoup</em>?>
+      <?def var2<>any <> content but PI start and end tags?>
+      <?def var3<><^def var4<>es^><^var4^><^undef var4^>?>
       ...
       <?var1?>
+      <?var2?>
+      T<?var3?><?pi-if var4?>T
       ->
       varcontent, may contain <em>tagsoup</em>
+      any <> content but PI start and end tags
+      TesT
 
 _`defa`
    Define or extend a PI that serves as an array.  Separate members
@@ -465,6 +479,28 @@ _`defa`
       <p><?arrnam loop<><b><></b>?></p>
       ->
       <p><b>m 1</b><b>m 2</b><b>m 3</b><b>m 4</b></p>
+
+   If the first argument is instead one of *unshift* and *push*, then
+   the remaining arguments are joined to a single one and inserted at
+   the front/the back of the array, respectively, auto-vivificating the
+   array as necessary.  Likewise, an argument of one of *shift* and
+   *pop* removes the first/the last member of the array.  In verbose
+   mode a log message is emitted if the array does not have any members.
+   And an argument *undef-empty* will `undef`_ the array if it is
+   empty.  E.g.::
+
+      <?test push<>entry 1?>
+      <?test unshift<>entry 0?>
+      <?test push<>entry 2?>
+      <?test loop<><> ?><br />
+      <?test pop?>
+      <?test shift?>
+      <?test loop<><> ?><br />
+      <?test pop?>
+      <?test loop<><> ?><br />
+      <?test undef-empty?>
+      ->
+      entry 0 entry 1 entry 2 <br />entry 1 <br /><br />
 
 _`defx`
    Define a PI which takes arguments (think format strings).  Arguments
@@ -539,7 +575,7 @@ _`include`, _`raw_include`
       may leave ``site`` absolutely or relatively, just as desired.
 
 _`perl`, _`shell`
-   These are multiline statement which can be used to embed ``perl(1)``
+   These are multiline statements which can be used to embed ``perl(1)``
    or ``shell(1)`` code that will be evaluated (in a forked subprocess).
    The output that is produced on STDOUT will be re-evaluated (as it
    is produced) and may thus contain more PIs.  ::
@@ -556,7 +592,7 @@ _`perl`, _`shell`
    .. note::
       Escaped newlines and shell-style comments are not handled while
       this mode is active.  (It can be used as usual for output that
-      is produced by the perl code, however.)
+      is produced by the perl or shell code, however.)
 
 _`pi-if`
    If it is unsure wether a PI (variable) exists, use this PI to
@@ -586,5 +622,12 @@ _`undef`
       defines the PI ``DOIT`` and then includes ``file2``, then an
       ``<?undef DOIT?>`` from within ``file2`` will **not** affect
       ``file1``, but only ``file2`` and deeper contexts.
+
+Future Directions
+=================
+
+The convertion phase can be parallelized without much effort.
+Add a special ``MAXJOBS`` or similar special ``config.rc`` PI variable
+to control this, then.
 
 .. vim:set fenc=utf-8 syntax=rst ts=8 sts=3 sw=3 et tw=70:
