@@ -206,7 +206,7 @@ Z @= femme
 tcase 0001-w42-atm \
 '<?begin?>
 
-<?def def1<><p>def1-content</p>?>
+<?def def1<><p>def1-cont<>ent</p>?>
 <?defa defa1<><p>defa1-c1<>defa1-c2</p>?>
 <?defx defx1<><p>defx1-c1</p><><p>defx1-c2</p><><p>defx1-c3</p>?>
 
@@ -214,10 +214,6 @@ tcase 0001-w42-atm \
 <?defa1 0?>
 <?defa1 1?>
 <?defx1 defx1-arg1<>defx1-arg2?>
-# ERROR
-<?defa1 2?>
-# ERROR
-<?defx1 defx1-arg1<>defx1-arg2<>defx1-arg3?>
 
 <?def def2<>def2-content?>
 <?defa defa2<>defa2-c1<>defa2-c2<>defa2-c3?>
@@ -242,9 +238,17 @@ tcase 0001-w42-atm \
 <?defx defxx<><><>TRAIL?>
 <p><?defxx ARG1<>arg2?></p>
 
+REE<?def reeval1<><^def reeval2<>reeval-output-ok^><^reeval2^><^undef reeval2^>?><?reeval1?><?pi-if reeval2?>VAL
+
+# ERROR(S)
+<?def error?>
+<?defa error?>
+<?defx error?>
+<?defa1 2?>
+<?defx1 defx1-arg1<>defx1-arg2<>defx1-arg3?>
 <?end?>' \
 \
-'<p>def1-content</p>
+'<p>def1-cont<>ent</p>
 <p>defa1-c1
 defa1-c2</p>
 <p>defx1-c1</p>defx1-arg1<p>defx1-c2</p>defx1-arg2<p>defx1-c3</p>
@@ -256,10 +260,14 @@ defa2-c2
 <p>m 1m 2m 3m 4</p>
 <p><b>m 1</b><b>m 2</b><b>m 3</b><b>m 4</b></p>
 <p>m 1<br>m 2<br>m 3<br>m 4<br></p>
-<p>ARG1arg2TRAIL</p>' \
+<p>ARG1arg2TRAIL</p>
+REEreeval-output-okVAL' \
 \
-"ERROR 'test-0001-w42-atm':12: defa1: 2 is not a valid array index
-ERROR 'test-0001-w42-atm':14: defx1 takes 2 argument(s)"
+"ERROR 'test-0001-w42-atm':38: def (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atm':39: defa (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atm':40: defx (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atm':41: defa1: 2 is not a valid array index
+ERROR 'test-0001-w42-atm':42: defx1 takes 2 argument(s)"
 
 ## }}}
 ## pi-if {{{

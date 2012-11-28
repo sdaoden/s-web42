@@ -1167,6 +1167,8 @@ jresetarr:  $pivars->{$key} = [];
          # necessary since it may contain PIs itself
          $l = $self->ctx->line;
          if (defined(my $reeval = $self->rest_data)) {
+            $reeval =~ s/<\^/<\?/g;
+            $reeval =~ s/\^>/\?>/g;
             $l = $reeval . $l;
             $self->rest_data(undef);
          }
