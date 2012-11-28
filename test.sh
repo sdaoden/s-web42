@@ -14,10 +14,10 @@ tcase() {
 	echo "${2}" > test-${1}
 	[ -n "${3}" ] && echo "${3}" > test-eout || :> test-eout
 	[ -n "${4}" ] && echo "${4}" > test-eerr || :> test-eerr
-	./s-web42 --no-rc --eo test-${1} > test-out 2> test-err
-	cmp -s test-out test-eout
+	./s-web42 --no-rc --eo test-${1} > test-${tno}-out 2> test-${tno}-err
+	cmp -s test-${tno}-out test-eout
 	[ $? -ne 0 ] && o='STDOUT ' || o=
-	cmp -s test-err test-eerr
+	cmp -s test-${tno}-err test-eerr
 	[ $? -ne 0 ] && e='STDERR ' || e=
 	[ -z "${o}${e}" ] && echo "OK: ${tno}" || terr ${tno} "${o}${e}"
 }
