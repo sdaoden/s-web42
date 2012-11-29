@@ -315,11 +315,12 @@ actions:
 
 Finally a ``-w42`` file content example::
 
+   WHO = Ziggy
    <?begin?>
 
    Yo S-Web42.
 
-   Ziggy.
+   <?WHO?>.
    # This is a comment line.
       # Yet another comment line
     This LN \
@@ -329,6 +330,12 @@ Finally a ``-w42`` file content example::
    <?end?>
    ->
    <p>Yo S-Web42.</p><p>Ziggy. This LN uses <it>NL</it> escaping.\\</p>
+
+But -- feel free::
+
+   <?begin?>*Hello*, S-Web42.<?end?>
+   ->
+   <it>Hello</it>, S-Web42.
 
 Assignments
 -----------
@@ -426,10 +433,9 @@ Processing Instructions (PIs)
 =============================
 
 It follows the list of predefined processing instructions.  PIs marked
-"multiline" in the list below are special in that they need a closing
-``end`` tag and both, the starting and the closing tag, must occur on
-lines of their own.  E.g., to end the multiline PI ``<?perl?>`` the
-PI ``<?perl end?>`` is necessary.
+"paired" in the list below are special in that they need a closing
+``end`` tag -- to end the paired PI ``<?perl?>`` the PI ``<?perl end?>``
+is necessary.
 
 For `def`_, `defa`_ (also via implicit array vivification) and `defx`_
 the same name restrictions apply to the introduced PI variable name
@@ -575,7 +581,7 @@ _`include`, _`raw_include`
       may leave ``site`` absolutely or relatively, just as desired.
 
 _`perl`, _`shell`
-   These are multiline statements which can be used to embed ``perl(1)``
+   These are paired statements which can be used to embed ``perl(1)``
    or ``shell(1)`` code that will be evaluated (in a forked subprocess).
    The output that is produced on STDOUT will be re-evaluated (as it
    is produced) and may thus contain more PIs.  ::
@@ -603,12 +609,12 @@ _`pi-if`
    exist.
 
 _`pre`, _`xpre`
-   The "preformatted" multiline PIs.  By default the converter trims
-   and squeezes whitespace and tries to join the input tagsoup, so as
-   to minimize useless DOM objects and file size.  Inside these
-   preformatted PIs it won't do so.  Since that is mostly of interest
-   inside of HTML ``<pre>`` tags, the expansion of the ``<?xpre?>``
-   PI contains this tag already.
+   The "preformatted" paired PIs.  By default the converter trims and
+   squeezes whitespace and tries to join the input tagsoup, so as to
+   minimize useless DOM objects and file size.  Inside these preformatted
+   PIs it won't do so.  Since that is mostly of interest inside of
+   HTML ``<pre>`` tags, the expansion of the ``<?xpre?>`` PI contains
+   this tag already.
 
    .. note::
       Escaped newlines and shell-style comments are not handled while

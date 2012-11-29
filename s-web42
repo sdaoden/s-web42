@@ -129,7 +129,8 @@ our %MULTILINE_PIS = (
    pre   => 0,       xpre        => 0
 );
 our %ALWAYS_REEVAL_PIS = (
-   ifdef    => 0,    ifndef      => 0,    'else'   => 0,    fi    => 0
+   ifdef    => 0,    ifndef      => 0,    'else'   => 0,    fi    => 0,
+   end      => 0
 );
 # }}}
 
@@ -985,8 +986,8 @@ jresetarr:  $pivars->{$key} = [];
       _outfh         => undef,   # for writing
       '%_pivars'     => undef,   # Ctx-local PIVars:: environment
       _mtime         => undef,   # Modification time (outermost level only)
+      _begin_line    => undef,   # <?begin?> line, if followed by content
       _empties_seen  => 0,       # No. of empty lines last readline() skipped
-      _expander      => undef    # Expander:: cookie
    }, sub {
       my $self = $_[0];
       my $curr = $self->outer;
@@ -1038,7 +1039,10 @@ jresetarr:  $pivars->{$key} = [];
       $saved_mode = $self->mode;
       $self->mode(Filter::ASSIGNMENTS_FILTERS);
       while (defined($l = $self->readline_assignments)) {
-         last if $l eq '<?begin?>';
+         if ($l =~ /^<\?begin\?>(.*)$/) {
+            $self->begin_line($1 ? $1 : undef);
+            last;
+         }
          PIVars::handle_assignment($self, $saved_mode & MODE_CONFIGRC, $l);
       }
       $self->mode($saved_mode);
@@ -1068,9 +1072,13 @@ jresetarr:  $pivars->{$key} = [];
       my ($self, $l, $af, $nl, $bno) = (shift, '');
       $af = $self->mode & FILTER_MASK;
       $self->empties_seen(0);
+      if (defined($nl = $self->begin_line)) {
+         $self->begin_line(undef);
+         goto jumpin;
+      }
       while ($nl = readline $self->infh) {
          ++${$self->__lineno};
-         $nl =~ s/(.*?)\s+$/$1/;
+jumpin:  $nl =~ s/(.*?)\s+$/$1/;
          $nl =~ s/^\s+(.*)/$1/ if $af & Filter::INTROWS;
          if (! length $l && ($af & Filter::COMMS)) {
             next if $nl =~ /^#/;
@@ -1110,16 +1118,13 @@ jresetarr:  $pivars->{$key} = [];
       my $self = shift;
 
       while (defined(my $l = $self->ctx->readline_full)) {
-         if ($l eq '<?end?>') {
+         if ($self->mode & Filter::EXPPIS) {
+            last if $self->_expand_pis($l)->seen_end;
+         } elsif ($l eq '<?end?>') {
             $self->seen_end(1);
             $self->_emit();
             last;
          }
-
-         if ($self->mode & Filter::EXPPIS) {
-            $self->_expand_pis($l);
-         }
-
       }
       ::e($self->ctx, 'Premature file exit') unless $self->seen_end;
       Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
@@ -1153,7 +1158,7 @@ jresetarr:  $pivars->{$key} = [];
 
          next if $self->discard && ! exists $ALWAYS_REEVAL_PIS{$pi};
          if (exists $PIS{$pi}) {
-            $self->_pi_comm($pi, $valarr);
+            goto jleave if $self->_pi_comm($pi, $valarr)->seen_end;
          } elsif (exists $self->ctx->pivars->{$pi}) {
 jpivar:     $self->_pi_var($pi, $valarr);
          } elsif (exists $IGNORE_PIS{$pi}) {
@@ -1181,6 +1186,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
 
       push @{$self->data}, $l if length $l && ! $self->discard;
       push @{$self->data}, "\n" if @{$self->data};
+jleave:
       $self->_emit();
       $self
    }
@@ -1301,6 +1307,12 @@ jpivar:     $self->_pi_var($pi, $valarr);
          $self->ctx($ctx->open)->read_assignments;
          $self->_consume->ctx($ctx->close->outer);
          $self->seen_end(0);
+         goto jleave;
+      }
+
+      elsif ($pi eq 'end') {
+         $self->seen_end(1);
+         # xxx $self->discard(1); $self->_emit();
          goto jleave;
       }
 
