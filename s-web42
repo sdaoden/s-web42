@@ -1310,6 +1310,18 @@ jleave:
          goto jleave;
       }
 
+      elsif ($pi eq 'raw_include') { # TODO of course, data hdling intermediate
+         $self->_emit();
+         $i = Expander::_expand_include_path($i);
+         ::panic($self->ctx, "raw_include: can't read '$i': $^E")
+            unless open RI, '<', $i;
+         push @{$self->data}, $_ foreach (readline RI); # XXX readline errors?
+         ::panic($self->ctx, "raw_include: can't close '$i': $^E")
+            unless close RI;
+         $self->_emit();
+         goto jleave;
+      }
+
       elsif ($pi eq 'end') {
          $self->seen_end(1);
          # xxx $self->discard(1); $self->_emit();

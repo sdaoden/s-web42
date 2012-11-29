@@ -523,5 +523,25 @@ START<?include test-0006-1?>END
 ''
 
 # }}}
+## ?raw_include?.. {{{
+
+printf '1\n 2\n3\n' > test-0007-1
+printf '4\n  5\n6\n' > test-0007-2
+tcase 0007-w42-atm \
+'<?begin?>
+START<?raw_include test-0007-1?>MID<?raw_include test-0007-2?>END
+<?end?>' \
+\
+'START1
+ 2
+3
+MID4
+  5
+6
+END' \
+\
+''
+
+# }}}
 
 [ ${errs} -eq 0 ] && exit 0 || exit 42
