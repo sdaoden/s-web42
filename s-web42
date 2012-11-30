@@ -1107,6 +1107,7 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
    SymObj::sym_create(SymObj::NONE, {
       _ctx        => undef,   # Ctx object we're exploding
       _mode       => 0,       # ->ctx->mode
+      _recursion  => [],      # For <?PAIR?> support, recursion-awareness
       _data       => [],      # Expanded line data
       _rest_data  => undef,   # Line data for re-evaluation
       _discard    => 0,       # Discard data, don't output (?ifdef? etc.)
@@ -1117,52 +1118,92 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
    sub _consume {
       my $self = shift;
 
-      while (defined(my $l = $self->ctx->readline_full)) {
-         if ($self->mode & Filter::EXPPIS) {
-            last if $self->_expand_pis($l)->seen_end;
-         } elsif ($l eq '<?end?>') {
-            $self->seen_end(1);
-            $self->_emit();
-            last;
+      unless ($self->mode & Filter::EXPPIS) {
+         while (defined(my $l = $self->ctx->readline_full)) {
+            if (0 <= index $l, '<?end?>') {
+               $l =~ /^(.*)<\?end\?>/;
+               $self->_add_data($1)->_endl if $1;
+               $self->seen_end(1);
+               last;
+            }
+            $self->_add_data($l)->_endl;
          }
+      } else {
+         while (defined(my $l = $self->ctx->readline_full)) {
+            last if $self->_expand_pis($l)->seen_end;
+            last if $self->_endl->seen_end;
+         }
+         Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
       }
-      ::e($self->ctx, 'Premature file exit') unless $self->seen_end;
-      Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
 
+      ::e($self->ctx, 'Premature file exit') if ! $self->seen_end;
+      $self
+   }
+
+   sub _prepare_recursion {
+      my ($self, $ctx, $mode) = @_;
+      $self->_emit->recursion($self->ctx, $self->mode);
+      $self->ctx($ctx) if defined $ctx;
+      if (defined $mode) {
+         $self->ctx->mode($mode);
+         $self->mode($mode);
+      }
+      $self
+   }
+
+   sub _end_recursion {
+      my $self = shift;
+      $self->_emit->seen_end(0);
+      my $m = pop @{$self->recursion};
+      $self->ctx(pop @{$self->recursion});
+      if (defined $m) {
+         $self->ctx->mode($m);
+         $self->mode($m);
+      }
+      $self
+   }
+
+   sub _add_data {
+      my ($self, $dat) = @_;
+      $self->data($dat) unless $self->discard || ! $dat;
+      $self
+   }
+
+   sub _endl {
+      my $self = $_[0];
+      if (@{$self->data} || @_ > 1) {
+         $self->data("\n");
+         $self->_emit;
+      }
       $self
    }
 
    sub _emit {
       my $self = shift;
-      return $self unless @{$self->data};
-      if ($self->discard) {
-         @{$self->data} = ();
-         return $self;
-      }
-      while (defined(my $d = shift @{$self->data})) {
+      foreach my $d (@{$self->data}) {
+         next unless $d;
          ::panic($self->ctx, "Failed to perform output: $^E")
             unless print {$self->ctx->outfh} $d;
       }
-#      ::panic($self->ctx, "Failed to perform output: $^E")
-#         unless print {$self->ctx->outfh} "\n";
+      @{$self->data} = ();
+      $self->rest_data(undef);
       $self
    }
 
    sub _expand_pis {
       my ($self, $l) = @_;
+
       while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/) {
-         push @{$self->data}, $1
-            if defined $1 && length $1 > 0 && ! $self->discard;
-         $self->ctx->line($l = defined $4 ? $4 : '');
+         $self->_add_data($1)->ctx->line($l = defined $4 ? $4 : '');
          my ($pi, $valarr) = ($2, (defined $3 ? [split '<>', $3, -1] : []));
 
          next if $self->discard && ! exists $ALWAYS_REEVAL_PIS{$pi};
          if (exists $PIS{$pi}) {
-            goto jleave if $self->_pi_comm($pi, $valarr)->seen_end;
+            $self->_pi_comm($pi, $valarr);
          } elsif (exists $self->ctx->pivars->{$pi}) {
 jpivar:     $self->_pi_var($pi, $valarr);
          } elsif (exists $IGNORE_PIS{$pi}) {
-            push @{$self->data}, '<?' . $pi . (defined $3 ? " $3" : '') . '?>';
+            $self->_add_data('<?' . $pi . (defined $3 ? " $3" : '') . '?>');
          } elsif (@$valarr >= 2 && ($valarr->[0] eq 'unshift' ||
                $valarr->[0] eq 'push')) {
             $self->ctx->pivars->{$pi} = [];
@@ -1183,11 +1224,8 @@ jpivar:     $self->_pi_var($pi, $valarr);
             $self->rest_data(undef);
          }
       }
-
-      push @{$self->data}, $l if length $l && ! $self->discard;
-      push @{$self->data}, "\n" if @{$self->data};
-jleave:
-      $self->_emit();
+      $self->_add_data($l);
+      $self->ctx->line('');
       $self
    }
 
@@ -1220,7 +1258,6 @@ jleave:
       }
 
       # Then a large block that actually handles the builtins XXX &{HASH->CODE}
-      $i = undef;
       $i = $valarr->[0];
       if (@$valarr && ! length $i) {
          ::e($self->ctx, "$pi: (first) argument may not be empty");
@@ -1274,7 +1311,7 @@ jleave:
          $w = '' unless defined $w;
          $w .= '&nbsp;' if length $w;
          $i = '<a href="' . $i . '">' . $w . $i . '</a>';
-         if ($pi) { $self->rest_data($i); } else { $self->data($i); }
+         if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
          goto jleave;
       } elsif ($pi eq 'hreft' || $pi eq 'lreft') {
          $pi = ($pi eq 'hreft');
@@ -1286,13 +1323,12 @@ jleave:
          $tm = $valarr->[1];
          $t = Expander::Markup::attribute($tm);
          $i = '<a href="' . $i . '" title="' . $t . '">' . $w . $tm . '</a>';
-         if ($pi) { $self->rest_data($i); } else { $self->data($i); }
+         if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
          goto jleave;
       }
 
       elsif ($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
             $pi eq 'fi') {
-         $self->_emit;
          $pi = Expander::Ifdef::handle_pi(scalar $self->ifdefs, $self->ctx,
                $pi, $i);
          $self->discard($pi) if $pi >= 0;
@@ -1300,31 +1336,35 @@ jleave:
       }
 
       elsif ($pi eq 'include') {
-         $self->_emit();
          $i = Expander::_expand_include_path($i);
          my $ctx = Ctx->new(outer => $self->ctx, mode => $self->mode,
                sumup => $i);
-         $self->ctx($ctx->open)->read_assignments;
-         $self->_consume->ctx($ctx->close->outer);
-         $self->seen_end(0);
+         $self->_prepare_recursion($ctx);
+         $ctx->open->read_assignments;
+         $self->_consume->_end_recursion;
+         $ctx->close;
          goto jleave;
       }
 
       elsif ($pi eq 'raw_include') { # TODO of course, data hdling intermediate
-         $self->_emit();
+         $self->_emit; # FIXME mode change!!
          $i = Expander::_expand_include_path($i);
          ::panic($self->ctx, "raw_include: can't read '$i': $^E")
             unless open RI, '<', $i;
-         push @{$self->data}, $_ foreach (readline RI); # XXX readline errors?
+         foreach (readline RI) { # XXX readline errs?
+            chomp;
+            $self->_add_data($_)->_endl(1);
+         }
          ::panic($self->ctx, "raw_include: can't close '$i': $^E")
             unless close RI;
-         $self->_emit();
+         $self->_emit; # FIXME mode change!
          goto jleave;
       }
 
       elsif ($pi eq 'end') {
-         $self->seen_end(1);
-         # xxx $self->discard(1); $self->_emit();
+         $self->_add_data($self->ctx->line)
+            ->ctx->line('');
+         $self->_emit->seen_end(1);
          goto jleave;
       }
 
