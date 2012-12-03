@@ -511,21 +511,22 @@ jresetarr:  $pivars->{$key} = [];
    sub INTROWS()  { 1<<0 } # Strip leading whitespace
    sub COMMS()    { 1<<1 } # Handle shell-style comments
    sub ESCNLS()   { 1<<2 } # Handle escaped newlines
-   sub EXPPIS()   { 1<<3 } # Expand PIs
-   sub AUTOPAR()  { 1<<4 } # Automatic <p></p>
-   sub TAGJOIN()  { 1<<5 } # Join together tagsoup
-   sub WSNORM()   { 1<<6 } # Normalize whitespace
-   sub MARKLO()   { 1<<7 } # Expand MarkLo
+   sub WIPEEL()   { 1<<3 } # Wipe empty lines
+   sub EXPPIS()   { 1<<4 } # Expand PIs
+   sub AUTOPAR()  { 1<<5 } # Automatic <p></p>
+   sub TAGJOIN()  { 1<<6 } # Join together tagsoup
+   sub WSNORM()   { 1<<7 } # Normalize whitespace
+   sub MARKLO()   { 1<<8 } # Expand MarkLo
 
-   sub MAXSHIFT() { 7 }
+   sub MAXSHIFT() { 8 }
 
-   sub ASSIGNMENTS_FILTERS()  { INTROWS | COMMS | ESCNLS }
+   sub ASSIGNMENTS_FILTERS()  { INTROWS | COMMS | ESCNLS | WIPEEL }
    sub CONTENT_FILTERS()      { (1 << (MAXSHIFT + 1)) - 1 }
 
    sub classify_filename {
       my ($path) = @_;
       my $r = {PATH => $path};
-      if ($path =~ /(.*?)(?:-w42(?:-(x|[icepatsm]+))?(-new)?)$/) {
+      if ($path =~ /(.*?)(?:-w42(?:-(x|[icewpatsm]+))?(-new)?)$/) {
          $r->{EXPANDABLE} = 1;
          $r->{STRIPPED_PATH} = $1;
          $r->{ALWAYS_REBUILD} = 1 if defined $3;
@@ -543,6 +544,7 @@ jresetarr:  $pivars->{$key} = [];
          $f |= INTROWS unless $s =~ /i/;
          $f |= COMMS   unless $s =~ /c/;
          $f |= ESCNLS  unless $s =~ /e/;
+         $f |= WIPEEL  unless $s =~ /w/;
          $f |= EXPPIS  unless $s =~ /p/;
          $f |= AUTOPAR unless $s =~ /a/;
          $f |= TAGJOIN unless $s =~ /t/;
@@ -561,6 +563,7 @@ jresetarr:  $pivars->{$key} = [];
          $s .= 'i' unless $f & INTROWS;
          $s .= 'c' unless $f & COMMS;
          $s .= 'e' unless $f & ESCNLS;
+         $s .= 'w' unless $f & WIPEEL;
          $s .= 'p' unless $f & EXPPIS;
          $s .= 'a' unless $f & AUTOPAR;
          $s .= 't' unless $f & TAGJOIN;
@@ -965,6 +968,8 @@ jresetarr:  $pivars->{$key} = [];
    sub MODE_OUTFH()     { 1<<(Filter::MAXSHIFT + 2) }
    sub MODE_CONFIGRC()  { 1<<(Filter::MAXSHIFT + 3) }
 
+   sub MAXSHIFT()       { Filter::MAXSHIFT + 3 }
+
    sub full_expand_lifecycle {
       my ($self) = @_;
       $self->open;
@@ -1093,9 +1098,10 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
          }
          $l .= $nl;
          last if length $l;
+         last unless $af & Filter::WIPEEL;
          ++${$self->__empties_seen};
       }
-      $self->line(length $l ? $l : undef);
+      $self->line($l ? $l : defined $nl ? $l : undef);
    }
 } # }}}
 
@@ -1106,12 +1112,16 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
       $self->_endl(1) if $self->seen_data == 1;
    }
 
+   sub NL_FLUX()  { 1<<(Ctx::MAXSHIFT + 1) }
+   sub NL_FORCE() { 1<<(Ctx::MAXSHIFT + 2) }
+
    SymObj::sym_create(SymObj::NONE, {
       _ctx        => undef,   # Ctx object we're exploding
       _mode       => 0,       # ->ctx->mode
       _recursion  => [],      # For <?PAIR?> support, recursion-awareness
       _data       => [],      # Expanded line data
       _rest_data  => undef,   # Line data for re-evaluation
+      _line_len   => 0,       # Seen any line data?
       _discard    => 0,       # Discard data, don't output (?ifdef? etc.)
       _ifdefs     => [],      # Ifdef:: stack
       _seen_data  => 0,       # Seen just any data?
@@ -1129,12 +1139,12 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
                $self->seen_end(1);
                last;
             }
-            $self->_add_data($l)->_endl;
+            $self->_add_data($l)->_endl(($self->mode & Filter::WIPEEL) == 0);
          }
       } else {
          while (defined(my $l = $self->ctx->readline_full)) {
+            $self->line_len(0);
             last if $self->_expand_pis($l)->seen_end;
-            last if $self->_endl->seen_end;
          }
          Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
       }
@@ -1169,6 +1179,7 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
    sub _add_data {
       my ($self, $dat) = @_;
       unless ($self->discard || ! $dat) {
+         ${$self->__line_len} += length $dat;
          $self->data($dat);
          $self->seen_data(1);
       }
@@ -1176,8 +1187,9 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
    }
 
    sub _endl {
-      my $self = $_[0];
-      if ((@{$self->data} && ! $self->discard) || @_ > 1) {
+      my ($self, $force) = @_;
+      if ((@{$self->data} && ! $self->discard) || $force) {
+         $self->line_len(0);
          $self->data("\n");
          $self->seen_data(2);
          $self->_emit;
@@ -1193,7 +1205,6 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
             unless print {$self->ctx->outfh} $d;
       }
       @{$self->data} = ();
-      $self->rest_data(undef);
       $self
    }
 
@@ -1231,8 +1242,11 @@ jpivar:     $self->_pi_var($pi, $valarr);
             $self->rest_data(undef);
          }
       }
-      $self->_add_data($l);
-      $self->ctx->line('');
+
+      $self->_add_data($l) if $l;
+      $l = $self->mode;
+      $self->_endl(($l & (Filter::WIPEEL|NL_FLUX)) == 0 || ($l & NL_FORCE));
+      ${$self->__mode} &= ~(NL_FLUX|NL_FORCE);
       $self
    }
 

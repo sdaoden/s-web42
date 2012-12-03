@@ -10,7 +10,7 @@ S-Web42
 
 .. _`perl(1)`: http://www.perl.org
 .. _`S-SymObj`: http://sdaoden.users.sourceforge.net/code.html#s-symobj
-.. |fextre| replace:: ``(.*?)(-w42(?:-(x|[icepatsm]+))?(-new)?)$``
+.. |fextre| replace:: ``(.*?)(-w42(?:-(x|[icewpatsm]+))?(-new)?)$``
 .. |checksum| replace:: MD5 checksum
 
 Overview
@@ -217,11 +217,11 @@ that cryptic expression:
       filename so that, e.g., an input file ``index.html-w42-new``
       will produce an output file ``index.html``.
 
-``(?:-(x|[icepatsm]+))?`` -- Mode configuration
+``(?:-(x|[icewpatsm]+))?`` -- Mode configuration
    It is possible to fine tune the behaviour of S-Web42 content filtering
    and expansion by continuing the ``-w42`` suffix with a hyphen ``-``
    and then either the letter ``x`` or any combination of the letters
-   ``icepatsm``.  This is described in detail in the section
+   ``icewpatsm``.  This is described in detail in the section
    `About.Filter`_.  An example of such a filename would be
    ``index.html-w42-cea``.
 
@@ -268,6 +268,9 @@ or otherwise excluded these actions:
    not itself escaped by a(n uneven number of) backslash(es), then the
    next line is joined with the current line after its leading whitespace
    has been discarded.
+
+*Wiping away empty lines* (disable mode: ``w``)
+   If a line is empty then remember it was there but ignore it otherwise.
 
 These filter operations will be performed on the `Content`_ part unless
 the mode configuration excluded them:

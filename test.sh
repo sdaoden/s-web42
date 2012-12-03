@@ -23,9 +23,9 @@ tcase() {
 		terr ${tno} "${1}" "${o}${e}"
 }
 
-## Basic filter test series (icep) {{{
+## Basic filter test series (icewp) {{{
 
-tcase 'Drop of trailing whitespace (cannot be disabled)' 842-w42-icepatsm \
+tcase 'Drop of trailing whitespace (cannot be disabled)' 842-w42-icewpatsm \
 'H = H
 <?begin?>
 A
@@ -43,6 +43,7 @@ G
 <?end?>' \
 \
 'A
+
 # SPACE
  B
 # TAB
@@ -56,9 +57,10 @@ G
 \
 ''
 
-tcase 'Drop of introductional whitespace (disable mode: i)' 843-w42-cepatsm \
+tcase 'Drop of introductional whitespace (disable mode: i)' 843-w42-cewpatsm \
 'H = H
 <?begin?>A
+
 # SPACE
  B 
 # TAB
@@ -71,6 +73,7 @@ G
 <?H?><?end?>' \
 \
 'A
+
 # SPACE
 B
 # TAB
@@ -84,10 +87,11 @@ G
 \
 ''
 
-tcase 'Handling of shell style comments (disable mode: c)' 844-w42-epatsm \
+tcase 'Handling of shell style comments (disable mode: c)' 844-w42-ewpatsm \
 'H = H
 <?begin?>
 A
+
 # SPACE
  B 
 # TAB
@@ -101,6 +105,7 @@ G
 <?end?>' \
 \
 'A
+
 B
 C
 D
@@ -111,9 +116,10 @@ G
 \
 ''
 
-tcase 'Escaping of newlines (disable mode: e)' 845-w42-patsm \
+tcase 'Escaping of newlines (disable mode: e)' 845-w42-wpatsm \
 'H = H
 <?begin?>A
+
 # SPACE
  B 
 # TAB
@@ -126,6 +132,7 @@ G
 <?H?><?end?>' \
 \
 'A
+
 B
 C
 D
@@ -134,7 +141,73 @@ EF G
 \
 ''
 
-tcase 'PI expansion (disable mode: p), 1' 846-w42-atsm \
+tcase 'Wiping away empty lines (disable mode: w), 1' 846-w42-wpatsm \
+'H = H
+<?begin?>A
+
+# SPACE
+ B
+
+# TAB
+
+	C	
+# TAB SPACE
+	 D	                                        
+
+E\
+F \
+G
+
+<?H?>
+
+<?end?>' \
+\
+'A
+
+B
+
+
+C
+D
+
+EF G
+
+<?H?>
+' \
+\
+''
+
+tcase 'Wiping away empty lines (disable mode: w), 2' 847-w42-patsm \
+'H = H
+<?begin?>A
+
+# SPACE
+ B
+
+# TAB
+
+	C	
+# TAB SPACE
+	 D	                                        
+
+E\
+F \
+G
+
+<?H?>
+
+<?end?>' \
+\
+'A
+B
+C
+D
+EF G
+<?H?>' \
+\
+''
+
+tcase 'PI expansion (disable mode: p), 1' 848-w42-atsm \
 'H = H
 <?begin?>A
 # SPACE
@@ -157,7 +230,7 @@ H' \
 \
 ''
 
-tcase 'PI expansion (disable mode: p), 2' 847-w42-atsm \
+tcase 'PI expansion (disable mode: p), 2' 849-w42-atsm \
 'H = H
 <?begin?>
 A
@@ -181,6 +254,7 @@ EF G
 H' \
 \
 ''
+
 ## }}}
 ## Assignments test series {{{
 
