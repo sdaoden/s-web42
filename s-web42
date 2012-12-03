@@ -1158,8 +1158,15 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
       $self->_emit->recursion($self->ctx, $self->mode, $epair);
       $self->ctx($ctx) if defined $ctx;
       if (defined $mode) {
+         my $om = $self->mode;
          $self->ctx->mode($mode);
          $self->mode($mode);
+         # If there is a change in WIPEEL and the changing PI is the only
+         # content on that line, avoid writing an unwanted empty line
+         # XXX check falsely succeeds if ctx->line() expands as nothing
+         ${$self->__mode} |= NL_FLUX
+            if ($om != $mode && ! $self->line_len && ! $self->ctx->line &&
+               ($mode & Filter::WIPEEL) == 0);
       }
       $self
    }
@@ -1171,8 +1178,13 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
       my $m = pop @{$self->recursion};
       $self->ctx(pop @{$self->recursion});
       if (defined $m) {
+         my $om = $self->mode;
          $self->ctx->mode($m);
          $self->mode($m);
+         # If there is a change in WIPEEL and there was data on the line before
+         # the changing PI, don't forget to write the wanted separating newline
+         ${$self->__mode} |= NL_FORCE
+            if ($om != $m && $self->line_len && ($om & Filter::WIPEEL) == 0);
       }
       $self
    }
