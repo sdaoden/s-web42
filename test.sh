@@ -707,4 +707,7 @@ END' \
 
 # }}}
 
-[ ${errs} -eq 0 ] && exit 0 || exit 42
+[ ${errs} -eq 0 ] && exit 0 || {
+	printf "=======\nThere were ${errs} error(s)\n"
+	exit 42
+}
