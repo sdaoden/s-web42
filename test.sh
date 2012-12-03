@@ -5,27 +5,187 @@ trap "rm -rf test-*" 0 1 2 15
 
 errs=0
 terr() {
-	echo >&2 "FAILED: ${1}: mismatch(es) in ${2}"
+	echo >&2 "FAILED: ${1} - ${2}: flaws in ${3}"
 	errs=`expr ${errs} + 1`
 }
 
 tcase() {
-	tno=`expr "${1}-" : '\(.*\)-w42.*'`
-	echo "${2}" > test-${1}
-	[ -n "${3}" ] && echo "${3}" > test-eout || :> test-eout
-	[ -n "${4}" ] && echo "${4}" > test-eerr || :> test-eerr
-	./s-web42 --no-rc --eo test-${1} > test-${tno}-out 2> test-${tno}-err
+	tno=`expr "${2}-" : '\(.*\)-w42.*'`
+	echo "${3}" > test-${2}
+	[ -n "${4}" ] && echo "${4}" > test-eout || :> test-eout
+	[ -n "${5}" ] && echo "${5}" > test-eerr || :> test-eerr
+	./s-web42 --no-rc --eo test-${2} > test-${tno}-out 2> test-${tno}-err
 	cmp -s test-${tno}-out test-eout
-	[ $? -ne 0 ] && o='STDOUT ' || o=
+	[ $? -ne 0 ] && o='OUT ' || o=
 	cmp -s test-${tno}-err test-eerr
-	[ $? -ne 0 ] && e='STDERR ' || e=
-	[ -z "${o}${e}" ] && echo "OK: ${tno}" || terr ${tno} "${o}${e}"
+	[ $? -ne 0 ] && e='ERR ' || e=
+	[ -z "${o}${e}" ] && echo "OK: ${tno} - ${1}" ||
+		terr ${tno} "${1}" "${o}${e}"
 }
 
-## Assignment test series {{{
+## Basic filter test series (icep) {{{
+
+tcase 'Drop of trailing whitespace (cannot be disabled)' 842-w42-icepatsm \
+'H = H
+<?begin?>
+A
+
+# SPACE
+ B 
+# TAB
+	C	
+# TAB SPACE
+	 D	                                        
+E\
+F \
+G
+<?H?>
+<?end?>' \
+\
+'A
+# SPACE
+ B
+# TAB
+	C
+# TAB SPACE
+	 D
+E\
+F \
+G
+<?H?>' \
+\
+''
+
+tcase 'Drop of introductional whitespace (disable mode: i)' 843-w42-cepatsm \
+'H = H
+<?begin?>A
+# SPACE
+ B 
+# TAB
+	C	
+# TAB SPACE
+	 D	                                        
+E\
+F \
+G
+<?H?><?end?>' \
+\
+'A
+# SPACE
+B
+# TAB
+C
+# TAB SPACE
+D
+E\
+F \
+G
+<?H?>' \
+\
+''
+
+tcase 'Handling of shell style comments (disable mode: c)' 844-w42-epatsm \
+'H = H
+<?begin?>
+A
+# SPACE
+ B 
+# TAB
+	C	
+# TAB SPACE
+	 D	                                        
+E\
+F \
+G
+<?H?>
+<?end?>' \
+\
+'A
+B
+C
+D
+E\
+F \
+G
+<?H?>' \
+\
+''
+
+tcase 'Escaping of newlines (disable mode: e)' 845-w42-patsm \
+'H = H
+<?begin?>A
+# SPACE
+ B 
+# TAB
+	C	
+# TAB SPACE
+	 D	                                        
+E\
+F \
+G
+<?H?><?end?>' \
+\
+'A
+B
+C
+D
+EF G
+<?H?>' \
+\
+''
+
+tcase 'PI expansion (disable mode: p), 1' 846-w42-atsm \
+'H = H
+<?begin?>A
+# SPACE
+ B 
+# TAB
+	C	
+# TAB SPACE
+	 D	                                        
+E\
+F \
+G
+<?H?><?end?>' \
+\
+'A
+B
+C
+D
+EF G
+H' \
+\
+''
+
+tcase 'PI expansion (disable mode: p), 2' 847-w42-atsm \
+'H = H
+<?begin?>
+A
+# SPACE
+ B 
+# TAB
+	C	
+# TAB SPACE
+	 D	                                        
+E\
+F \
+G
+<?H?>
+<?end?>' \
+\
+'A
+B
+C
+D
+EF G
+H' \
+\
+''
+## }}}
+## Assignments test series {{{
 
 # Variable
-tcase 1000-w42-atm \
+tcase 'Assignments: variable, 1' 864-w42-atm \
 'X = one
 <?begin?>
 <?X?>
@@ -35,7 +195,7 @@ tcase 1000-w42-atm \
 \
 ''
 
-tcase 1001-w42-atm \
+tcase 'Assignments: variable, 2' 865-w42-atm \
 'X = <em>two</em>
 <?begin?>
 <?X?>
@@ -45,7 +205,7 @@ tcase 1001-w42-atm \
 \
 ''
 
-tcase 1002-w42-atm \
+tcase 'Assignments: variable, 3' 866-w42-atm \
 'X = <?def Y<>three?><?Y?><?undef Y?>
 <?begin?>
 <?X?>
@@ -55,7 +215,7 @@ tcase 1002-w42-atm \
 \
 ''
 
-tcase 1003-w42-atm \
+tcase 'Assignments: variable, 4' 867-w42-atm \
 'X = <?def Y<><em>four</em>?><?Y?><?undef Y?>
 <?begin?>
 <?X?>
@@ -65,7 +225,7 @@ tcase 1003-w42-atm \
 \
 ''
 
-tcase 1004-w42-atm \
+tcase 'Assignments: variable, 5' 868-w42-atm \
 'X = <?def Y<><em>five</em>?><?Y?><?undef Y?><?Y?>
 <?begin?>
 <?X?>
@@ -73,9 +233,9 @@ tcase 1004-w42-atm \
 \
 '<em>five</em>' \
 \
-"ERROR 'test-1004-w42-atm':3: Unknown PI: Y"
+"ERROR 'test-868-w42-atm':3: Unknown PI: Y"
 
-tcase 1005-w42-atm \
+tcase 'Assignments: variable, 6' 869-w42-atm \
 'X = <?def Y<><em>six</em>?>
 X += <?Y?>
 X += <?undef Y?>
@@ -86,9 +246,9 @@ X += <?Y?>
 \
 '<em>six</em>' \
 \
-"ERROR 'test-1005-w42-atm':6: Unknown PI: Y"
+"ERROR 'test-869-w42-atm':6: Unknown PI: Y"
 
-tcase 1006-w42-atm \
+tcase 'Assignments: variable, 7' 870-w42-atm \
 'X = <?def Y<><em>seven</em>?>
 X ?= <?def Y<><em>NOOHNOOHNO</em>?>
 X += <?Y?>
@@ -105,10 +265,10 @@ Z ?= bob
 '<em>seven</em>
 virgin' \
 \
-"ERROR 'test-1006-w42-atm':10: Unknown PI: Y"
+"ERROR 'test-870-w42-atm':10: Unknown PI: Y"
 
 # Array
-tcase 2000-w42-atm \
+tcase 'Assignments: array, 1' 884-w42-atm \
 'X @= one
 <?begin?>
 <?X 0?>
@@ -118,7 +278,7 @@ tcase 2000-w42-atm \
 \
 ''
 
-tcase 2001-w42-atm \
+tcase 'Assignments: array, 2' 885-w42-atm \
 'X @= one
 X @= <em>two</em>
 <?begin?>
@@ -129,7 +289,7 @@ X @= <em>two</em>
 \
 ''
 
-tcase 2002-w42-atm \
+tcase 'Assignments: array, 3' 886-w42-atm \
 'X @= one
 X @= two
 X @= three
@@ -141,7 +301,7 @@ X @= three
 \
 ''
 
-tcase 2003-w42-atm \
+tcase 'Assignments: array, 4' 887-w42-atm \
 'X @= one
 X @= two
 X @= three
@@ -154,7 +314,7 @@ X @= four
 \
 ''
 
-tcase 2004-w42-atm \
+tcase 'Assignments: array, 5' 888-w42-atm \
 'X @= one
 X @= two
 X @= three
@@ -167,7 +327,7 @@ X @= four
 \
 ''
 
-tcase 2005-w42-atm \
+tcase 'Assignments: array, 6' 889-w42-atm \
 'X @= one
 X @= two
 X @= three
@@ -181,13 +341,15 @@ X @= five
 \
 ''
 
-tcase 2006-w42-atm \
+tcase 'Assignments: array, 7' 890-w42-atm \
 'X @= <?def Y<>a?><?Y?><?Y?><?Y?><?undef Y?>
 X ?@= <?def Y<>z?><?Y?><?Y?><?Y?><?undef Y?>
 X @= <?lref http://www.netbsd.org?>
 Z ?@= virgin
 Z ?@= bob
 Z @= femme
+BEEF = no
+BEEF @= dead
 <?begin?>
 <?X 0?><?X 1?>
 <?X loop<><p><></p>?>
@@ -198,12 +360,12 @@ Z @= femme
 <p>aaa</p><p><a href="http://www.netbsd.org">http://www.netbsd.org</a></p>
  virgin  femme ' \
 \
-''
+"ERROR 'test-890-w42-atm':8: BEEF: array assignment to non-array key"
 
 ## }}}
 ## def/defa/defx {{{
 
-tcase 0001-w42-atm \
+tcase 'def/defa/defx' 0001-w42-atm \
 '<?begin?>
 
 <?def def1<><p>def1-cont<>ent</p>?>
@@ -287,7 +449,7 @@ ERROR 'test-0001-w42-atm':52: MODTIME_ALOCAL: cannot modify builtin PI (variable
 ## }}}
 ## pi-if {{{
 
-tcase 0002-w42-atm \
+tcase 'pi-if' 0002-w42-atm \
 '<?begin?>
 
 <?def def1<><p>def1-content</p>?>
@@ -311,7 +473,7 @@ tcase 0002-w42-atm \
 ## }}}
 ## undef {{{
 
-tcase 0003-w42-atm \
+tcase 'undef' 0003-w42-atm \
 '<?begin?>
 
 <?def def1<><p>def1-content</p>?>
@@ -341,7 +503,7 @@ ERROR 'test-0003-w42-atm':16: undef: no such variable: defx2"
 ## }}}
 ## lref,lreft, href,hreft {{{
 
-tcase 0004-w42-atm \
+tcase 'lref/lreft/href/hreft' 0004-w42-atm \
 '<?begin?>
 
 <?lref http://www.netbsd.org?>
@@ -383,7 +545,7 @@ ERROR 'test-0004-w42-atm':21: hreft takes 2 argument(s)"
 ## }}}
 ## ?ifdef?.. {{{
 
-tcase 0005-w42-atm \
+tcase 'ifdef/...' 0005-w42-atm \
 '<?begin?>
 
 <?ifdef 0?>
@@ -513,7 +675,7 @@ ERROR 'test-0005-w42-atm':104: ifn?def: was started here, but where's the <?fi?>
 echo '<?begin?>1.1<?include test-0006-2?>1.2<?end?>' > test-0006-1
 echo '<?begin?>2.1<?include test-0006-3?>2.2<?end?>' > test-0006-2
 echo '<?begin?>:<?end?>' > test-0006-3
-tcase 0006-w42-atm \
+tcase 'include' 0006-w42-atm \
 '<?begin?>
 START<?include test-0006-1?>END
 <?end?>' \
@@ -527,7 +689,7 @@ START<?include test-0006-1?>END
 
 printf '1\n 2\n3\n' > test-0007-1
 printf '4\n  5\n\n6\n' > test-0007-2
-tcase 0007-w42-atm \
+tcase 'raw_include' 0007-w42-atm \
 '<?begin?>
 START<?raw_include test-0007-1?>MID<?raw_include test-0007-2?>END
 <?end?>' \
