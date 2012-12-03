@@ -1101,7 +1101,9 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
 
 {package Expander; # {{{
    sub explode {
-      Expander->new(ctx => $_[0], mode => $_[0]->mode)->_consume;
+      my $self = Expander->new(ctx => $_[0], mode => $_[0]->mode)->_consume;
+      # Force a trailing newline for non-empty output files
+      $self->_endl(1) if $self->seen_data == 1;
    }
 
    SymObj::sym_create(SymObj::NONE, {
@@ -1112,6 +1114,7 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
       _rest_data  => undef,   # Line data for re-evaluation
       _discard    => 0,       # Discard data, don't output (?ifdef? etc.)
       _ifdefs     => [],      # Ifdef:: stack
+      _seen_data  => 0,       # Seen just any data?
       _seen_end   => 0        # Seen <?end?>?
    });
 
@@ -1165,14 +1168,18 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
 
    sub _add_data {
       my ($self, $dat) = @_;
-      $self->data($dat) unless $self->discard || ! $dat;
+      unless ($self->discard || ! $dat) {
+         $self->data($dat);
+         $self->seen_data(1);
+      }
       $self
    }
 
    sub _endl {
       my $self = $_[0];
-      if (@{$self->data} || @_ > 1) {
+      if ((@{$self->data} && ! $self->discard) || @_ > 1) {
          $self->data("\n");
+         $self->seen_data(2);
          $self->_emit;
       }
       $self
