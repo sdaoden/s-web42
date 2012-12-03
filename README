@@ -612,16 +612,11 @@ _`pi-if`
    exist.
 
 _`pre`, _`xpre`
-   The "preformatted" paired PIs.  By default the converter trims and
-   squeezes whitespace and tries to join the input tagsoup, so as to
-   minimize useless DOM objects and file size.  Inside these preformatted
-   PIs it won't do so.  Since that is mostly of interest inside of
-   HTML ``<pre>`` tags, the expansion of the ``<?xpre?>`` PI contains
-   this tag already.
-
-   .. note::
-      Escaped newlines and shell-style comments are not handled while
-      evaluating input from these modes.
+   The "preformatted" paired PIs.  While these PIs are active *none*
+   of the filters that have been documented in `About.Filter`_ are
+   active except for the PI expansion filter.  Since that is mostly
+   of interest inside of HTML ``<pre>`` tags, the expansion of the
+   ``<?xpre?>`` PI contains this tag already.
 
 _`undef`
    Undefine an user defined array or PI.

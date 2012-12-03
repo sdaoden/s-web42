@@ -780,6 +780,183 @@ END' \
 ''
 
 # }}}
+## pre/xpre.. {{{
+
+tcase 'pre/xpre' 0008-w42-atm \
+'<?begin?>
+	1. Beware of bugs in the above code;             
+<?pre?>
+
+     I   
+	have  
+		only       
+			proved 
+		it
+
+
+	correct,          
+
+<?pre end?>
+not tried it.
+
+	2. Beware of bugs in the above code;             
+<pre><?pre?>
+
+     I   
+	have  
+		only       
+			proved 
+		it
+
+
+	correct,          
+
+<?pre end?></pre>
+not tried it.
+
+	3. Beware of bugs in the above code;             
+<?pre?><pre>
+
+     I   
+	have  
+		only       
+			proved 
+		it
+
+
+	correct,          
+
+</pre><?pre end?>
+not tried it.
+
+	4. Beware of bugs in the above code;             
+<?pre?>    I   
+	have  
+		only       
+			proved 
+		it
+
+	correct,<?pre end?>not tried it.
+
+	5. Beware of bugs in the above code;             
+<?xpre?>
+
+     I   
+	have  
+		only       
+			proved 
+		it
+
+
+	correct,          
+
+<?xpre end?>
+not tried it.
+
+	6. Beware of bugs in the above code;<?xpre?>    I   
+	have  
+		only       
+			proved 
+		it
+
+
+	correct,<?xpre end?>not tried it.
+
+7. Beware of bugs in the above code;
+<?xpre?>    I   
+	have  
+		only       
+			proved 
+		it
+
+	correct,<?xpre end?>
+not tried it.
+
+<?end?>' \
+\
+'1. Beware of bugs in the above code;
+
+     I
+	have
+		only
+			proved
+		it
+
+
+	correct,
+
+not tried it.
+2. Beware of bugs in the above code;
+<pre>
+
+     I
+	have
+		only
+			proved
+		it
+
+
+	correct,
+
+</pre>
+not tried it.
+3. Beware of bugs in the above code;
+<pre>
+
+     I
+	have
+		only
+			proved
+		it
+
+
+	correct,
+
+</pre>
+not tried it.
+4. Beware of bugs in the above code;
+    I
+	have
+		only
+			proved
+		it
+
+	correct,not tried it.
+5. Beware of bugs in the above code;
+<pre>
+
+     I
+	have
+		only
+			proved
+		it
+
+
+	correct,
+
+</pre>
+not tried it.
+6. Beware of bugs in the above code;<pre>    I
+	have
+		only
+			proved
+		it
+
+
+	correct,</pre>not tried it.
+7. Beware of bugs in the above code;
+<pre>    I
+	have
+		only
+			proved
+		it
+
+	correct,</pre>
+not tried it.' \
+\
+''
+
+# }}}
 
 [ ${errs} -eq 0 ] && exit 0 || {
 	printf "=======\nThere were ${errs} error(s)\n"

@@ -1374,6 +1374,18 @@ jpivar:     $self->_pi_var($pi, $valarr);
          goto jleave;
       }
 
+      elsif ($pi eq 'pre' || $pi eq 'xpre') {
+         if ($i) {
+            $self->_end_recursion;
+            $self->_add_data('</pre>') if $pi eq 'xpre';
+         } else {
+            $self->_add_data('<pre>') if $pi eq 'xpre';
+            $self->_prepare_recursion(undef,
+               (($self->mode & ~Ctx::FILTER_MASK) | Filter::EXPPIS), $pi);
+         }
+         goto jleave;
+      }
+
       elsif ($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
             $pi eq 'fi') {
          $pi = Expander::Ifdef::handle_pi(scalar $self->ifdefs, $self->ctx,
