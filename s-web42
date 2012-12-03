@@ -1154,8 +1154,8 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
    }
 
    sub _prepare_recursion {
-      my ($self, $ctx, $mode) = @_;
-      $self->_emit->recursion($self->ctx, $self->mode);
+      my ($self, $ctx, $mode, $epair) = @_;
+      $self->_emit->recursion($self->ctx, $self->mode, $epair);
       $self->ctx($ctx) if defined $ctx;
       if (defined $mode) {
          $self->ctx->mode($mode);
@@ -1167,6 +1167,7 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
    sub _end_recursion {
       my $self = shift;
       $self->_emit->seen_end(0);
+      pop @{$self->recursion}; # (Simply discard the expected end pair)
       my $m = pop @{$self->recursion};
       $self->ctx(pop @{$self->recursion});
       if (defined $m) {
@@ -1261,6 +1262,19 @@ jpivar:     $self->_pi_var($pi, $valarr);
             ::e($self->ctx,
                "$pi is multiline PI, it may only be given 'end' argument");
             goto jleave;
+         }
+         # If this ends a multiline PI, check it's a matching one
+         if (@$valarr == 1) {
+            $i = @{$self->recursion};
+            if ($i == 0) {
+               ::e($self->ctx, "no $pi to end here");
+               goto jleave;
+            }
+            $i = $self->recursion->[$i - 1];
+            if ($i ne $pi) {
+               ::e($self->ctx, "a $i is to be ended here, not a $pi");
+               goto jleave;
+            }
          }
       } elsif ($i == 0) {
          if (@$valarr != 0) {
