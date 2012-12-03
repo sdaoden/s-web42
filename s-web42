@@ -525,7 +525,7 @@ jresetarr:  $pivars->{$key} = [];
    sub classify_filename {
       my ($path) = @_;
       my $r = {PATH => $path};
-      if ($path =~ /(.*?)(?:-w42(?:-(x|[acempst]+))?(-new)?)$/) {
+      if ($path =~ /(.*?)(?:-w42(?:-(x|[icepatsm]+))?(-new)?)$/) {
          $r->{EXPANDABLE} = 1;
          $r->{STRIPPED_PATH} = $1;
          $r->{ALWAYS_REBUILD} = 1 if defined $3;
