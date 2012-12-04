@@ -746,15 +746,36 @@ ERROR 'test-0005-w42-atm':104: ifn?def: was started here, but where's the <?fi?>
 ## }}}
 ## ?include?.. {{{
 
-echo '<?begin?>1.1<?include test-0006-2?>1.2<?end?>' > test-0006-1
-echo '<?begin?>2.1<?include test-0006-3?>2.2<?end?>' > test-0006-2
-echo '<?begin?>:<?end?>' > test-0006-3
+echo '<?begin?>1.1<?include test-0006-2?>1.2<?end?>AFTER END' > test-0006-1
+echo '<?begin?>2.1<?include test-0006-3?>2.2<?end?>AFTER END' > test-0006-2
+echo '
+MYVAR = :
+<?begin?><?MYVAR?><?end?>AFTER END' > test-0006-3
+echo '
+MYVAR = )
+<?begin?>
+4.1
+<?include test-0006-3?><?MYVAR?>
+4.2
+<?end?>' > test-0006-4
+printf '<?begin?>;<?end?>AFTER END' > test-0006-5
+
 tcase 'include' 0006-w42-atm \
 '<?begin?>
 START<?include test-0006-1?>END
+<?include test-0006-4?>
+5.1
+<?include test-0006-5?>
+5.2<?include test-0006-5?>5.3
 <?end?>' \
 \
-'START1.12.1:2.21.2END' \
+'START1.12.1:2.21.2END
+4.1
+:)
+4.2
+5.1
+;
+5.2;5.3' \
 \
 ''
 
