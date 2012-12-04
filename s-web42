@@ -1106,14 +1106,20 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
 } # }}}
 
 {package Expander; # {{{
+   sub NL_FLUX()  { 1<<(Ctx::MAXSHIFT + 1) }
+   sub NL_FORCE() { 1<<(Ctx::MAXSHIFT + 2) }
+
    sub explode {
       my $self = Expander->new(ctx => $_[0], mode => $_[0]->mode)->_consume;
       # Force a trailing newline for non-empty output files
-      $self->_endl(1) if $self->seen_data == 1;
+      if ($self->seen_data == 1) {
+         $self->discard(0);
+         ${$self->__mode} |= NL_FORCE;
+         $self->_endl;
+      }
+      ::e($self->ctx, 'At EOF there are paired PIs open')
+         if @{$self->recursion};
    }
-
-   sub NL_FLUX()  { 1<<(Ctx::MAXSHIFT + 1) }
-   sub NL_FORCE() { 1<<(Ctx::MAXSHIFT + 2) }
 
    SymObj::sym_create(SymObj::NONE, {
       _ctx        => undef,   # Ctx object we're exploding
@@ -1139,11 +1145,10 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
                $self->seen_end(1);
                last;
             }
-            $self->_add_data($l)->_endl(($self->mode & Filter::WIPEEL) == 0);
+            $self->_add_data($l)->_endl;
          }
       } else {
          while (defined(my $l = $self->ctx->readline_full)) {
-            $self->line_len(0);
             last if $self->_expand_pis($l)->seen_end;
          }
          Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
@@ -1155,18 +1160,19 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
 
    sub _prepare_recursion {
       my ($self, $ctx, $mode, $epair) = @_;
-      $self->_emit->recursion($self->ctx, $self->mode, $epair);
+      $self->_emit->recursion($self->ctx, $self->mode,
+         defined $epair ? $epair : '[Recursion was not opened via paired PI!]');
       $self->ctx($ctx) if defined $ctx;
       if (defined $mode) {
          my $om = $self->mode;
-         $self->ctx->mode($mode);
-         $self->mode($mode);
+         $self->mode($self->ctx->mode($mode));
          # If there is a change in WIPEEL and the changing PI is the only
-         # content on that line, avoid writing an unwanted empty line
-         # XXX check falsely succeeds if ctx->line() expands as nothing
+         # content on that line, avoid writing an unwanted empty line.
+         # This only applies to paired PIs, though.
+         my $noel = ($mode & Filter::WIPEEL);
          ${$self->__mode} |= NL_FLUX
-            if ($om != $mode && ! $self->line_len && ! $self->ctx->line &&
-               ($mode & Filter::WIPEEL) == 0);
+            if (defined $epair && ! $noel && $noel != ($om & Filter::WIPEEL) &&
+               ! $self->line_len && ! $self->ctx->line);
       }
       $self
    }
@@ -1179,12 +1185,12 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
       $self->ctx(pop @{$self->recursion});
       if (defined $m) {
          my $om = $self->mode;
-         $self->ctx->mode($m);
-         $self->mode($m);
+         $self->mode($self->ctx->mode($m));
          # If there is a change in WIPEEL and there was data on the line before
          # the changing PI, don't forget to write the wanted separating newline
+         my $noel = ($om & Filter::WIPEEL);
          ${$self->__mode} |= NL_FORCE
-            if ($om != $m && $self->line_len && ($om & Filter::WIPEEL) == 0);
+            if (! $noel && $noel != ($m & Filter::WIPEEL) && $self->line_len);
       }
       $self
    }
@@ -1200,24 +1206,35 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
    }
 
    sub _endl {
-      my ($self, $force) = @_;
-      if ((@{$self->data} && ! $self->discard) || $force) {
-         $self->line_len(0);
-         $self->data("\n");
-         $self->seen_data(2);
-         $self->_emit;
+      my ($self) = @_;
+      my $m = $self->mode;
+      if ($self->line_len) {
+         goto jleave if $self->discard || ($m & NL_FLUX);
+      } elsif (($m & (Filter::WIPEEL|NL_FLUX)) != 0 && ($m & NL_FORCE) == 0) {
+         goto jleave;
       }
+      $self->data("\n");
+      $self->seen_data(2);
+      $self->_emit;
+jleave:
+      $m &= ~(NL_FLUX|NL_FORCE);
+      $self->mode($m);
+      #@{$self->data} = (); XXX
+      $self->line_len(0);
       $self
    }
 
    sub _emit {
       my $self = shift;
-      foreach my $d (@{$self->data}) {
-         next unless $d;
-         ::panic($self->ctx, "Failed to perform output: $^E")
-            unless print {$self->ctx->outfh} $d;
+      unless ($self->discard) {
+         foreach my $d (@{$self->data}) {
+            next unless $d;
+            ::panic($self->ctx, "Failed to perform output: $^E")
+               unless print {$self->ctx->outfh} $d;
+         }
       }
       @{$self->data} = ();
+      #$self->line_len(0); XXX
       $self
    }
 
@@ -1257,9 +1274,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
       }
 
       $self->_add_data($l) if $l;
-      $l = $self->mode;
-      $self->_endl(($l & (Filter::WIPEEL|NL_FLUX)) == 0 || ($l & NL_FORCE));
-      ${$self->__mode} &= ~(NL_FLUX|NL_FORCE);
+      $self->_endl;
       $self
    }
 
@@ -1405,25 +1420,27 @@ jpivar:     $self->_pi_var($pi, $valarr);
          goto jleave;
       }
 
-      elsif ($pi eq 'raw_include') { # TODO of course, data hdling intermediate
-         $self->_emit; # FIXME mode change!!
+      elsif ($pi eq 'raw_include') {
+         $self->_prepare_recursion($self->ctx, 0);
          $i = Expander::_expand_include_path($i);
          ::panic($self->ctx, "raw_include: can't read '$i': $^E")
             unless open RI, '<', $i;
          foreach (readline RI) { # XXX readline errs?
-            chomp;
-            $self->_add_data($_)->_endl(1);
+            my $had = chomp;
+            $self->_add_data($_);
+            $self->_endl if $had;
          }
          ::panic($self->ctx, "raw_include: can't close '$i': $^E")
             unless close RI;
-         $self->_emit; # FIXME mode change!
+         $self->_end_recursion;
          goto jleave;
       }
 
       elsif ($pi eq 'end') {
-         $self->_add_data($self->ctx->line)
-            ->ctx->line('');
-         $self->_emit->seen_end(1);
+         $self->ctx->line('');
+         ${$self->__mode} |= NL_FLUX
+            if $self->ctx->outer && $self->ctx->outer->line;
+         $self->seen_end(1);
          goto jleave;
       }
 
