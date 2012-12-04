@@ -583,25 +583,61 @@ _`include`, _`raw_include`
       By **definition** there is really no notion of a "chroot".  One
       may leave ``site`` absolutely or relatively, just as desired.
 
-_`perl`, _`shell`
+_`perl`, _`sh`
    These are paired statements which can be used to embed ``perl(1)``
-   or ``shell(1)`` code that will be evaluated (in a forked subprocess).
-   The output that is produced on STDOUT will be re-evaluated (as it
-   is produced) and may thus contain more PIs.  ::
+   or ``sh(1)`` code, respectively.  The code will be executed in a
+   subprocess, and the output it produces on its standard output channel
+   will be subject to the same expansion and filtering that is in use
+   for the surrounding text.  In fact the output is expected to form
+   a valid S-Web42 document.
+
+   Note that the code is subject to the normal S-Web42 processing
+   before it is passed through to the subprocess that runs the
+   interpreter.  I.e., PI expansion can be used to "pass arguments"
+   through.  This raises the question how a valid S-Web42 document can
+   be produced if PIs are expanded during code evaluation.  Well, it
+   turns out that S-Web42 injects four variables automatically:
+
+   =========  =============
+   ``PIS``    ``<?``
+   ``PIE``    ``?>``
+   ``BEGIN``  ``<?BEGIN?>``
+   ``END``    ``<?END?>``
+   =========  =============
+
+   Note that ``$PIE`` is not necessary and provided only for completeness
+   sake.  I.e., one has to perform the uncomfortable task of PI building
+   via string concatenation to avoid unwanted data expansions::
 
       <?perl?>
       my $gmd = gmtime;
       my $lmd = localtime;
+      my $user = fetch_user();
 
-      print '<p>Hi <?USER?>!';
-      print "It is $lmd.<br />";
-      print "That is $gmd UTC!</p>"
+      print <<__EOT__;
+      USER = $user
+      ${BEGIN}
+      ${PIS}include +header?>
+      <h1>Hi ${PIS}USER${PIE}!</h1>
+
+      It is ${lmd}.
+      That is ${gmd} UTC!
+
+      ${PIS}include +footer?>
+      ${END}
+      __EOT__
       <?perl end?>
 
+      # This works:
+      $ echo '<?begin?>START<?sh?>' \
+      > 'printf "${PIS}BEGIN?>IN${PIS}END?>" | tr [:upper:] [:lower:]' \
+      > '<?sh end?>END<?end?>' | s-web42 --no-rc --eo
+
    .. note::
-      Escaped newlines and shell-style comments are not handled while
-      this mode is active.  (It can be used as usual for output that
-      is produced by the perl or shell code, however.)
+      The entire -- expanded -- script is read into memory before
+      being passed to the interpreter that runs in the subprocess and
+      will ``eval`` the script.  These PIs cannot be nested
+      (especially not with each other).
 
 _`pi-if`
    If it is unsure wether a PI (variable) exists, use this PI to

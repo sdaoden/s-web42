@@ -993,8 +993,109 @@ not tried it.' \
 ''
 
 # }}}
+## perl/sh {{{
+
+echo 'When the Blitzkrieg raged' > test-0009-1
+echo 'And the bodies stank' > test-0009-2
+
+tcase 'perl/sh' 0009-w42-atm \
+'PERL = perl(1)
+SH = sh(1)
+<?begin?>
+Hello, <?PERL?>.
+<?perl?>
+my $lmd = "Tue Dec  4 11:49:44 2012";
+my $gmd = "Tue Dec  4 10:49:44 2012";
+
+print <<__EOT__;
+MYSELF = <?PERL?>
+${BEGIN}
+Hi ${PIS}MYSELF?>!
+
+It is ${lmd}.
+<?raw_include test-0009-1?>
+That is ${gmd} UTC!
+
+${END}
+__EOT__
+<?perl end?>
+
+Hello, <?SH?>.
+<?sh?>
+lmd="Tue Dec  4 11:49:44 2012"
+gmd="Tue Dec  4 10:49:44 2012"
+
+echo "
+MYSELF = <?SH?>
+${BEGIN}
+Hi ${PIS}MYSELF?>!
+
+It is ${lmd}.
+<?raw_include test-0009-2?>
+That is ${gmd} UTC!
+
+${END}
+"
+<?sh end?>
+
+<?perl?>
+my $perls = "perl string";
+
+print <<__EOT__;
+${BEGIN}
+$perls
+<?pre?>
+	HAHAHA
+<?pre end?>
+$perls${PIS}pre?>   HOHOHO${PIS}pre end?>$perls
+__EOT__
+
+print "$perls${PIS}pre?>   HIHIHI${PIS}pre end?>$perls\n";
+print "${END}\n";
+<?perl end?>
+
+<?sh?>
+echo "${BEGIN}"
+echo pipe | tr "[:lower:]" "[:upper:]"
+echo "${END}"
+<?sh end?>
+<?end?>' \
+\
+'Hello, perl(1).
+Hi perl(1)!
+It is Tue Dec  4 11:49:44 2012.
+When the Blitzkrieg raged
+That is Tue Dec  4 10:49:44 2012 UTC!
+Hello, sh(1).
+Hi sh(1)!
+It is Tue Dec  4 11:49:44 2012.
+And the bodies stank
+That is Tue Dec  4 10:49:44 2012 UTC!
+perl string
+HAHAHA
+perl string   HOHOHOperl string
+perl string   HIHIHIperl string
+PIPE' \
+\
+''
+
+tcase 'Oneline document (perl(1))' 9.1-w42-atm \
+'<?begin?>START<?perl?>print "${BEGIN}in${END}"<?perl end?>END<?end?>' \
+\
+'STARTinEND' \
+\
+''
+
+tcase 'Oneline document (sh(1))' 9.2-w42-atm \
+'<?begin?>START<?sh?>printf "${BEGIN}in${END}"<?sh end?>END<?end?>' \
+\
+'STARTinEND' \
+\
+''
+
+# }}}
 
 [ ${errs} -eq 0 ] && exit 0 || {
-	printf "=======\nThere were ${errs} error(s)\n"
+	printf "=======\nThere were ${errs} error(s)\n"
 	exit 42
 }

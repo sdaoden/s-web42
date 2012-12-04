@@ -999,8 +999,10 @@ jresetarr:  $pivars->{$key} = [];
       if ($self->mode & MODE_CONFIGRC) {
          $self->{_pivars} = $PIVars::outermost;
       } elsif ($curr) {
-         ${$self->__mode} |= MODE_OUTFH;
-         $self->outfh($curr->outfh);
+         unless ($self->mode & MODE_OUTFH) {
+            ${$self->__mode} |= MODE_OUTFH;
+            $self->outfh($curr->outfh);
+         }
          $self->mtime($curr->mtime);
          $self->pivars($curr->pivars);
       } else {
@@ -1054,7 +1056,7 @@ jresetarr:  $pivars->{$key} = [];
       if ($saved_mode & MODE_CONFIGRC) {
          ::v($self, "'$CONFIG' file contains non-Assignments") if defined $l;
       } else {
-         ::e($self, 'Premature file exit') unless defined $l;
+         ::e($self, 'Premature file exit before <?begin?>') unless defined $l;
       }
       $self;
    }
@@ -1131,7 +1133,8 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
       _discard    => 0,       # Discard data, don't output (?ifdef? etc.)
       _ifdefs     => [],      # Ifdef:: stack
       _seen_data  => 0,       # Seen just any data?
-      _seen_end   => 0        # Seen <?end?>?
+      _seen_end   => 0,       # Seen <?end?>?
+      _data_condome => undef  # ?perl?/?sh? intermediate layer (see _emit())
    });
 
    sub _consume {
@@ -1154,7 +1157,8 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
          Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
       }
 
-      ::e($self->ctx, 'Premature file exit') if ! $self->seen_end;
+      ::e($self->ctx, 'Premature file exit, no <?end?> seen')
+         if ! $self->seen_end;
       $self
    }
 
@@ -1226,7 +1230,9 @@ jleave:
 
    sub _emit {
       my $self = shift;
-      unless ($self->discard) {
+      if (defined ${$self->__data_condome}) {
+         push @{$self->data_condome}, join('', @{$self->data});
+      } elsif (! $self->discard) {
          foreach my $d (@{$self->data}) {
             next unless $d;
             ::panic($self->ctx, "Failed to perform output: $^E")
@@ -1436,6 +1442,28 @@ jpivar:     $self->_pi_var($pi, $valarr);
          goto jleave;
       }
 
+      elsif ($pi eq 'perl' || $pi eq 'sh') {
+         if ($i) {
+            $self->_end_recursion;
+            $self->_create_subproc($pi);
+         } elsif (defined ${$self->__data_condome}) {
+            ::panic($self->ctx,
+               'There is already one of <?perl/sh?> active!'); 
+         } else {
+            $self->_prepare_recursion(undef,
+               (($self->mode & ~Ctx::FILTER_MASK) | Filter::EXPPIS), $pi);
+            ${$self->__data_condome} = [];
+            if ($pi eq 'perl') {
+               $self->_add_data('my ($PIS, $PIE, $BEGIN, $END) = ' .
+                  '("<?", "?>", "<?begin?>", "<?end?>");')->_endl;
+            } else {
+               $self->_add_data('PIS="<?" PIE="?>" ' .
+                  'BEGIN="<?begin?>" END="<?end?>"')->_endl;
+            }
+         }
+         goto jleave;
+      }
+
       elsif ($pi eq 'end') {
          $self->ctx->line('');
          ${$self->__mode} |= NL_FLUX
@@ -1560,6 +1588,49 @@ jleave:
 jset:    $path = $l . $1;
       }
       $path
+   } # }}}
+
+   sub _create_subproc { # {{{
+      my ($self, $type) = @_;
+      my $eval_args_ar = join '', @{$self->data_condome};
+      ${$self->__data_condome} = undef;
+
+      ::panic($self->ctx, "can't create communication for <?$type?>: " . $^E)
+         unless pipe RDC, WRP;
+      my $pid = fork;
+      ::panic($self->ctx, 'cannot create child process: ' . $^E)
+         unless defined $pid;
+
+      if ($pid) {
+         # Parent
+         close WRP; # xxx err hdl.
+         my $ctx = Ctx->new(outer => $self->ctx,
+            mode => ($self->mode & Ctx::FILTER_MASK) | Ctx::MODE_INFH |
+                  Ctx::MODE_OUTFH,
+            sumup => '<?' . $type . '?> mode at ' . $self->ctx->sumup .
+                  ', line ' . $self->ctx->lineno,
+            infh => *RDC);
+         $self->_prepare_recursion($ctx);
+         $ctx->open->read_assignments;
+         $self->_consume->_end_recursion;
+         $ctx->close;
+         close RDC;
+         ::e($self->ctx, 'failed to wait for child process')
+            unless $pid == waitpid $pid, 0;
+         ::e($self->ctx, '[<?'. $type .'?> evaluation errors occurred]') if $?;
+      } else {
+         # Child
+         close RDC; # xxx err hdl.
+         open(STDOUT, '>&=', fileno WRP) || die;
+         if ($type eq 'perl') {
+            eval $eval_args_ar;
+            exit($@ ? 1 : 0);
+         } else {
+            exec '/bin/sh', '-c', $eval_args_ar;
+            exit 1;
+         }
+      }
+      $self
    } # }}}
 
 {package Expander::Ifdef; # {{{
