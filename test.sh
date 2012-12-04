@@ -763,19 +763,34 @@ START<?include test-0006-1?>END
 
 printf '1\n 2\n3\n' > test-0007-1
 printf '4\n  5\n\n6\n' > test-0007-2
+printf '7' > test-0007-3
+printf '8\n9' > test-0007-4
+
 tcase 'raw_include' 0007-w42-atm \
 '<?begin?>
+<?raw_include test-0007-1?>
 START<?raw_include test-0007-1?>MID<?raw_include test-0007-2?>END
+START<?raw_include test-0007-3?>MID<?raw_include test-0007-4?>END
+<?raw_include test-0007-3?>
+<?raw_include test-0007-4?>
 <?end?>' \
 \
-'START1
+'1
+ 2
+3
+START1
  2
 3
 MID4
   5
 
 6
-END' \
+END
+START7MID8
+9END
+7
+8
+9' \
 \
 ''
 
