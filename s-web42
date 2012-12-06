@@ -754,35 +754,6 @@ jupsums:
    sub STATE_CACHE_MASK()  { 0 }    # Flags transported through cache DB
 
    our $root = undef;
-   SymObj::sym_create(SymObj::NONE, {
-      _state   => STATE_NONE,
-      _path    => '',
-      _parent  => undef,
-      _sibling => undef
-   });
-
-   sub isdir   { exists $_[0]->{_dirs}; }
-   sub isfile  { ! exists $_[0]->{_dirs}; }
-
-   sub isexpandable  { $_[0]->{_state} & STATE_EXPANDABLE; }
-   sub isdel         { $_[0]->{_state} & STATE_DEL; }
-   sub isknown       { $_[0]->{_state} & STATE_KNOWN; }
-   sub isrefresh     { $_[0]->{_state} & STATE_REFRESH; }
-
-   sub set_refresh {
-      my $self = shift;
-      $self->{_state} |= STATE_REFRESH;
-      $self;
-   }
-   sub unset_refresh {
-      my $self = shift;
-      $self->{_state} &= ~STATE_REFRESH;
-      $self;
-   }
-   sub state_for_cache {
-      my $self = shift;
-      $self->{_state} & STATE_CACHE_MASK;
-   }
 
    sub dirnode_for_cached_dirname {
       my ($name) = @_;
@@ -802,25 +773,44 @@ jupsums:
          }
          $dnode = $dn;
       }
-      $dnode;
+      $dnode
    }
+
+   SymObj::sym_create(SymObj::NONE, {
+      _state   => STATE_NONE,
+      _path    => '',
+      _parent  => undef,
+      _sibling => undef
+   });
+
+   sub isdir   { exists $_[0]->{_dirs} }
+   sub isfile  { ! exists $_[0]->{_dirs} }
+
+   sub isexpandable  { $_[0]->state & STATE_EXPANDABLE }
+   sub isdel         { $_[0]->state & STATE_DEL }
+   sub isknown       { $_[0]->state & STATE_KNOWN }
+   sub isrefresh     { $_[0]->state & STATE_REFRESH }
+
+   sub set_refresh      { ${$_[0]->__state} |= STATE_REFRESH; $_[0] }
+   sub unset_refresh    { ${$_[0]->__state} &= ~STATE_REFRESH; $_[0] }
+   sub state_for_cache  { ${$_[0]->__state} & STATE_CACHE_MASK }
 
 {package Node::Dir;
    our @ISA = ('Node');
-   SymObj::sym_create(SymObj::NONE, { _dirs => undef, _files => undef });
+   SymObj::sym_create(SymObj::NONE, {_dirs => undef, _files => undef});
 
    sub __ctor {
       my ($self) = @_;
       $Node::root = $self unless defined $Node::root;
       if (defined(my $p = $self->parent)) {
-         $self->sibling($p->{_dirs});
-         $p->{_dirs} = $self;
+         $self->sibling($p->dirs);
+         $p->dirs($self);
       }
    }
 
    sub source_path {
       my $self = shift;
-      $SITE . '/' . $self->site_path;
+      $SITE . '/' . $self->site_path
    }
 
    sub site_path {
@@ -831,7 +821,7 @@ jupsums:
          $p = $s->path . '/' . $p;
          $s = $s->parent;
       }
-      $self->{__sitepath} = $p;
+      $self->{__sitepath} = $p
    }
 }
 
@@ -858,7 +848,7 @@ jupsums:
          $self->{__sipp} = $cf->{STRIPPED_PATH} if exists $cf->{STRIPPED_PATH};
          $i = Node::STATE_EXPANDABLE;
          $i |= Node::STATE_REFRESH if exists $cf->{ALWAYS_REBUILD};
-         $self->state($self->state | $i);
+         ${$self->__state} |= $i;
          $self->filters($cf->{FILTERS}) if exists $cf->{FILTERS};
       }
    }
@@ -866,18 +856,25 @@ jupsums:
    sub source_path {
       my $self = shift;
       my $s = $self->parent->source_path;
-      $s .= '/' if length $s;
-      $s .= $self->path;
+      if (length $s) {
+         File::Spec->catfile($s, $self->path);
+      } else {
+         $self->path;
+      }
    }
 
    sub site_path {
       my $self = shift;
       return $self->{__sitepath} if defined $self->{__sitepath};
+      my $p .= defined $self->{__sipp} ? $self->{__sipp} : $self->path;
+      delete $self->{__sipp};
       my $s = $self->parent->site_path;
-      $s .= '/' if length $s;
-      $s .= defined $self->{__sipp} ? $self->{__sipp} : $self->path;
-      undef $self->{__sipp};
-      $self->{__sitepath} = $s;
+      if (length $s) {
+         $s = File::Spec->catfile($s, $p);
+      } else {
+         $s = $p;
+      }
+      $self->{__sitepath} = $s
    }
 }
 } # }}}
