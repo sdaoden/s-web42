@@ -619,12 +619,12 @@ jresetarr:  $pivars->{$key} = [];
             ::xe("Hook execution failed in '$spath'") if $? >> 8;
          }
 
-         opendir(DH, $spath) || ::xpanic("Can't opendir '$spath': $^E");
+         ::xpanic("Can't opendir '$spath': $^E") unless opendir DH, $spath;
          my @sdirs = grep {
             -d "$spath/$_" &&
             substr($_, 0, 1) ne '.' && $_ ne 'SCCS' && $_ ne 'CVS'
          } readdir DH;
-         closedir DH;
+         closedir DH; # xxx err hdl
 
          foreach (@sdirs) {
             ::xpanic("Can't handle paths with quotation marks: '$_'")
@@ -647,11 +647,11 @@ jresetarr:  $pivars->{$key} = [];
             ::xvv("** <$SITE> **");
          }
 
-         opendir(DH, $i) || ::xpanic("Can't opendir '$i': $^E");
+         ::xpanic("Can't opendir '$i': $^E") unless opendir DH, $i;
          $i = [grep {
             -f "$i/$_" && substr($_, 0, 1) ne '.' && $_ ne $HOOK
          } readdir DH];
-         closedir DH;
+         closedir DH; # xxx err hdl
 
          foreach my $e (@$i) {
             ::xpanic("Can't handle paths with quotation marks: '$e'")
@@ -679,18 +679,18 @@ jresetarr:  $pivars->{$key} = [];
          my ($dnode) = @_;
          if ($dnode->parent) {
             if (! $dnode->isknown) {
-               ::xv('New directory: \'' . $dnode->site_path . '\'');
+               print $LOGFH "New directory: '", $dnode->site_path, "'\n";
                $dnode->set_refresh;
                push @refresh_nodes, $dnode;
             } elsif ($dnode->isdel) {
-               ::xv('Directory deleted: \'' . $dnode->site_path . '\'');
+               print $LOGFH "Directory deleted: '", $dnode->site_path, "'\n";
                push @delete_nodes, $dnode;
             }
          }
 
          for (my $fn = $dnode->files; defined $fn; $fn = $fn->sibling) {
             if ($fn->isdel) {
-               ::xv('File deleted: \'' . $fn->site_path . '\'');
+               print $LOGFH "File deleted: '", $fn->site_path, "'\n";
                push @delete_nodes, $fn;
                next;
             }
@@ -698,27 +698,25 @@ jresetarr:  $pivars->{$key} = [];
             $fn->modtime($ignmod ? 0 : (stat $fn->source_path)[9]);
             my $cos = undef;
             # Sofar ->isrefresh transports users' force-rebuild desire..
-            if (! $fn->isknown || $fn->isrefresh ||
-                  $PIVars::outermost->{IGNORE_MODTIME} ||
+            if (! $fn->isknown || $fn->isrefresh || $ignmod ||
                   $fn->modtime != $fn->cached_modtime) {
                $fn->icksum(::checksum_path($fn->source_path));
                if (! $fn->isknown || $fn->isrefresh) {
-                  ::xv(($fn->isknown ? 'Forced-rebuild: \'' : 'New file: \'')
-                     . $fn->site_path . '\'');
+                  ::xv(($fn->isknown ? 'Forced-rebuild: \'' : 'New file: \'') .
+                     $fn->site_path . '\'');
                } elsif ($fn->icksum ne $fn->cached_icksum) {
                   ::xv('checksum differs: \'' . $fn->site_path . '\'');
                   $cos = $fn->icksum;
                } else {
                   if ($VERBOSE) {
-                     if ($PIVars::outermost->{IGNORE_MODTIME}) {
-                        ::xvv('.. \'' . $fn->site_path .
-                           '\': checksum matches');
+                     if ($ignmod) {
+                        ::xvv('.. \'' .$fn->site_path. '\': checksum matches');
                      } else {
                         ::xvv('.. \'' . $fn->site_path .
                            '\': modtime differs, but checksum matches');
                      }
                   }
-                  next;
+                  goto jupsums;
                }
                $fn->set_refresh;
                push @refresh_nodes, $fn;
@@ -726,7 +724,7 @@ jresetarr:  $pivars->{$key} = [];
                ::xvv('.. \'' . $fn->site_path . '\' seems unchanged');
                $fn->icksum($fn->cached_icksum);
             }
-
+jupsums:
             # Just ensure valid up2date fields at this point; expanded files
             # will be re-checksummed later
             $cos = ($fn->isknown ? $fn->cached_ocksum : $fn->icksum)
