@@ -557,7 +557,7 @@ _`include`, _`raw_include`
    for the including file, whereas the ``<?raw_include?>`` PI will
    include the given file raw and **without any** S-Web42 processing.
    Paths are interpreted relative to the source directory of the file
-   which defines the include directive. ::
+   which uses the include directive in question. ::
 
       HOME = ../index.html
       <?begin?>
@@ -589,14 +589,16 @@ _`perl`, _`sh`
    subprocess, and the output it produces on its standard output channel
    will be subject to the same expansion and filtering that is in use
    for the surrounding text.  In fact the output is expected to form
-   a valid S-Web42 document.
+   a valid S-Web42 document.  The working directory of the subprocess
+   is the directory in which the *topmost* file, i.e., the file that
+   is currently being produced output for, exists.
 
-   Note that the code is subject to the normal S-Web42 processing
-   before it is passed through to the subprocess that runs the
-   interpreter.  I.e., PI expansion can be used to "pass arguments"
-   through.  This raises the question how a valid S-Web42 document can
-   be produced if PIs are expanded during code evaluation.  Well, it
-   turns out that S-Web42 injects four variables automatically:
+   The code is subject to the normal S-Web42 processing before it is
+   passed through to the subprocess that runs the interpreter.  I.e.,
+   PI expansion can be used to "pass arguments" through.  This raises
+   the question how a valid S-Web42 document can be produced if PIs
+   are expanded during code evaluation.  Well, it turns out that S-Web42
+   injects four variables automatically:
 
    =========  =============
    ``PIS``    ``<?``
@@ -605,9 +607,10 @@ _`perl`, _`sh`
    ``END``    ``<?END?>``
    =========  =============
 
-   Note that ``$PIE`` is not necessary and provided only for completeness
-   sake.  I.e., one has to perform the uncomfortable task of PI building
-   via string concatenation to avoid unwanted data expansions::
+   (Since it is not necessary to quote the closing ``?>`` of a PI
+   ``$PIE`` is provided only for completeness sake.) So -- unfortunately
+   one has to perform the uncomfortable task of PI building via string
+   concatenation to avoid unwanted data expansions.  E.g.::
 
       <?perl?>
       my $gmd = gmtime;

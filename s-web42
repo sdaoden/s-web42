@@ -51,6 +51,8 @@ use warnings;
 
 use sigtrap qw(die normal-signals);
 
+require Cwd;
+require File::Spec;
 eval "require $DIGEST";
 eval { require Time::Piece; };
    my $HAVE_TIMEPIECE = $@ ? 0 : 1;
@@ -212,16 +214,23 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
    # The very special case..
    if (defined $eo) {
       my $m = &Filter::CONTENT_FILTERS | &Ctx::MODE_OUTFH;
+      my $dird = undef;
       if (length $eo) {
          my $cf = Filter::classify_filename($eo);
          xe("File '$eo' doesn't seem to be an expandable S-Web42 file!")
             unless exists $cf->{EXPANDABLE};
          $m = $cf->{FILTERS} | &Ctx::MODE_OUTFH if exists $cf->{FILTERS};
+         my ($dn, $i, $bn);
+         $bn = Cwd::realpath($eo);
+         ($dn, $i, $bn) = File::Spec->splitpath($bn);
+         $dird = File::Spec->catpath($dn, $i, '');
+         xpanic("S-Web42 BUG #1 - please report this") unless $dird;
       } else {
          $m |= &Ctx::MODE_INFH;
          $eo = 'STDIN';
       }
-      Ctx->new(mode => $m, sumup => $eo)->full_expand_lifecycle;
+      Ctx->new(mode => $m, chdird => $dird, incdird => $dird, sumup => $eo)
+         ->full_expand_lifecycle;
       goto jEXIT;
    }
 
@@ -250,16 +259,17 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
    foreach my $n (@Site::refresh_nodes) {
       next if $n->isdir;
       if ($n->isexpandable) {
-         Ctx->new(mode => $n->filters, sumup => $n->source_path)
-            ->full_expand_lifecycle;
-         my $bdig = checksum_path($TMP_WORK);
+         my $i = $n->parent->source_path;
+         Ctx->new(mode => $n->filters, chdird => $i, incdird => $i,
+            sumup => $n->source_path)->full_expand_lifecycle;
+         $i = checksum_path($TMP_WORK);
          # Site:: has set .ocksum to whatever made sense - we can use it here
-         if ($bdig eq $n->ocksum) {
+         if ($i eq $n->ocksum) {
             $n->unset_refresh;
             xvv(".. '" . $n->site_path . "'" . ': output checksum matches');
             next;
          }
-         $n->ocksum($bdig);
+         $n->ocksum($i);
       }
       xv("'" . $n->site_path . "' content changed, including it");
       Target::add($n);
@@ -985,6 +995,8 @@ jresetarr:  $pivars->{$key} = [];
    SymObj::sym_create(SymObj::NONE, {
       _outer         => undef,   # <?include?> support (Expander:: recursion)
       _mode          => 0,
+      _chdird        => undef,   # (opt) chdir(2) for ?EXEC? modes (outermost)
+      _incdird       => undef,   # (opt) root path for ?include*?
       _sumup         => '',      # Input filename or mode description
       _lineno        => 0,       # Current input line number
       _line          => '',      # Current input line
@@ -999,13 +1011,18 @@ jresetarr:  $pivars->{$key} = [];
       my $curr = $self->outer;
       if ($self->mode & MODE_CONFIGRC) {
          $self->{_pivars} = $PIVars::outermost;
-      } elsif ($curr) {
+         return;
+      }
+
+      if ($curr) {
          unless ($self->mode & MODE_OUTFH) {
             ${$self->__mode} |= MODE_OUTFH;
             $self->outfh($curr->outfh);
          }
          $self->mtime($curr->mtime);
          $self->pivars($curr->pivars);
+         $self->chdird($curr->chdird);
+         $self->incdird($curr->incdird) unless defined $self->incdird;
       } else {
          $self->pivars($PIVars::outermost);
       }
@@ -1015,7 +1032,7 @@ jresetarr:  $pivars->{$key} = [];
       my $self = shift;
       unless ($self->mode & MODE_INFH) {
          ::panic($self, "Failed to open for reading: $^E")
-            unless open ${$self->__infh}, '<', $self->{_sumup};
+            unless open ${$self->__infh}, '<', ${$self->__sumup};
       } else {
          $self->infh(*STDIN) unless $self->infh;
       }
@@ -1417,9 +1434,9 @@ jpivar:     $self->_pi_var($pi, $valarr);
       }
 
       elsif ($pi eq 'include') {
-         $i = Expander::_expand_include_path($i);
-         my $ctx = Ctx->new(outer => $self->ctx, mode => $self->mode,
-               sumup => $i);
+         ($pi, $i) = $self->_expand_include_path($i);
+         my $ctx = Ctx->new(outer => $self->ctx, incdird => $pi,
+               mode => ($self->mode & ~Ctx::MODE_INFH), sumup => $i);
          $self->_prepare_recursion($ctx);
          $ctx->open->read_assignments;
          $self->_consume->_end_recursion;
@@ -1428,8 +1445,8 @@ jpivar:     $self->_pi_var($pi, $valarr);
       }
 
       elsif ($pi eq 'raw_include') {
+         ($pi, $i) = $self->_expand_include_path($i);
          $self->_prepare_recursion($self->ctx, 0);
-         $i = Expander::_expand_include_path($i);
          ::panic($self->ctx, "raw_include: can't read '$i': $^E")
             unless open RI, '<', $i;
          foreach (readline RI) { # XXX readline errs?
@@ -1579,16 +1596,29 @@ jleave:
    } # }}}
 
    sub _expand_include_path { # {{{
-      my ($path) = @_;
+      my ($self, $path) = @_;
       my $l = '';
+      my $incdir = $self->ctx->incdird;
+      $incdir = '.' unless defined $incdir;
+
       if ($path =~ /^~(.*)$/) {
-         $l = $ENV{HOME} . '/' if $ENV{HOME};
+         $incdir = $ENV{HOME} if $ENV{HOME};
          goto jset;
       } elsif ($path =~ /^\+(.*)$/) {
-         $l = $ENV{WEB42INC} . '/' if $ENV{WEB42INC};
-jset:    $path = $l . $1;
+         $incdir = $ENV{WEB42INC} if $ENV{WEB42INC};
+jset:    $l = $incdir . '/';
+         $path = $l . $1;
+      } else {
+         $path = File::Spec->catfile($incdir, $path);
+         $path = Cwd::realpath($path);
+         if (defined $path) {
+            my ($dn, $i, $bn) = File::Spec->splitpath($path);
+            $incdir = File::Spec->catpath($dn, $i, '');
+         } else {
+            $path = $incdir = ''; # ::panic()s later on, pass 'em up
+         }
       }
-      $path
+      ($incdir, $path)
    } # }}}
 
    sub _create_subproc { # {{{
@@ -1621,14 +1651,19 @@ jset:    $path = $l . $1;
          ::e($self->ctx, '[<?'. $type .'?> evaluation errors occurred]') if $?;
       } else {
          # Child
-         close RDC; # xxx err hdl.
-         open(STDOUT, '>&=', fileno WRP) || die;
+         ::panic($self->ctx, "child cannot perform chdir(2): $^E")
+            if defined $self->ctx->chdird && ! chdir $self->ctx->chdird;
+         ::panic($self->ctx, "child can't close input channel: $^E")
+            unless close RDC;
+         ::panic($self->ctx, "child can't redirect output channel: $^E")
+            unless open STDOUT, '>&=', fileno WRP;
          if ($type eq 'perl') {
             eval $eval_args_ar;
             exit($@ ? 1 : 0);
          } else {
-            exec '/bin/sh', '-c', $eval_args_ar;
-            exit 1;
+            ::panic($self->ctx, "child failed to exec /bin/sh: $^E")
+               unless exec '/bin/sh', '-c', $eval_args_ar;
+            exit 99;
          }
       }
       $self
