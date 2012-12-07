@@ -230,7 +230,6 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
          $bn = Cwd::realpath($eo);
          ($dn, $i, $bn) = File::Spec->splitpath($bn);
          $dird = File::Spec->catpath($dn, $i, '');
-         xpanic("S-Web42 BUG #1 - please report this") unless $dird;
       } else {
          $m |= &Ctx::MODE_INFH;
          $eo = 'STDIN';
@@ -265,6 +264,7 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
    foreach my $n (@Site::refresh_nodes) {
       next if $n->isdir;
       if ($n->isexpandable) {
+         xv("Checking '" . $n->site_path);
          my $i = $n->parent->source_path;
          Ctx->new(mode => $n->filters, chdird => $i, incdird => $i,
             sumup => $n->source_path)->full_expand_lifecycle;
@@ -272,12 +272,12 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
          # Site:: has set .ocksum to whatever made sense - we can use it here
          if ($i eq $n->ocksum) {
             $n->unset_refresh;
-            xvv(".. '" . $n->site_path . "'" . ': output checksum matches');
+            xv(".. '" . $n->site_path . "'" . ': output checksum matches');
             next;
          }
          $n->ocksum($i);
       }
-      xv("'" . $n->site_path . "' content changed, including it");
+      print $LOGFH "'", $n->site_path, "' content changed, including it\n";
       Target::add($n);
    }
 
@@ -294,7 +294,7 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
    Cache::update() unless $NO_UPDATE_CACHE;
 
 jEXIT:
-   exit $ERRORS ? 1 : 0;
+   exit($ERRORS ? 1 : 0);
 } # }}}
 
 # Support subs {{{
