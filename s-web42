@@ -461,14 +461,15 @@ jresetarr:  $pivars->{$key} = [];
       my ($pivars, $secs) = @_;
       $secs = time unless defined $secs;
       my (@a, @la, $s);
+      sub __zpad { ($_[0] < 10 ? '0' : '') . $_[0] }
       unless ($HAVE_TIMEPIECE) {
          $s = [gmtime $secs];
          $a[0] = $s->[5] + 1900;
-         $a[1] = $s->[4] + 1;
-         $a[2] = $s->[3];
-         $a[3] = $s->[2];
-         $a[4] = $s->[1];
-         $a[5] = $s->[0];
+         $a[1] = __zpad($s->[4] + 1);
+         $a[2] = __zpad($s->[3]);
+         $a[3] = __zpad($s->[2]);
+         $a[4] = __zpad($s->[1]);
+         $a[5] = __zpad($s->[0]);
          @la = @a;
          $a[6] = 'UTC';
          $la[6] = '+0000';
@@ -482,11 +483,11 @@ jresetarr:  $pivars->{$key} = [];
          sub __fill {
             my ($r, $t, $utc) = @_;
             $r->[0] = $t->year;
-            $r->[1] = $t->mon;
-            $r->[2] = $t->day;
-            $r->[3] = $t->hour;
-            $r->[4] = $t->min;
-            $r->[5] = $t->sec;
+            $r->[1] = __zpad($t->mon);
+            $r->[2] = __zpad($t->mday);
+            $r->[3] = __zpad($t->hour);
+            $r->[4] = __zpad($t->min);
+            $r->[5] = __zpad($t->sec);
             if ($utc) {
                $r->[6] = 'UTC';
             } else {
