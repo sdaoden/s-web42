@@ -4,7 +4,7 @@ my $SELF = 's-web42'; #@ One more option to manage your website.
 #@ Web       : http://sdaoden.users.sourceforge.net/code.html
 #@ Git       : git.code.sf.net/p/s-web42/code
 #@ Git browse: http://sourceforge.net/p/s-web42/code/
-#@ Requires  : S-SymObj (from CPAN or visit the Web: link from above).
+#@ Requires  : S-SymObj >=v0.8.0 (from CPAN or visit the Web: link from above).
 #@ Use: in CWD "site/" is the source tree, (optional) "hook" will act as a per
 #@ directory hook, (optional) "config.rc" as a global PI variable setter.
 #@ "cache.dat" will be used as database to remember timestamps and checksums.
@@ -59,11 +59,12 @@ eval { require Time::Piece; };
 
 BEGIN {
    eval { require SymObj };
-   if ($@) {
+   if ($@ || $SymObj::VERSION lt '0.8.0') {
       (my $msg = <<'      __EOT__') =~ s/^      //gm;
 
       PANIC PANIC PANIC
-        The S-SymObj module cannot be loaded.
+        The S-SymObj module cannot be loaded, or it is too old
+        to be usable by S-Web42 (v0.8.0 or newer is required).
         If it is missing on your system, then you may either get
         it from Perl's CPAN and install it as a regular part of
         your perl(1) installation, which is just as easy as:
@@ -1020,11 +1021,15 @@ jresetarr:  $pivars->{$key} = [];
             $self->outfh($curr->outfh);
          }
          $self->mtime($curr->mtime);
-         $self->pivars($curr->pivars);
          $self->chdird($curr->chdird);
          $self->incdird($curr->incdird) unless defined $self->incdird;
+         $curr = $curr->pivars;
       } else {
-         $self->pivars($PIVars::outermost);
+         $curr = $PIVars::outermost;
+      }
+
+      while (my ($i, $j) = each %$curr) {
+         $self->pivars($i, SymObj::clone_ref($j));
       }
    });
 
