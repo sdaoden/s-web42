@@ -1,8 +1,13 @@
 # (Optimized for stripping down even without tagsoup joining)
-TITLE ?= TITLE not set
-PACK_LEVEL ?= 1
-<?begin?>
+<?mode atsm?>
+
+<?ifndef PACK_LEVEL?>
+ <?def PACK_LEVEL<>1?>
+<?fi?>
 <?ifndef HOMEPAGE?>
+ <?ifndef HOME?>
+  <?def HOME<>index.html?>
+ <?fi?>
  <?TOPMENU unshift<>\
   <a class="_home" href="<^HOME^>" title="Homepage">Home</a>?>
 <?fi?>
@@ -27,6 +32,8 @@ PACK_LEVEL ?= 1
   <a class="_first" href="<^FIRST^>" title="First page"><^NAVI_FIRST^></a>?>
 <?fi?>
 
+##  --  >8  --  8<  --  ##
+
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" \
  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\
@@ -36,7 +43,7 @@ PACK_LEVEL ?= 1
 \
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />\
 <meta name="Author" content="<?AUTHOR_AND_EMAIL_RAW?>" />\
-<meta name="Generator" content="vim and S-Web42" />\
+<meta name="Generator" content="vim(1) and S-Web42" />\
 <?ifdef DESC?>\
  <meta name="Description" content="<?DESC?>" />\
 <?fi?>\
@@ -70,6 +77,7 @@ PACK_LEVEL ?= 1
 \
 <div id="_title"><h<?PACK_LEVEL?>>\
 <?ifdef HEADLINE?><?HEADLINE?><?else?><?TITLE?><?fi?>\
-</h<?PACK_LEVEL?>></div>
-<?end?>
+</h<?PACK_LEVEL?>></div>\
+\
+<?mode %?>
 # vim:set fenc=utf-8 syntax=xml ts=1 sts=1 sw=1 et tw=79:
