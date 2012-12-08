@@ -1,10 +1,36 @@
 # (Optimized for stripping down even without tagsoup joining)
-<?begin?>
+<?mode atsm?>
+
+<?ifndef HOMEPAGE?>
+ <?ifdef LAST?>
+  <?BOTMENU unshift<>\
+   <a class="_last" href="<^LAST^>" title="Last page"><^NAVI_LAST^></a>?>
+ <?fi?>
+ <?ifdef NEXT?>
+  <?BOTMENU unshift<>\
+   <a class="_next" href="<^NEXT^>" title="Next page"><^NAVI_NEXT^></a>?>
+ <?fi?>
+ <?ifdef UP?>
+  <?BOTMENU unshift<>\
+   <a class="_up" href="<^UP^>" title="Up to higher level"><^NAVI_UP^></a>?>
+ <?fi?>
+ <?ifdef PREV?>
+  <?BOTMENU unshift<>\
+   <a class="_prev" href="<^PREV^>" title="Previous page"><^NAVI_PREV^></a>?>
+ <?fi?>
+ <?ifdef FIRST?>
+  <?BOTMENU unshift<>\
+   <a class="_first" href="<^FIRST^>" title="First page"><^NAVI_FIRST^></a>?>
+ <?fi?>
+<?fi?>
+<?BOTMENU unshift<><^NAVI_PTOP^>?>
+
+##  --  >8  --  8<  --  ##
+
 </div><div id="_bottom">\
 \
 <div id="_bottommenu"><ul>\
-<?TOPMENU unshift<><^NAVI_PTOP^>?>\
-<?TOPMENU loop<><li><>&nbsp;&nbsp;</li>?>\
+<?pi-if BOTMENU<>loop<><li><>&nbsp;&nbsp;</li>?>\
 </ul></div>\
 \
 <div id="_copycontact"><p>\
@@ -18,6 +44,7 @@ Copyright (c) <?COPY_DATE_SPEC?>,\
 \
 </div>\
 </body>\
-</html>
-<?end?>
+</html>\
+\
+<?mode %?>
 # vim:set fenc=utf-8 syntax=xml ts=1 sts=1 sw=1 et tw=79:
