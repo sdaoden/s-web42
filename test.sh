@@ -1,7 +1,7 @@
 #!/bin/sh -
 #@ S-Web42 unit test
 
-trap "rm -rf test-*" 0 1 2 15
+trap "rm -rf test-*; exit" 0 1 2 15
 
 errs=0
 terr() {
@@ -9,12 +9,15 @@ terr() {
 	errs=`expr ${errs} + 1`
 }
 
+WEB42=./s-web42
+RC=--no-rc
+
 tcase() {
 	tno=`expr "${2}-" : '\(.*\)-w42.*'`
 	[ -n "${3}" ] && echo "${3}" > test-${2}
 	[ -n "${4}" ] && echo "${4}" > test-eout || :> test-eout
 	[ -n "${5}" ] && echo "${5}" > test-eerr || :> test-eerr
-	./s-web42 --no-rc --eo test-${2} > test-${tno}-out 2> test-${tno}-err
+	${WEB42} ${RC} --eo test-${2} > test-${tno}-out 2> test-${tno}-err
 	cmp -s test-${tno}-out test-eout
 	[ $? -ne 0 ] && o='OUT ' || o=
 	cmp -s test-${tno}-err test-eerr
@@ -1185,6 +1188,83 @@ tcase 'MarkLo expansion (disable mode: m)' 0042-w42-ats \
 ''
 
 ## }}}
+
+## "Deep dirhier": (no) cross-file variables, incdir, chdir {{{
+
+(	WEB42=../s-web42 RC=
+	mkdir -p test-dirhier/l1/l2/l3 || {
+		echo >&2 'FAILED to create dirhier for final test'
+		exit 11
+	}
+	cd test-dirhier || {
+		echo >&2 'FAILED to chdir to test-dirhier for final test'
+		exit 12
+	}
+	CWD=`pwd`
+
+	echo > config.rc \
+'PERL = <?perl?>require Cwd; print "${BEGIN}<?FILE?><", Cwd->getcwd, ">${END}"\
+<?perl end?>
+TOPMENU @= {TOP}'
+
+	echo \
+'TOPMENU @= [11]
+FILE = (11)
+<?begin?><?PERL?><?include l2/f1?><?include l2/f2?><?TOPMENU loop?><?end?>' \
+	> l1/f1
+
+	echo \
+'TOPMENU @= [21]
+FILE = (21)
+<?begin?><?PERL?><?include l3/f1?><?include l3/f2?><?TOPMENU loop?><?end?>' \
+	> l1/l2/f1
+
+	echo \
+'TOPMENU @= [22]
+FILE = (22)
+<?begin?><?PERL?><?raw_include l3/f3?><?TOPMENU loop?><?end?>' \
+	> l1/l2/f2
+
+	echo \
+'TOPMENU @= [31]
+FILE = (31)
+<?begin?><?PERL?><?include ../f2?><?TOPMENU loop?><?end?>' \
+	> l1/l2/l3/f1
+
+	echo \
+'TOPMENU @= [32]
+FILE = (32)
+<?begin?><?PERL?><?include ../f2?><?TOPMENU loop?><?end?>' \
+	> l1/l2/l3/f2
+
+	printf 'Jo-Ho-Ho' > l1/l2/l3/f3
+
+	tcase 'FINALLY: deep dirhier' 4221-w42 \
+'<?begin?>START<?include l1/f1?>END<?end?>' \
+\
+"START\
+(11)<${CWD}>\
+(21)<${CWD}>\
+(31)<${CWD}>\
+(22)<${CWD}>Jo-Ho-Ho\
+{TOP}[11][21][31][22]\
+{TOP}[11][21][31]\
+(32)<${CWD}>\
+(22)<${CWD}>Jo-Ho-Ho\
+{TOP}[11][21][32][22]\
+{TOP}[11][21][32]\
+{TOP}[11][21]\
+(22)<${CWD}>Jo-Ho-Ho\
+{TOP}[11][22]\
+{TOP}[11]\
+END" \
+\
+''
+
+	[ ${errs} -eq 0 ]
+)
+
+# }}}
 
 [ ${errs} -eq 0 ] && exit 0 || {
 	printf "=======\nThere were ${errs} error(s)\n"
