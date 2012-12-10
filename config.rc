@@ -4,7 +4,7 @@
 
 COMPRESS = gzip
 IGNORE_MODTIME = 1
-WWW = <strong class="_web" title="WEB!">&infin;</strong>
+WWW = <strong class="_web" title="WEB!">&infin;</strong>&nbsp;
 
 ## Example navigation for interaction with example header/footer
 
@@ -21,9 +21,12 @@ PTOP_NAVI   = <div class="_topdown"><p><a class="_topdownmove" \
             href="#_top" title="Page-Top">&uarr;</a>&nbsp;&nbsp;\
             <a class="_topdownmove" href="#_bottom" \
             title="Page-Bottom">&darr;</a></p></div>
+
+# Navigation menu for *header*
 TOPMENU @= <?lreft disccopy.html<>Imprint/Disclaimer?>
-TOPMENU @= <?lreft person.html<>I?>
-TOPMENU @= <?lreft code.html<>Code?>
+
+# Navigation menu for *footer*
+# *footer* unshifts this *last* BOTMENU @= <?NAVI_PTOP?>
 
 ## Contact information
 
