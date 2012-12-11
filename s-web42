@@ -670,6 +670,7 @@ jresetarr:  $pivars->{$key} = [];
       return unless defined $Node::root->files || defined $Node::root->dirs;
 
       ::xv("Testing modification times/input checksums");
+      our $ignmod = $PIVars::outermost->{IGNORE_MODTIME};
       sub __traverse {
          my ($dnode) = @_;
          if ($dnode->parent) {
@@ -690,7 +691,7 @@ jresetarr:  $pivars->{$key} = [];
                next;
             }
 
-            $fn->modtime((stat $fn->source_path)[9]);
+            $fn->modtime($ignmod ? 0 : (stat $fn->source_path)[9]);
             my $cos = undef;
             # Sofar ->isrefresh transports users' force-rebuild desire..
             if (! $fn->isknown || $fn->isrefresh ||
