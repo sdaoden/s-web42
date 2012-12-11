@@ -1188,6 +1188,9 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
 
    sub _prepare_recursion {
       my ($self, $ctx, $mode, $epair) = @_;
+      # Ensure we rant before perl(1) on deep recursion
+      ::e($self->ctx, "Deep recursion warning: code is nested 100 times, " .
+         "maybe there's a loop?") if @{$self->recursion} >= 99 * 3;
       $self->_emit->recursion($self->ctx, $self->mode,
          defined $epair ? $epair : '[Recursion was not opened via paired PI!]');
       $self->ctx($ctx) if defined $ctx;
