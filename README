@@ -304,17 +304,21 @@ actions:
    characters are squeezed to a single (ASCII) space character.
 
 *MarkLo expansion* (disable mode: ``m``)
-   As a last step some *MarkLo* markers will be converted to markup:
+   As a last step some *MarkLo* markers will be converted to markup.
+   Expanded content is reevaluated until no more expansion is possible.
+   *MarkLo* detection and expansion is neither performed across newline
+   boundaries nor PI occurrences, and there is no possibility to escape
+   *MarkLo* expansion (e.g., via backslash escaping) except by turning
+   it off entirely. ::
 
-   * ``*CONTENT*`` will be ``<it>CONTENT</it>``.
-   * ``**CONTENT**`` will be ``<b>CONTENT</b>``.
-   * ``_CONTENT_`` will be ``<ul>CONTENT</ul>``.
-   * \` ``CONTENT``\ ` will be ``<tt>CONTENT</tt>``.
+      \c{CONTENT}  ->  <tt>CONTENT</tt>
+      \i{CONTENT}  ->  <em>CONTENT</em>
+      \b{CONTENT}  ->  <strong>CONTENT</strong>
+      \u{CONTENT}  ->  <u>CONTENT</u>
 
-   To prevent these expansions, escape the (first) trigger character
-   with a backslash -- such a backslash will be removed: to have
-   a backslash in front of one of the trigger characters, escape the
-   backslash with a(n) (uneven number of) backslash(es).
+      \i{I \b{really \u{love} you}, baby!}
+      ->
+      <em>I <strong>really <u>love</u> you</strong>, baby!</em>
 
 Finally a ``-w42`` file content example::
 
@@ -328,17 +332,17 @@ Finally a ``-w42`` file content example::
       # Yet another comment line
     This LN \
       use\
-         s *NL* escaping.\\\\
+         s \i{NL} escaping.\\\\
 
    <?end?>
    ->
-   <p>Yo S-Web42.</p><p>Ziggy. This LN uses <it>NL</it> escaping.\\</p>
+   <p>Yo S-Web42.</p><p>Ziggy. This LN uses <em>NL</em> escaping.\\</p>
 
 But -- feel free::
 
-   <?begin?>*Hello*, S-Web42.<?end?>
+   <?begin?>\i{Hello}, S-Web42.<?end?>
    ->
-   <it>Hello</it>, S-Web42.
+   <em>Hello</em>, S-Web42.
 
 Assignments
 -----------

@@ -11,7 +11,7 @@ terr() {
 
 tcase() {
 	tno=`expr "${2}-" : '\(.*\)-w42.*'`
-	echo "${3}" > test-${2}
+	[ -n "${3}" ] && echo "${3}" > test-${2}
 	[ -n "${4}" ] && echo "${4}" > test-eout || :> test-eout
 	[ -n "${5}" ] && echo "${5}" > test-eerr || :> test-eerr
 	./s-web42 --no-rc --eo test-${2} > test-${tno}-out 2> test-${tno}-err
@@ -1102,6 +1102,20 @@ tcase 'Oneline document (sh(1))' 9.2-w42-atm \
 ''
 
 # }}}
+
+## MarkLo {{{
+
+printf '<?begin?>\nSTART\\c{tt}\\i{em}\\b{strong}\\u{u}\n\\i{I \\b{really \\u{love} you}, baby!}END\n<?end?>' > test-0042-w42-ats
+
+tcase 'MarkLo expansion (disable mode: m)' 0042-w42-ats \
+'' \
+\
+'START<tt>tt</tt><em>em</em><strong>strong</strong><u>u</u>
+<em>I <strong>really <u>love</u> you</strong>, baby!</em>END' \
+\
+''
+
+## }}}
 
 [ ${errs} -eq 0 ] && exit 0 || {
 	printf "=======\nThere were ${errs} error(s)\n"

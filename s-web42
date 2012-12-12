@@ -1226,13 +1226,15 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
       $self
    }
 
+   # Data output {{{
    sub _add_data {
       my ($self, $dat) = @_;
-      unless ($self->discard || ! $dat) {
-         ${$self->__line_len} += length $dat;
-         $self->data($dat);
-         $self->seen_data(1);
-      }
+      goto jleave if $self->discard || ! $dat;
+      $dat = _marklo_ex($dat) if $self->mode & Filter::MARKLO;
+      ${$self->__line_len} += length $dat;
+      $self->data($dat);
+      $self->seen_data(1);
+jleave:
       $self
    }
 
@@ -1271,6 +1273,7 @@ jleave_keeplen:
       @{$self->data} = ();
       $self
    }
+   # }}}
 
    sub _expand_pis {
       my ($self, $l) = @_;
@@ -1604,6 +1607,38 @@ jleave:
 jleave:
       $self
    } # }}}
+
+   # MarkLo {{{
+   # Thanks to '$ man perlre' is proper.
+   our $nestmlo = qr{
+         (.*)
+         \\([cibu])\{
+            (?:
+               ([^\}]+)
+            |
+               (??{ $Expander::nestmlo })
+            )*
+         \}
+         (.*)
+   }x;
+
+   sub _marklo_ex {
+      my ($in) = @_;
+      my $dat = '';
+      while ($in =~ /(.*?)(\\[cibu]\{.*)/) {
+         $dat .= $1 if $1;
+         $in = $2;
+         while ($in =~ /$nestmlo/) {
+            my ($s, $e);
+            $s = {c => 'tt', i => 'em', b => 'strong', u => 'u'}->{$2};
+            $e = '</' . $s . '>';
+            $s = '<' . $s . '>';
+            $in = $1 . $s . $3 . $e . $4;
+         }
+      }
+      $dat .= $in;
+   }
+   # }}}
 
    sub _expand_include_path { # {{{
       my ($self, $path) = @_;
