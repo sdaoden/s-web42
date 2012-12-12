@@ -1240,34 +1240,35 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
       my ($self) = @_;
       my $m = $self->mode;
       if ($self->line_len) {
-         goto jleave if $self->discard || ($m & NL_FLUX);
+         goto jleave_keeplen if $m & NL_FLUX;
       } elsif (($m & (Filter::WIPEEL|NL_FLUX)) != 0 && ($m & NL_FORCE) == 0) {
          goto jleave;
       }
-      $self->data("\n");
       $self->seen_data(2);
-      $self->_emit;
+      $self->_emit(1);
 jleave:
+      $self->line_len(0);
+jleave_keeplen:
       $m &= ~(NL_FLUX|NL_FORCE);
       $self->mode($m);
-      #@{$self->data} = (); XXX
-      $self->line_len(0);
       $self
    }
 
    sub _emit {
-      my $self = shift;
+      my ($self, $endl) = @_;
       if (defined ${$self->__data_condome}) {
          push @{$self->data_condome}, join('', @{$self->data});
-      } elsif (! $self->discard) {
-         foreach my $d (@{$self->data}) {
-            next unless $d;
-            ::panic($self->ctx, "Failed to perform output: $^E")
-               unless print {$self->ctx->outfh} $d;
+      } else {
+         if (! $self->discard) {
+            foreach my $d (@{$self->data}) {
+               ::panic($self->ctx, "Failed to perform output: $^E")
+                  unless print {$self->ctx->outfh} $d;
+            }
          }
+         ::panic($self->ctx, "Failed to perform output: $^E")
+            unless ! $endl || print {$self->ctx->outfh} "\n";
       }
       @{$self->data} = ();
-      #$self->line_len(0); XXX
       $self
    }
 
@@ -1310,7 +1311,6 @@ jpivar:     $self->_pi_var($pi, $valarr);
       $self->_endl;
       $self
    }
-
 
    sub _pi_comm { # {{{
       my ($self, $pi, $valarr) = @_;
@@ -1436,6 +1436,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
 
       elsif ($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
             $pi eq 'fi') {
+         $self->_emit;
          $pi = Expander::Ifdef::handle_pi(scalar $self->ifdefs, $self->ctx,
                $pi, $i);
          $self->discard($pi) if $pi >= 0;
@@ -1632,7 +1633,7 @@ jset:    $l = $incdir . '/';
 
    sub _create_subproc { # {{{
       my ($self, $type) = @_;
-      my $eval_args_ar = join '', @{$self->data_condome};
+      my $eval_args_ar = join "\n", @{$self->data_condome};
       ${$self->__data_condome} = undef;
 
       ::panic($self->ctx, "can't create communication for <?$type?>: " . $^E)

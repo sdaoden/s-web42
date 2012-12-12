@@ -718,6 +718,11 @@ no.24
 
 <?ifdef 0?>1<?else?>2<?fi?><?ifndef 0?>3<?else?>4<?fi?><?ifndef 0?>5<?ifdef 0?>6<?else?>7<?fi?>8<?else?>9<?fi?>:)
 
+<?ifdef 0?>1<?else?>
+2<?fi?>3<?ifndef 0?>
+4<?else?>5<?fi?>6<?ifndef 0?>7<?else?>
+8<?fi?>9
+
 <?ifdef 0?>
  <?NON-EXISTENT-PI?>
  <?ifdef 0?>
@@ -738,10 +743,13 @@ yes.10
 yes.11
 yes.12
 yes.13
-23578:)' \
+23578:)
+23
+467
+9' \
 \
-"ERROR 'test-0005-w42-atm':104: ifn?def: was started here, but where's the <?fi?>?
-ERROR 'test-0005-w42-atm':104: ifn?def: was started here, but where's the <?fi?>?"
+"ERROR 'test-0005-w42-atm':109: ifn?def: was started here, but where's the <?fi?>?
+ERROR 'test-0005-w42-atm':109: ifn?def: was started here, but where's the <?fi?>?"
 
 ## }}}
 ## ?include?.. {{{
