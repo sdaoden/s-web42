@@ -243,6 +243,7 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
    # Traversal over all (non-deleted) files, query modification time and input
    # source checksum
    Site::inspect_tree();
+   $DELETE_OK = 1;
    unless (@Site::delete_nodes || @Site::refresh_nodes) {
       print $LOGFH "Nothing to do.\n";
       goto jEXIT;
@@ -250,7 +251,6 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
 
    ## Phase 2) we (most likely) have to perform updates on the target and thus
    ## will create a shell archive (always) and a new cache database (likely)
-   $DELETE_OK = 1;
 
    # Open the target and already place the deletion and mkdir commands that may
    # be necessary
