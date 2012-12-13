@@ -1787,6 +1787,9 @@ jset:    $l = $incdir . '/';
 
    sub attribute {
       my $t = shift;
+      # We need to expand MarkLo because otherwise that would (XXX possibly)
+      # become expanded later and then this attribute would contain markup!
+      $t = Expander::_marklo_ex($t);
       $t = clean_tags($t);
       $t =~ s/"/\"/g;
       $t
