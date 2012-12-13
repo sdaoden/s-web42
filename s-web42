@@ -1426,7 +1426,8 @@ jpivar:     $self->_pi_var($pi, $valarr);
          $w = '' unless defined $w;
          $w .= '&nbsp;' if length $w;
          $i = '<a href="' . $i . '">' . $w . $i . '</a>';
-         if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
+         #if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
+         $self->rest_data($i);
          goto jleave;
       } elsif ($pi eq 'hreft' || $pi eq 'lreft') {
          $pi = ($pi eq 'hreft');
@@ -1438,7 +1439,8 @@ jpivar:     $self->_pi_var($pi, $valarr);
          $tm = $valarr->[1];
          $t = Expander::Markup::attribute($tm);
          $i = '<a href="' . $i . '" title="' . $t . '">' . $w . $tm . '</a>';
-         if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
+         #if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
+         $self->rest_data($i);
          goto jleave;
       }
 
