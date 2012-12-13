@@ -752,7 +752,7 @@ yes.13
 ERROR 'test-0005-w42-atm':109: ifn?def: was started here, but where's the <?fi?>?"
 
 ## }}}
-## ?include?.. {{{
+## ?x?include?.. {{{
 
 echo '<?begin?>1.1<?include test-0006-2?>1.2<?end?>AFTER END' > test-0006-1
 echo '<?begin?>2.1<?include test-0006-3?>2.2<?end?>AFTER END' > test-0006-2
@@ -768,13 +768,18 @@ MYVAR = )
 <?end?>' > test-0006-4
 printf '<?begin?>;<?end?>AFTER END' > test-0006-5
 
-tcase 'include' 0006-w42-atm \
+echo 'Embedded file <?def crossfile<>with?><?crossfile?> NL' > test-0006-6
+printf 'And an embedded file <?crossfile?>out NL' > test-0006-7
+
+tcase 'x?include' 0006-w42-atm \
 '<?begin?>
 START<?include test-0006-1?>END
 <?include test-0006-4?>
 5.1
 <?include test-0006-5?>
 5.2<?include test-0006-5?>5.3
+:<?xinclude test-0006-6?>-<?xinclude test-0006-7?>.
+Passed <?crossfile?><?undef crossfile?>out errors.
 <?end?>' \
 \
 'START1.12.1:2.21.2END
@@ -783,7 +788,10 @@ START<?include test-0006-1?>END
 4.2
 5.1
 ;
-5.2;5.3' \
+5.2;5.3
+:Embedded file with NL
+-And an embedded file without NL.
+Passed without errors.' \
 \
 ''
 
@@ -1001,12 +1009,12 @@ not tried it.' \
 ''
 
 # }}}
-## perl/sh {{{
+## x?perl/x?sh {{{
 
 echo 'When the Blitzkrieg raged' > test-0009-1
 echo 'And the bodies stank' > test-0009-2
 
-tcase 'perl/sh' 0009-w42-atm \
+tcase 'x?perl/x?sh' 0009-w42-atm \
 'PERL = perl(1)
 SH = sh(1)
 <?begin?>
@@ -1067,6 +1075,17 @@ echo "${BEGIN}"
 echo pipe | tr "[:lower:]" "[:upper:]"
 echo "${END}"
 <?sh end?>
+
+:<?xperl?>
+print "Embedded sentence ${PIS}def crossfile<>with?>${PIS}crossfile?> NL\n";
+print "And an embedded sentence ${PIS}crossfile?>out NL";
+<?xperl end?>.
+Passed <?crossfile?><?undef crossfile?>out errors.
+:<?xsh?>
+echo "Embedded sentence ${PIS}def crossfile<>with?>${PIS}crossfile?> NL"
+printf "And an embedded sentence ${PIS}crossfile?>out NL"
+<?xsh end?>.
+Passed <?crossfile?><?undef crossfile?>out errors.
 <?end?>' \
 \
 'Hello, perl(1).
@@ -1083,7 +1102,13 @@ perl string
 HAHAHA
 perl string   HOHOHOperl string
 perl string   HIHIHIperl string
-PIPE' \
+PIPE
+:Embedded sentence with NL
+And an embedded sentence without NL.
+Passed without errors.
+:Embedded sentence with NL
+And an embedded sentence without NL.
+Passed without errors.' \
 \
 ''
 

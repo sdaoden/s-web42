@@ -121,15 +121,15 @@ our %PIS = (
    end      => 0,
    href     => 1,    hreft       => 2,    lref     => 1,    lreft => 2,
    ifdef    => 1,    ifndef      => 1,    'else'   => 0,    fi    => 0,
-   include  => 1,    raw_include => 1,
-   perl     => 0,    sh          => 0,
+   include  => 1,    xinclude    => 1,    raw_include => 1,
+   perl     => 0,    xperl       => 0,    sh       => 0,    xsh   => 0,
    'pi-if'  => -1,
    pre      => 0,    xpre        => 0,
    'undef'  => 1
 );
 our %MULTILINE_PIS = (
-   perl  => 0,       sh          => 0,
-   pre   => 0,       xpre        => 0
+   perl     => 0,    xperl       => 0,    sh       => 0,    xsh   => 0,
+   pre      => 0,    xpre        => 0
 );
 our %ALWAYS_REEVAL_PIS = (
    ifdef    => 0,    ifndef      => 0,    'else'   => 0,    fi    => 0,
@@ -980,8 +980,9 @@ jresetarr:  $pivars->{$key} = [];
    sub MODE_INFH()      { 1<<(Filter::MAXSHIFT + 1) }
    sub MODE_OUTFH()     { 1<<(Filter::MAXSHIFT + 2) }
    sub MODE_CONFIGRC()  { 1<<(Filter::MAXSHIFT + 3) }
+   sub MODE_EMBED()     { 1<<(Filter::MAXSHIFT + 4) } # no ?begin?/?end?
 
-   sub MAXSHIFT()       { Filter::MAXSHIFT + 3 }
+   sub MAXSHIFT()       { Filter::MAXSHIFT + 4 }
 
    sub full_expand_lifecycle {
       my ($self) = @_;
@@ -1008,6 +1009,7 @@ jresetarr:  $pivars->{$key} = [];
       _mtime         => undef,   # Modification time (outermost level only)
       _begin_line    => undef,   # <?begin?> line, if followed by content
       _empties_seen  => 0,       # No. of empty lines last readline() skipped
+      _seen_endl     => 0        # Last readline_full() saw \s+$
    }, sub {
       my $self = $_[0];
       my $curr = $self->outer;
@@ -1029,8 +1031,12 @@ jresetarr:  $pivars->{$key} = [];
          $curr = $PIVars::outermost;
       }
 
-      while (my ($i, $j) = each %$curr) {
-         $self->pivars($i, SymObj::clone_ref($j));
+      if ($self->mode & MODE_EMBED) {
+         $self->{_pivars} = $curr;
+      } else {
+         while (my ($i, $j) = each %$curr) {
+            $self->pivars($i, SymObj::clone_ref($j));
+         }
       }
    });
 
@@ -1068,6 +1074,7 @@ jresetarr:  $pivars->{$key} = [];
    sub read_assignments {
       my ($self, $l, $saved_mode) = (shift);
       $saved_mode = $self->mode;
+      return $self if $saved_mode & MODE_EMBED;
       $self->mode(Filter::ASSIGNMENTS_FILTERS);
       while (defined($l = $self->readline_assignments)) {
          if ($l =~ /^<\?begin\?>(.*)$/) {
@@ -1105,12 +1112,13 @@ jresetarr:  $pivars->{$key} = [];
       $self->empties_seen(0);
       if (defined($nl = $self->begin_line)) {
          $self->begin_line(undef);
+         $self->seen_endl(1);
          goto jumpin;
       }
       while ($nl = readline $self->infh) {
          ++${$self->__lineno};
-jumpin:  $nl =~ s/(.*?)\s+$/$1/;
-         $nl =~ s/^\s+(.*)/$1/ if $af & Filter::INTROWS;
+         $self->seen_endl($nl =~ s/(.*?)\s+$/$1/);
+jumpin:  $nl =~ s/^\s+(.*)/$1/ if $af & Filter::INTROWS;
          if (! length $l && ($af & Filter::COMMS)) {
             next if $nl =~ /^#/;
          }
@@ -1127,7 +1135,15 @@ jumpin:  $nl =~ s/(.*?)\s+$/$1/;
          last unless $af & Filter::WIPEEL;
          ++${$self->__empties_seen};
       }
-      $self->line($l ? $l : defined $nl ? $l : undef);
+      if (! $l && ! defined $nl) {
+         if ($self->mode & MODE_EMBED) {
+            ${$self->__mode} &= ~MODE_EMBED;
+            $l = '<?end?>';
+         } else {
+            $l = undef;
+         }
+      }
+      $self->line($l);
    }
 } # }}}
 
@@ -1275,7 +1291,7 @@ jleave_keeplen:
    }
    # }}}
 
-   sub _expand_pis {
+   sub _expand_pis { # {{{
       my ($self, $l) = @_;
 
       while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/) {
@@ -1311,9 +1327,9 @@ jpivar:     $self->_pi_var($pi, $valarr);
       }
 
       $self->_add_data($l) if $l;
-      $self->_endl;
+      $self->_endl if $self->ctx->seen_endl;
       $self
-   }
+   } # }}}
 
    sub _pi_comm { # {{{
       my ($self, $pi, $valarr) = @_;
@@ -1446,11 +1462,13 @@ jpivar:     $self->_pi_var($pi, $valarr);
          goto jleave;
       }
 
-      elsif ($pi eq 'include') {
+      elsif ($pi eq 'include' || $pi eq 'xinclude') {
+         my $ctx = ($self->mode & ~(Ctx::MODE_INFH|Ctx::MODE_EMBED)) |
+               ($pi eq 'xinclude' ? Ctx::MODE_EMBED : 0);
          ($pi, $i) = $self->_expand_include_path($i);
-         my $ctx = Ctx->new(outer => $self->ctx, incdird => $pi,
-               mode => ($self->mode & ~Ctx::MODE_INFH), sumup => $i);
-         $self->_prepare_recursion($ctx);
+         $ctx = Ctx->new(outer => $self->ctx, incdird => $pi,
+               mode => $ctx, sumup => $i);
+         $self->_prepare_recursion($ctx, $ctx->mode);
          $ctx->open->read_assignments;
          $self->_consume->_end_recursion;
          $ctx->close;
@@ -1473,18 +1491,19 @@ jpivar:     $self->_pi_var($pi, $valarr);
          goto jleave;
       }
 
-      elsif ($pi eq 'perl' || $pi eq 'sh') {
+      elsif ($pi eq 'perl' || $pi eq 'xperl' || $pi eq 'sh' || $pi eq 'xsh') {
          if ($i) {
             $self->_end_recursion;
             $self->_create_subproc($pi);
          } elsif (defined ${$self->__data_condome}) {
             ::panic($self->ctx,
-               'There is already one of <?perl/sh?> active!'); 
+               'There is already one of <?x?perl/x?sh?> active!'); 
          } else {
             $self->_prepare_recursion(undef,
-               (($self->mode & ~Ctx::FILTER_MASK) | Filter::EXPPIS), $pi);
+               (($self->mode & ~(Ctx::FILTER_MASK|Ctx::MODE_EMBED)) |
+                  Filter::EXPPIS), $pi);
             ${$self->__data_condome} = [];
-            if ($pi eq 'perl') {
+            if ($pi eq 'perl' || $pi eq 'xperl') {
                $self->_add_data('my ($PIS, $PIE, $BEGIN, $END) = ' .
                   '("<?", "?>", "<?begin?>", "<?end?>");')->_endl;
             } else {
@@ -1681,8 +1700,8 @@ jset:    $l = $incdir . '/';
          # Parent
          close WRP; # xxx err hdl.
          my $ctx = Ctx->new(outer => $self->ctx,
-            mode => ($self->mode & Ctx::FILTER_MASK) | Ctx::MODE_INFH |
-                  Ctx::MODE_OUTFH,
+            mode => ((($self->mode & Ctx::FILTER_MASK) | Ctx::MODE_INFH |
+                  Ctx::MODE_OUTFH) | ($type =~ /^x/ ? Ctx::MODE_EMBED : 0)),
             sumup => '<?' . $type . '?> mode at ' . $self->ctx->sumup .
                   ', line ' . $self->ctx->lineno,
             infh => *RDC);
@@ -1702,7 +1721,7 @@ jset:    $l = $incdir . '/';
             unless close RDC;
          ::panic($self->ctx, "child can't redirect output channel: $^E")
             unless open STDOUT, '>&=', fileno WRP;
-         if ($type eq 'perl') {
+         if ($type eq 'perl' || $type eq 'xperl') {
             eval $eval_args_ar;
             exit($@ ? 1 : 0);
          } else {
