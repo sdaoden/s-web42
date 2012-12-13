@@ -122,6 +122,7 @@ our %PIS = (
    href     => 1,    hreft       => 2,    lref     => 1,    lreft => 2,
    ifdef    => 1,    ifndef      => 1,    'else'   => 0,    fi    => 0,
    include  => 1,    xinclude    => 1,    raw_include => 1,
+   mode     => 1,
    perl     => 0,    xperl       => 0,    sh       => 0,    xsh   => 0,
    'pi-if'  => -1,
    pre      => 0,    xpre        => 0,
@@ -1522,9 +1523,23 @@ jpivar:     $self->_pi_var($pi, $valarr);
          goto jleave;
       }
 
-
-      push @{$self->data}, "<<COMMAND:$pi||" .
-         (defined $valarr ? join(';',@$valarr) : 'NOVAL') . ">>";
+      elsif ($pi eq 'mode') {
+         if ($i eq '%') {
+            ::panic($self->ctx, "<?mode?> is NOT IN USE")
+               unless exists $self->{__omode};
+            $i = $self->{__omode};
+            delete $self->{__omode};
+         } else {
+            ::panic($self->ctx, "<?mode?> is IN USE already")
+               if exists $self->{__omode};
+            $i = Filter::string_to_filters($i);
+            $i |= Filter::EXPPIS;
+            $self->{__omode} = $self->{_mode};
+         }
+         $self->_emit->dumper->force_mode_change($self->ctx->mode(
+            $self->{_mode} = $i));
+         goto jleave;
+      }
 
 jleave:
       $self

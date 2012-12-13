@@ -1127,6 +1127,45 @@ tcase 'Oneline document (sh(1))' 9.2-w42-atm \
 ''
 
 # }}}
+## mode {{{
+
+tcase 'mode (but do not use it)' 0010-w42-atm \
+'<?begin?>
+  # Comment
+   Hello, Honey   \
+	Sugar Candy	\
+ Girl
+
+    # Comment
+<?mode icew?>
+  # Comment
+   Hello, Honey   \
+	Sugar Candy	\
+ Girl
+
+    # Comment
+<?mode %?>
+  # Comment
+   Hello, Honey   \
+	Sugar Candy	\
+ Girl
+
+    # Comment
+<?end?>' \
+\
+'Hello, Honey   Sugar Candy	Girl
+
+  # Comment
+   Hello, Honey   \
+	Sugar Candy	\
+ Girl
+
+    # Comment
+Hello, Honey   Sugar Candy	Girl' \
+\
+''
+
+## }}}
 
 ## MarkLo {{{
 
