@@ -811,6 +811,15 @@ Passed without errors.' \
 \
 ''
 
+tcase 'x?include (exclusive content)' 6.1-w42-atm \
+'<?begin?>
+<?include test-0006-5?>
+<?end?>' \
+\
+';' \
+\
+''
+
 # }}}
 ## ?raw_include?.. {{{
 
@@ -818,6 +827,25 @@ printf '1\n 2\n3\n' > ./test-0007-1
 printf '4\n  5\n\n6\n' > ./test-0007-2
 printf '7' > ./test-0007-3
 printf '8\n9' > ./test-0007-4
+
+tcase 'raw_include (direct I/O, I)' .1-w42-atm \
+'<?begin?>
+<?raw_include test-0007-3?>
+<?end?>' \
+\
+'7' \
+\
+''
+
+tcase 'raw_include (direct I/O, II)' 7.2-w42-atm \
+'<?begin?>
+<?raw_include test-0007-4?>
+<?end?>' \
+\
+'8
+9' \
+\
+''
 
 tcase 'raw_include' 0007-w42-atm \
 '<?begin?>
