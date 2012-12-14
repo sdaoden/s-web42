@@ -441,17 +441,19 @@ Processing Instructions (PIs)
 
 It follows the list of predefined processing instructions.  PIs marked
 "paired" in the list below are special in that they need a closing
-``end`` tag -- to end the paired PI ``<?perl?>`` the PI ``<?perl end?>``
-is necessary.
+``end`` tag -- to, e.g., end the paired PI ``<?perl?>`` the PI
+``<?perl end?>`` is necessary.
 
-For `def`_, `defa`_ (also via implicit array vivification) and `defx`_
-the same name restrictions apply to the introduced PI variable name
-as has been documented for `Assignments`_.  Note that the content that
-is assigned to PI variables created by those PIs may not contain PIs
-themselves, of course.  It is however possible to use the pseudo-tags
-``<^`` and ``^>`` as aliases, which will be automatically converted
-to ``<?`` and ``?>``, respectively, and via a simple regular expression,
-once the PI variable is expanded.  See `def`_ for an example.
+For `def`_, `defa`_ (also via implicit array vivification, as below)
+and `defx`_ the same name restrictions apply to the introduced PI
+variable name as has been documented for `Assignments`_.  Note that
+the content that is assigned to PI variables created by those PIs may
+not contain PIs themselves, of course.  It is however possible to use
+the pseudo-tags ``<^`` and ``^>`` as aliases there, which will be
+automatically converted to ``<?`` and ``?>``, respectively, and via a
+simple regular expression, once the PI variable is expanded; to create
+an empty tag ``<>``, the alias ``<^>`` has been provided for completeness
+sake.  See `def`_ and `defx`_ for examples.
 
 _`def`
    Define a PI which expands to it's value part when used. ::
@@ -523,10 +525,15 @@ _`defx`
    simply write the empty tag). ::
 
       <?defx var2<>Expanded <> var <> content <>?>
+         <?defx note<><em><></em>: <>.?>
+      <?defx subscription<><^note For subscribers only<^><>^>?>
+
       ...
       <?var2 arg1<>arg2<>arg3?>
+      <?subscription nonexistent list?>
       ->
       Expanded arg1 var arg2 content arg3
+      <em>For subscribers only</em>: nonexistent list.
 
 _`href`, _`hreft`, _`lref`, _`lreft`
    These purely convenience PIs expand to (X)HTML hyperlinks; the first

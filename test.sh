@@ -484,6 +484,10 @@ REE<?def reeval1<><^def reeval2<>reeval-output-ok^><^reeval2^><^undef reeval2^>?
 <?tonga loop<><> ?><br />
 <?tonga undef-empty?><?ifdef tonga?>tonga should not be there<?fi?>
 
+<?defx note<><em><></em>: <>.?>
+<?defx subscription<><^note For subscribers only<^><>^>?>
+<?subscription nonexistent list?>
+
 # ERROR(S)
 <?def error?>
 <?defa error?>
@@ -510,15 +514,16 @@ defa2-c2
 REEreeval-output-okVAL
 entry 0 entry 1 entry 2 <br />
 entry 1 <br />
-<br />' \
+<br />
+<em>For subscribers only</em>: nonexistent list.' \
 \
-"ERROR 'test-0001-w42-atm':46: def (presumably) needs (at least) 2 argument(s)
-ERROR 'test-0001-w42-atm':47: defa (presumably) needs (at least) 2 argument(s)
-ERROR 'test-0001-w42-atm':48: defx (presumably) needs (at least) 2 argument(s)
-ERROR 'test-0001-w42-atm':49: defa1: 2 is not a valid array index
-ERROR 'test-0001-w42-atm':50: defx1 takes 2 argument(s)
-ERROR 'test-0001-w42-atm':51: MODTIME_SLOCAL does not take any argument(s)
-ERROR 'test-0001-w42-atm':52: MODTIME_ALOCAL: cannot modify builtin PI (variable) via push"
+"ERROR 'test-0001-w42-atm':50: def (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atm':51: defa (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atm':52: defx (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atm':53: defa1: 2 is not a valid array index
+ERROR 'test-0001-w42-atm':54: defx1 takes 2 argument(s)
+ERROR 'test-0001-w42-atm':55: MODTIME_SLOCAL does not take any argument(s)
+ERROR 'test-0001-w42-atm':56: MODTIME_ALOCAL: cannot modify builtin PI (variable) via push"
 
 ## }}}
 ## pi-if {{{
