@@ -1290,10 +1290,13 @@ jleave_keeplen:
       my $data = $self->data;
       if (defined ${$self->__data_condome}) {
          push(@{$self->data_condome}, join('', @$data)) if @$data;
+         @{$self->data} = ();
       } elsif (@$data || defined $endl) {
          $self->dumper->put(scalar $data, $self->mode, defined $endl);
+         # Neither of @{$self->data} = ();/@{$self->__data} = []; since Dumper
+         # simply copies over the reference for simplicity
+         $self->{_data} = [];
       }
-      @{$self->data} = ();
       $self
    }
    # }}}
@@ -1773,25 +1776,28 @@ jset:    $l = $incdir . '/';
       _mode          => 0,       # Filters of currently hold data
       _expander      => undef,   # Parent
       _data          => [],      # Expanded line data, intermediate storage
-      _empties_seen  => 0,       # Any empty lines *before* current calls?
       _seen_data     => 0        # 1=yes, 2=ended with NL
    });
 
    sub terminate {
       my ($self) = @_;
+      $self->_flush if @{$self->data};
+   }
+
+   sub empties_seen {
+      my ($self, $any) = @_;
+      # If there were any empty lines seen we now we can work what we have
+      $self->_flush if @{$self->data} && $any;
    }
 
    sub put {
       my ($self, $data, $mode, $endl) = @_;
       $self->seen_data(1 + $endl) if $self->seen_data < 2;
-      my $l = 0;
-      foreach my $d (@$data) {
-         $l += length $l unless $endl;
-         ::xpanic("Failed to perform output: $^E")
-            unless print {$self->fh} $d;
-      }
-      ::xpanic("Failed to perform output: $^E")
-         unless ! $endl || print {$self->fh} "\n";
+      my $da = $self->data;
+      push @$da, [] unless @$da;
+      my $lda = $da->[@$da - 1];
+      push @$lda, $data;
+      push @$da, [] if $endl;
    }
 
    sub direct_start {
@@ -1800,6 +1806,7 @@ jset:    $l = $incdir . '/';
       $self->{__final_nl} = (! $self->expander->seen_line &&
             ! $self->expander->ctx->line);
       $self->{__endl} = 0;
+      $self->_flush(1) if @{$self->data};
       $self
    }
 
@@ -1823,10 +1830,16 @@ jset:    $l = $incdir . '/';
    }
 
    sub _flush {
-      my ($self) = @_;
-      foreach my $d (@{$self->data}) {
+      my ($self, $maybe_bad_boundary) = @_;
+      for (my $data = $self->data; @$data;) {
+         my $lda = shift @$data;
+         foreach my $la (@$lda) {
+            my $d = join '', @$la;
+            ::xpanic("Failed to perform output: $^E")
+               unless print {$self->fh} $d;
+         }
          ::xpanic("Failed to perform output: $^E")
-            unless print {$self->fh} $d;
+            unless ! @$data || print {$self->fh} "\n";
       }
    }
 } # }}}
