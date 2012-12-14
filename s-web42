@@ -1157,13 +1157,18 @@ jresetarr:  $pivars->{$key} = [];
    sub NL_FORCE() { 1<<(Ctx::MAXSHIFT + 2) }
 
    sub explode {
-      my $self = Expander->new(ctx => $_[0], mode => $_[0]->mode)->_consume;
+      my $ctx = $_[0];
+      my $self = Expander->new(ctx => $ctx, mode => $ctx->mode,
+            dumper => Expander::Dumper->new(fh => $ctx->outfh,
+            mode => $ctx->mode));
+      $self->dumper->expander($self);
       # Force a trailing newline for non-empty output files
-      if ($self->seen_data == 1) {
+      if ($self->_consume->dumper->seen_data == 1) {
          $self->discard(0);
          ${$self->__mode} |= NL_FORCE;
          $self->_endl;
       }
+      $self->dumper->terminate;
       ::e($self->ctx, 'At EOF there are paired PIs open')
          if @{$self->recursion};
    }
@@ -1171,32 +1176,35 @@ jresetarr:  $pivars->{$key} = [];
    SymObj::sym_create(SymObj::NONE, {
       _ctx        => undef,   # Ctx object we're exploding
       _mode       => 0,       # ->ctx->mode
+      _dumper     => undef,   # Output ::Dumper (+ AUTOPAR/TAGJOIN/WSNORM hdl.)
       _recursion  => [],      # For <?PAIR?> support, recursion-awareness
-      _data       => [],      # Expanded line data
+      _data       => [],      # Expanded line data, intermediate storage
       _rest_data  => undef,   # Line data for re-evaluation
       _line_len   => 0,       # Seen any line data?
       _discard    => 0,       # Discard data, don't output (?ifdef? etc.)
       _ifdefs     => [],      # Ifdef:: stack
-      _seen_data  => 0,       # Seen just any data?
       _seen_end   => 0,       # Seen <?end?>?
       _data_condome => undef  # ?perl?/?sh? intermediate layer (see _emit())
    });
 
-   sub _consume {
+   sub _consume { # {{{
       my $self = shift;
 
       unless ($self->mode & Filter::EXPPIS) {
          while (defined(my $l = $self->ctx->readline_full)) {
             if (0 <= index $l, '<?end?>') {
+               $self->dumper->empties_seen($self->ctx->empties_seen);
                $l =~ /^(.*)<\?end\?>/;
                $self->_add_data($1)->_endl if $1;
                $self->seen_end(1);
                last;
             }
+            $self->dumper->empties_seen($self->ctx->empties_seen);
             $self->_add_data($l)->_endl;
          }
       } else {
          while (defined(my $l = $self->ctx->readline_full)) {
+            $self->dumper->empties_seen($self->ctx->empties_seen);
             last if $self->_expand_pis($l)->seen_end;
          }
          Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
@@ -1205,8 +1213,9 @@ jresetarr:  $pivars->{$key} = [];
       ::e($self->ctx, 'Premature file exit, no <?end?> seen')
          if ! $self->seen_end;
       $self
-   }
+   } # }}}
 
+   # Recursion {{{
    sub _prepare_recursion {
       my ($self, $ctx, $mode, $epair) = @_;
       # Ensure we rant before perl(1) on deep recursion
@@ -1246,15 +1255,15 @@ jresetarr:  $pivars->{$key} = [];
       }
       $self
    }
+   # }}}
 
-   # Data output {{{
+   # Intermediate data output layer {{{
    sub _add_data {
       my ($self, $dat) = @_;
       goto jleave if $self->discard || ! $dat;
       $dat = _marklo_ex($dat) if $self->mode & Filter::MARKLO;
       ${$self->__line_len} += length $dat;
       $self->data($dat);
-      $self->seen_data(1);
 jleave:
       $self
    }
@@ -1267,7 +1276,6 @@ jleave:
       } elsif (($m & (Filter::WIPEEL|NL_FLUX)) != 0 && ($m & NL_FORCE) == 0) {
          goto jleave;
       }
-      $self->seen_data(2);
       $self->_emit(1);
 jleave:
       $self->line_len(0);
@@ -1281,15 +1289,9 @@ jleave_keeplen:
       my ($self, $endl) = @_;
       if (defined ${$self->__data_condome}) {
          push @{$self->data_condome}, join('', @{$self->data});
-      } else {
-         if (! $self->discard) {
-            foreach my $d (@{$self->data}) {
-               ::panic($self->ctx, "Failed to perform output: $^E")
-                  unless print {$self->ctx->outfh} $d;
-            }
-         }
-         ::panic($self->ctx, "Failed to perform output: $^E")
-            unless ! $endl || print {$self->ctx->outfh} "\n";
+      } elsif (@{$self->data} || defined $endl) {
+         $self->dumper->put(scalar $self->data, $self->mode, defined $endl,
+            $self->discard);
       }
       @{$self->data} = ();
       $self
@@ -1488,10 +1490,20 @@ jpivar:     $self->_pi_var($pi, $valarr);
          $self->_prepare_recursion($self->ctx, 0);
          ::panic($self->ctx, "raw_include: can't read '$i': $^E")
             unless open RI, '<', $i;
-         foreach (readline RI) { # XXX readline errs?
-            my $had = chomp;
-            $self->_add_data($_);
-            $self->_endl if $had;
+         # Use direct I/O if possible; we can't if redirection is active
+         if (defined ${$self->__data_condome}) {
+            foreach (readline RI) { # XXX readline errs?
+               my $had = chomp;
+               $self->_add_data($_);
+               $self->_endl if $had;
+            }
+         } else {
+            $self->dumper->direct_start;
+            foreach (readline RI) { # XXX readline errs?
+               my $had = chomp;
+               $self->dumper->direct_put($_, $had);
+            }
+            $self->dumper->direct_end;
          }
          ::panic($self->ctx, "raw_include: can't close '$i': $^E")
             unless close RI;
@@ -1754,6 +1766,73 @@ jset:    $l = $incdir . '/';
       }
       $self
    } # }}}
+
+{package Expander::Dumper; # {{{
+   SymObj::sym_create(SymObj::NONE, {
+      _fh            => undef,   # Output file handle
+      _mode          => 0,       # Filters of currently hold data
+      _expander      => undef,   # Parent
+      _data          => [],      # Expanded line data, intermediate storage
+      _empties_seen  => 0,       # Any empty lines *before* current calls?
+      _seen_data     => 0        # 1=yes, 2=ended with NL
+   });
+
+   sub terminate {
+      my ($self) = @_;
+   }
+
+   sub put {
+      my ($self, $data, $mode, $endl, $discard) = @_;
+      $self->seen_data(1 + $endl) if $self->seen_data < 2;
+      my $l = 0;
+      if (! $discard) {
+         foreach my $d (@$data) {
+            $l += length $l unless $endl;
+            ::xpanic("Failed to perform output: $^E")
+               unless print {$self->fh} $d;
+         }
+      }
+      ::xpanic("Failed to perform output: $^E")
+         unless ! $endl || print {$self->fh} "\n";
+      $self->expander->line_len($l);
+   }
+
+   sub direct_start {
+      my ($self) = @_;
+      # FIXME make these expander states an argument - "line exclusive?" or so
+      $self->{__final_nl} = ($self->expander->line_len == 0 &&
+            length($self->expander->ctx->line) == 0);
+      $self->{__endl} = 0;
+      $self
+   }
+
+   sub direct_end {
+      my ($self) = @_;
+      $self->direct_put('', 1) if $self->{__final_nl} && ! $self->{__endl};
+      delete $self->{__final_nl};
+      delete $self->{__endl};
+      $self
+   }
+
+   sub direct_put {
+      my ($self, $data, $endl) = @_;
+      $self->seen_data(1 + $endl) if $self->seen_data < 2;
+      $self->{__endl} = $endl;
+      ::xpanic("Failed to perform output: $^E")
+         unless print {$self->fh} $data;
+      ::xpanic("Failed to perform output: $^E")
+         unless ! $endl || print {$self->fh} "\n";
+      $self
+   }
+
+   sub _flush {
+      my ($self) = @_;
+      foreach my $d (@{$self->data}) {
+         ::xpanic("Failed to perform output: $^E")
+            unless print {$self->fh} $d;
+      }
+   }
+} # }}}
 
 {package Expander::Ifdef; # {{{
    sub handle_pi {
