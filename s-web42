@@ -1180,7 +1180,7 @@ jresetarr:  $pivars->{$key} = [];
       _recursion  => [],      # For <?PAIR?> support, recursion-awareness
       _data       => [],      # Expanded line data, intermediate storage
       _rest_data  => undef,   # Line data for re-evaluation
-      _line_len   => 0,       # Seen any line data?
+      _seen_line  => 0,       # Seen any line data?
       _discard    => 0,       # Discard data, don't output (?ifdef? etc.)
       _ifdefs     => [],      # Ifdef:: stack
       _seen_end   => 0,       # Seen <?end?>?
@@ -1233,7 +1233,7 @@ jresetarr:  $pivars->{$key} = [];
          my $noel = ($mode & Filter::WIPEEL);
          ${$self->__mode} |= NL_FLUX
             if (defined $epair && ! $noel && $noel != ($om & Filter::WIPEEL) &&
-               ! $self->line_len && ! $self->ctx->line);
+               ! $self->seen_line && ! $self->ctx->line);
       }
       $self
    }
@@ -1251,7 +1251,7 @@ jresetarr:  $pivars->{$key} = [];
          # the changing PI, don't forget to write the wanted separating newline
          my $noel = ($om & Filter::WIPEEL);
          ${$self->__mode} |= NL_FORCE
-            if (! $noel && $noel != ($m & Filter::WIPEEL) && $self->line_len);
+            if (! $noel && $noel != ($m & Filter::WIPEEL) && $self->seen_line);
       }
       $self
    }
@@ -1262,7 +1262,7 @@ jresetarr:  $pivars->{$key} = [];
       my ($self, $dat) = @_;
       goto jleave if $self->discard || ! $dat;
       $dat = _marklo_ex($dat) if $self->mode & Filter::MARKLO;
-      ${$self->__line_len} += length $dat;
+      $self->seen_line(1) if $dat;
       $self->data($dat);
 jleave:
       $self
@@ -1271,14 +1271,14 @@ jleave:
    sub _endl {
       my ($self) = @_;
       my $m = $self->mode;
-      if ($self->line_len) {
+      if ($self->seen_line) {
          goto jleave_keeplen if $m & NL_FLUX;
       } elsif (($m & (Filter::WIPEEL|NL_FLUX)) != 0 && ($m & NL_FORCE) == 0) {
          goto jleave;
       }
       $self->_emit(1);
 jleave:
-      $self->line_len(0);
+      $self->seen_line(0);
 jleave_keeplen:
       $m &= ~(NL_FLUX|NL_FORCE);
       $self->mode($m);
@@ -1792,14 +1792,13 @@ jset:    $l = $incdir . '/';
       }
       ::xpanic("Failed to perform output: $^E")
          unless ! $endl || print {$self->fh} "\n";
-      $self->expander->line_len($l);
    }
 
    sub direct_start {
       my ($self) = @_;
       # FIXME make these expander states an argument - "line exclusive?" or so
-      $self->{__final_nl} = ($self->expander->line_len == 0 &&
-            length($self->expander->ctx->line) == 0);
+      $self->{__final_nl} = (! $self->expander->seen_line &&
+            ! $self->expander->ctx->line);
       $self->{__endl} = 0;
       $self
    }
