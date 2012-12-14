@@ -1287,11 +1287,11 @@ jleave_keeplen:
 
    sub _emit {
       my ($self, $endl) = @_;
+      my $data = $self->data;
       if (defined ${$self->__data_condome}) {
-         push @{$self->data_condome}, join('', @{$self->data});
-      } elsif (@{$self->data} || defined $endl) {
-         $self->dumper->put(scalar $self->data, $self->mode, defined $endl,
-            $self->discard);
+         push(@{$self->data_condome}, join('', @$data)) if @$data;
+      } elsif (@$data || defined $endl) {
+         $self->dumper->put(scalar $data, $self->mode, defined $endl);
       }
       @{$self->data} = ();
       $self
@@ -1782,15 +1782,13 @@ jset:    $l = $incdir . '/';
    }
 
    sub put {
-      my ($self, $data, $mode, $endl, $discard) = @_;
+      my ($self, $data, $mode, $endl) = @_;
       $self->seen_data(1 + $endl) if $self->seen_data < 2;
       my $l = 0;
-      if (! $discard) {
-         foreach my $d (@$data) {
-            $l += length $l unless $endl;
-            ::xpanic("Failed to perform output: $^E")
-               unless print {$self->fh} $d;
-         }
+      foreach my $d (@$data) {
+         $l += length $l unless $endl;
+         ::xpanic("Failed to perform output: $^E")
+            unless print {$self->fh} $d;
       }
       ::xpanic("Failed to perform output: $^E")
          unless ! $endl || print {$self->fh} "\n";
