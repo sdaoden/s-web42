@@ -1111,15 +1111,19 @@ jresetarr:  $pivars->{$key} = [];
       my ($self, $l, $af, $nl, $bno) = (shift, '');
       $af = $self->mode & Filter::FILTER_MASK;
       $self->empties_seen(0);
+      my $ogoditisanewperl = 0;
       if (defined($nl = $self->begin_line)) {
          $self->begin_line(undef);
          $self->seen_endl(1);
-         goto jumpin;
+         $ogoditisanewperl = 1; #goto jumpin;
       }
-      while ($nl = readline $self->infh) {
-         ++${$self->__lineno};
-         $self->seen_endl($nl =~ s/(.*?)\s+$/$1/);
-jumpin:  $nl =~ s/^\s+(.*)/$1/ if $af & Filter::INTROWS;
+      while ($ogoditisanewperl || ($nl = readline $self->infh)) {
+         if (! $ogoditisanewperl) {
+            ++${$self->__lineno};
+            $self->seen_endl($nl =~ s/(.*?)\s+$/$1/);
+         }
+         $ogoditisanewperl = 0; #jumpin:
+         $nl =~ s/^\s+(.*)/$1/ if $af & Filter::INTROWS;
          if (! length $l && ($af & Filter::COMMS)) {
             next if $nl =~ /^#/;
          }
