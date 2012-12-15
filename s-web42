@@ -1920,8 +1920,8 @@ msftp() {
   rmfile()   { echo "-rm '\$1'"; }
   rmdir()    { echo "-rmdir '\$1'"; }
   creatdir() { echo "-mkdir '\$1'"; }
-  putfile()  { echo "-put '\$2' '\$3'"; }
-  mktpath; cdtpath; tmpexp; dodarms; dodamkdirs; dodaputs; exit 0
+  putfile()  { echo "-put '\$__cwd/\$2' '\$3'"; }
+  mktpath; cdtpath; __cwd=`pwd`; tmpexp; dodarms; dodamkdirs; dodaputs; exit 0
 }
 mktpath() {
   [ -d "\$TPATH" ] || mkdir -p "\$TPATH" ||
