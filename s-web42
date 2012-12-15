@@ -531,7 +531,8 @@ jresetarr:  $pivars->{$key} = [];
    sub WSNORM()   { 1<<7 } # Normalize whitespace
    sub MARKLO()   { 1<<8 } # Expand MarkLo
 
-   sub MAXSHIFT() { 8 }
+   sub MAXSHIFT()    { 8 }
+   sub FILTER_MASK() { (1<<(MAXSHIFT + 1)) - 1 }
 
    sub ASSIGNMENTS_FILTERS()  { INTROWS | COMMS | ESCNLS | WIPEEL }
    sub CONTENT_FILTERS()      { (1 << (MAXSHIFT + 1)) - 1 }
@@ -977,7 +978,6 @@ jresetarr:  $pivars->{$key} = [];
 } # }}}
 
 {package Ctx; # {{{
-   sub FILTER_MASK()    { (1<<(Filter::MAXSHIFT + 1)) - 1 }
    sub MODE_INFH()      { 1<<(Filter::MAXSHIFT + 1) }
    sub MODE_OUTFH()     { 1<<(Filter::MAXSHIFT + 2) }
    sub MODE_CONFIGRC()  { 1<<(Filter::MAXSHIFT + 3) }
@@ -1060,7 +1060,7 @@ jresetarr:  $pivars->{$key} = [];
          PIVars::create_modtime_pis(scalar $self->pivars, $self->mtime);
       }
       ::vv($self, 'Opened context, mode: ' .
-         Filter::filters_to_string($self->mode & FILTER_MASK));
+         Filter::filters_to_string($self->mode & Filter::FILTER_MASK));
       $self;
    }
 
@@ -1109,7 +1109,7 @@ jresetarr:  $pivars->{$key} = [];
 
    sub readline_full {
       my ($self, $l, $af, $nl, $bno) = (shift, '');
-      $af = $self->mode & FILTER_MASK;
+      $af = $self->mode & Filter::FILTER_MASK;
       $self->empties_seen(0);
       if (defined($nl = $self->begin_line)) {
          $self->begin_line(undef);
@@ -1452,7 +1452,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
          } else {
             $self->_add_data('<pre>') if $pi eq 'xpre';
             $self->_prepare_recursion(undef,
-               (($self->mode & ~Ctx::FILTER_MASK) | Filter::EXPPIS), $pi);
+               (($self->mode & ~Filter::FILTER_MASK) | Filter::EXPPIS), $pi);
          }
          goto jleave;
       }
@@ -1504,7 +1504,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
                'There is already one of <?x?perl/x?sh?> active!'); 
          } else {
             $self->_prepare_recursion(undef,
-               (($self->mode & ~(Ctx::FILTER_MASK|Ctx::MODE_EMBED)) |
+               (($self->mode & ~(Filter::FILTER_MASK|Ctx::MODE_EMBED)) |
                   Filter::EXPPIS), $pi);
             ${$self->__data_condome} = [];
             if ($pi eq 'perl' || $pi eq 'xperl') {
@@ -1718,7 +1718,7 @@ jset:    $l = $incdir . '/';
          # Parent
          close WRP; # xxx err hdl.
          my $ctx = Ctx->new(outer => $self->ctx,
-            mode => ((($self->mode & Ctx::FILTER_MASK) | Ctx::MODE_INFH |
+            mode => ((($self->mode & Filter::FILTER_MASK) | Ctx::MODE_INFH |
                   Ctx::MODE_OUTFH) | ($type =~ /^x/ ? Ctx::MODE_EMBED : 0)),
             sumup => '<?' . $type . '?> mode at ' . $self->ctx->sumup .
                   ', line ' . $self->ctx->lineno,
