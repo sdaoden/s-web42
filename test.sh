@@ -1261,6 +1261,69 @@ boing bum tschak' \
 ''
 
 ## }}}
+## Automatic paragraphs {{{
+
+tcase 'Automatic paragraphs (disable mode: a)' 0044-w42-t \
+'<?begin?>
+1 no empties before.
+
+2 empties before and after.
+
+3 empties before but not after.
+because, yeah, this is a complete textblock.
+
+4 No, i will not use the lazy fox or any ipsum.
+<?xpre?>
+buum
+<?xpre end?>
+
+<p>
+5 this is yet a paragraph!
+</p>
+
+6 empties before and after.
+
+7 empties before and after.
+
+<?mode wt?>\
+
+
+
+<?mode %?><?mode at?>
+
+8 empties before and after, but no AUTOPAR.
+
+<?mode %?>
+
+9 empties before and after.
+
+
+10 empties before but not after.
+<?end?>' \
+\
+'1 no empties before.
+<p>2 empties before and after.</p>
+<p>3 empties before but not after.
+because, yeah, this is a complete textblock.</p>
+4 No, i will not use the lazy fox or any ipsum.
+<pre>
+buum
+</pre>
+<p>
+5 this is yet a paragraph!
+</p>
+<p>6 empties before and after.</p>
+<p>7 empties before and after.</p>
+
+
+
+8 empties before and after, but no AUTOPAR.
+<p>9 empties before and after.</p>
+10 empties before but not after.' \
+\
+''
+
+## }}}
 
 ## "Deep dirhier": (no) cross-file variables, incdir, chdir {{{
 

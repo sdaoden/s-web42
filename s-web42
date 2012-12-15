@@ -110,6 +110,10 @@ our %UNCOMPRESS = (
    xz       => '| xz --decompress --stdout'
 );
 
+# These markup tags will be accepted during automatic paragraph checking, i.e.,
+# even if the textblock in question begins with these tags
+our %AUTOPAR_IGNORE = ( tt => 1, em => 1, strong => 1, u => 1 );
+
 # PIs that are passed through unchanged (XXX make configurable?)
 our %IGNORE_PIS = ( xml => 0 );
 
@@ -1193,18 +1197,18 @@ jresetarr:  $pivars->{$key} = [];
       unless ($self->mode & Filter::EXPPIS) {
          while (defined(my $l = $self->ctx->readline_full)) {
             if (0 <= index $l, '<?end?>') {
-               $self->dumper->empties_seen($self->ctx->empties_seen);
+               $self->dumper->seen_empties if $self->ctx->empties_seen;
                $l =~ /^(.*)<\?end\?>/;
                $self->_add_data($1)->_endl if $1;
                $self->seen_end(1);
                last;
             }
-            $self->dumper->empties_seen($self->ctx->empties_seen);
+            $self->dumper->seen_empties if $self->ctx->empties_seen;
             $self->_add_data($l)->_endl;
          }
       } else {
          while (defined(my $l = $self->ctx->readline_full)) {
-            $self->dumper->empties_seen($self->ctx->empties_seen);
+            $self->dumper->seen_empties if $self->ctx->empties_seen;
             last if $self->_expand_pis($l)->seen_end;
          }
          Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx);
@@ -1773,7 +1777,7 @@ jset:    $l = $incdir . '/';
 {package Expander::Dumper; # {{{
    SymObj::sym_create(SymObj::NONE, {
       _fh            => undef,   # Output file handle
-      _mode          => 0,       # Filters of currently hold data
+      '?_mode'       => 0,       # Filters of currently hold data
       _expander      => undef,   # Parent
       _data          => [],      # Expanded line data, intermediate storage
       _seen_data     => 0        # 1=yes, 2=ended with NL
@@ -1785,22 +1789,58 @@ jset:    $l = $incdir . '/';
       $self
    }
 
-   sub empties_seen {
-      my ($self, $any) = @_;
-      # If there were any empty lines seen we now we can work what we have
-      $self->_flush if @{$self->data} && $any;
+   sub force_mode_change {
+      my ($self, $mode) = @_;
+      $mode &= Filter::FILTER_MASK;
+      $self->_flush if $mode != $self->{_mode} && @{$self->data}; # XXX finetune
+      $self->{_mode} = $mode;
+      $self
+   }
+
+   sub seen_empties {
+      my ($self) = @_;
+      my ($da, $i) = (scalar $self->data);
+      if (($self->{_mode} & Filter::AUTOPAR) == 0) {
+         delete $self->{__autopar};
+         goto jleave;
+      }
+      if (defined($i = $self->{__autopar})) {
+         my ($lda, $llda) = (scalar $da->[$i], scalar $da->[@$da - 1]);
+         goto jflush unless defined $lda && @$lda && defined $llda;
+         $lda->[0]->[0] =~ /^\s*<([^>]+)>/;
+
+         $i = $1;
+         $i = undef if $i && $AUTOPAR_IGNORE{$i};
+         $llda = $da->[@$da - 2] unless @$llda; # XXX MUST be NL before..
+         if (! $i) { 
+            unshift @$lda, ['<p>'];
+            push @$llda, ['</p>'];
+         }
+      }
+jflush:
+      $self->_flush;
+      # Set the starting index of this new paragraph
+      # Ensure to not track the empty array for the next line that put() may
+      # have placed
+      $i = scalar(@$da);
+      $self->{__autopar} = $i;
+jleave:
+      $self
    }
 
    sub put {
       my ($self, $data, $mode, $endl) = @_;
-      $self->_flush if $mode != $self->mode;
-      $self->mode($mode);
+      $mode &= Filter::FILTER_MASK;
+      $self->force_mode_change($mode) if $mode != $self->{_mode};
       $self->seen_data(1 + $endl) if $self->seen_data < 2;
       my $da = $self->data;
       push @$da, [] unless @$da;
       my $lda = $da->[@$da - 1];
       push @$lda, $data;
-      push @$da, [] if $endl;
+      if ($endl) {
+         push @$da, [];
+         $self->_flush(1) if @$da > 50 && ($mode & Filter::AUTOPAR) == 0;
+      }
       $self
    }
 
@@ -1811,6 +1851,7 @@ jset:    $l = $incdir . '/';
             ! $self->expander->ctx->line);
       $self->{__endl} = 0;
       $self->_flush(1) if @{$self->data};
+      delete $self->{__autopar};
       $self
    }
 
@@ -1835,7 +1876,8 @@ jset:    $l = $incdir . '/';
 
    sub _flush {
       my ($self, $maybe_bad_boundary) = @_;
-      my $mode = $self->mode;
+      my $mode = $self->{_mode};
+      delete $self->{__autopar};
 
       # Shortpath if no postprocessing is to be applied
       if (($mode & (Filter::AUTOPAR|Filter::TAGJOIN|Filter::WSNORM)) == 0) {
