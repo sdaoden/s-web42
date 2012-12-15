@@ -1782,6 +1782,7 @@ jset:    $l = $incdir . '/';
    sub terminate {
       my ($self) = @_;
       $self->_flush if @{$self->data};
+      $self
    }
 
    sub empties_seen {
@@ -1792,12 +1793,15 @@ jset:    $l = $incdir . '/';
 
    sub put {
       my ($self, $data, $mode, $endl) = @_;
+      $self->_flush if $mode != $self->mode;
+      $self->mode($mode);
       $self->seen_data(1 + $endl) if $self->seen_data < 2;
       my $da = $self->data;
       push @$da, [] unless @$da;
       my $lda = $da->[@$da - 1];
       push @$lda, $data;
       push @$da, [] if $endl;
+      $self
    }
 
    sub direct_start {
@@ -1831,16 +1835,38 @@ jset:    $l = $incdir . '/';
 
    sub _flush {
       my ($self, $maybe_bad_boundary) = @_;
-      for (my $data = $self->data; @$data;) {
-         my $lda = shift @$data;
-         foreach my $la (@$lda) {
-            my $d = join '', @$la;
+      my $mode = $self->mode;
+
+      # Shortpath if no postprocessing is to be applied
+      if (($mode & (Filter::AUTOPAR|Filter::TAGJOIN|Filter::WSNORM)) == 0) {
+         for (my $data = $self->data; @$data;) {
+            my $lda = shift @$data;
+            foreach my $la (@$lda) {
+               foreach my $d (@$la) {
+                  ::xpanic("Failed to perform output: $^E")
+                     unless print {$self->fh} $d;
+               }
+            }
             ::xpanic("Failed to perform output: $^E")
-               unless print {$self->fh} $d;
+               unless ! @$data || print {$self->fh} "\n";
          }
-         ::xpanic("Failed to perform output: $^E")
-            unless ! @$data || print {$self->fh} "\n";
+      } else {
+         for (my $data = $self->data; @$data;) {
+            my $lda = shift @$data;
+            foreach my $la (@$lda) {
+               my $d = join '', @$la;
+               if ($mode & Filter::WSNORM) {
+                  $d =~ s/^\s*(.*)\s*$/$1/g;
+                  $d =~ s/\s+/ /g;
+               }
+               ::xpanic("Failed to perform output: $^E")
+                  unless print {$self->fh} $d;
+            }
+            ::xpanic("Failed to perform output: $^E")
+               unless ! @$data || print {$self->fh} "\n";
+         }
       }
+      $self
    }
 } # }}}
 
