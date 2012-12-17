@@ -270,7 +270,7 @@ H' \
 ## Assignments test series {{{
 
 # Variable
-tcase 'Assignments: variable, 1' 864-w42-atm \
+tcase 'Assignments: variable, 1' 864-w42-atsm \
 'X = one
 <?begin?>
 <?X?>
@@ -280,7 +280,7 @@ tcase 'Assignments: variable, 1' 864-w42-atm \
 \
 ''
 
-tcase 'Assignments: variable, 2' 865-w42-atm \
+tcase 'Assignments: variable, 2' 865-w42-atsm \
 'X = <em>two</em>
 <?begin?>
 <?X?>
@@ -290,7 +290,7 @@ tcase 'Assignments: variable, 2' 865-w42-atm \
 \
 ''
 
-tcase 'Assignments: variable, 3' 866-w42-atm \
+tcase 'Assignments: variable, 3' 866-w42-atsm \
 'X = <?def Y<>three?><?Y?><?undef Y?>
 <?begin?>
 <?X?>
@@ -300,7 +300,7 @@ tcase 'Assignments: variable, 3' 866-w42-atm \
 \
 ''
 
-tcase 'Assignments: variable, 4' 867-w42-atm \
+tcase 'Assignments: variable, 4' 867-w42-atsm \
 'X = <?def Y<><em>four</em>?><?Y?><?undef Y?>
 <?begin?>
 <?X?>
@@ -310,7 +310,7 @@ tcase 'Assignments: variable, 4' 867-w42-atm \
 \
 ''
 
-tcase 'Assignments: variable, 5' 868-w42-atm \
+tcase 'Assignments: variable, 5' 868-w42-atsm \
 'X = <?def Y<><em>five</em>?><?Y?><?undef Y?><?Y?>
 <?begin?>
 <?X?>
@@ -318,9 +318,9 @@ tcase 'Assignments: variable, 5' 868-w42-atm \
 \
 '<em>five</em>' \
 \
-"ERROR 'test-868-w42-atm':3: Unknown PI: Y"
+"ERROR 'test-868-w42-atsm':3: Unknown PI: Y"
 
-tcase 'Assignments: variable, 6' 869-w42-atm \
+tcase 'Assignments: variable, 6' 869-w42-atsm \
 'X = <?def Y<><em>six</em>?>
 X += <?Y?>
 X += <?undef Y?>
@@ -331,9 +331,9 @@ X += <?Y?>
 \
 '<em>six</em>' \
 \
-"ERROR 'test-869-w42-atm':6: Unknown PI: Y"
+"ERROR 'test-869-w42-atsm':6: Unknown PI: Y"
 
-tcase 'Assignments: variable, 7' 870-w42-atm \
+tcase 'Assignments: variable, 7' 870-w42-atsm \
 'X = <?def Y<><em>seven</em>?>
 X ?= <?def Y<><em>NOOHNOOHNO</em>?>
 X += <?Y?>
@@ -350,10 +350,10 @@ Z ?= bob
 '<em>seven</em>
 virgin' \
 \
-"ERROR 'test-870-w42-atm':10: Unknown PI: Y"
+"ERROR 'test-870-w42-atsm':10: Unknown PI: Y"
 
 # Array
-tcase 'Assignments: array, 1' 884-w42-atm \
+tcase 'Assignments: array, 1' 884-w42-atsm \
 'X @= one
 <?begin?>
 <?X 0?>
@@ -363,7 +363,7 @@ tcase 'Assignments: array, 1' 884-w42-atm \
 \
 ''
 
-tcase 'Assignments: array, 2' 885-w42-atm \
+tcase 'Assignments: array, 2' 885-w42-atsm \
 'X @= one
 X @= <em>two</em>
 <?begin?>
@@ -374,7 +374,7 @@ X @= <em>two</em>
 \
 ''
 
-tcase 'Assignments: array, 3' 886-w42-atm \
+tcase 'Assignments: array, 3' 886-w42-atsm \
 'X @= one
 X @= two
 X @= three
@@ -386,7 +386,7 @@ X @= three
 \
 ''
 
-tcase 'Assignments: array, 4' 887-w42-atm \
+tcase 'Assignments: array, 4' 887-w42-atsm \
 'X @= one
 X @= two
 X @= three
@@ -399,7 +399,7 @@ X @= four
 \
 ''
 
-tcase 'Assignments: array, 5' 888-w42-atm \
+tcase 'Assignments: array, 5' 888-w42-atsm \
 'X @= one
 X @= two
 X @= three
@@ -412,7 +412,7 @@ X @= four
 \
 ''
 
-tcase 'Assignments: array, 6' 889-w42-atm \
+tcase 'Assignments: array, 6' 889-w42-atsm \
 'X @= one
 X @= two
 X @= three
@@ -426,7 +426,7 @@ X @= five
 \
 ''
 
-tcase 'Assignments: array, 7' 890-w42-atm \
+tcase 'Assignments: array, 7' 890-w42-atsm \
 'X @= <?def Y<>a?><?Y?><?Y?><?Y?><?undef Y?>
 X ?@= <?def Y<>z?><?Y?><?Y?><?Y?><?undef Y?>
 X @= <?lref http://www.netbsd.org?>
@@ -445,12 +445,12 @@ BEEF @= dead
 <p>aaa</p><p><a href="http://www.netbsd.org">http://www.netbsd.org</a></p>
  virgin  femme ' \
 \
-"ERROR 'test-890-w42-atm':8: BEEF: array assignment to non-array key"
+"ERROR 'test-890-w42-atsm':8: BEEF: array assignment to non-array key"
 
 ## }}}
 ## def/defa/defx {{{
 
-tcase 'def/defa/defx' 0001-w42-atm \
+tcase 'def/defa/defx' 0001-w42-atsm \
 '<?begin?>
 
 <?def def1<><p>def1-cont<>ent</p>?>
@@ -528,18 +528,18 @@ entry 1 <br />
 <br />
 <em>For subscribers only</em>: nonexistent list.' \
 \
-"ERROR 'test-0001-w42-atm':50: def (presumably) needs (at least) 2 argument(s)
-ERROR 'test-0001-w42-atm':51: defa (presumably) needs (at least) 2 argument(s)
-ERROR 'test-0001-w42-atm':52: defx (presumably) needs (at least) 2 argument(s)
-ERROR 'test-0001-w42-atm':53: defa1: 2 is not a valid array index
-ERROR 'test-0001-w42-atm':54: defx1 takes 2 argument(s)
-ERROR 'test-0001-w42-atm':55: MODTIME_SLOCAL does not take any argument(s)
-ERROR 'test-0001-w42-atm':56: MODTIME_ALOCAL: cannot modify builtin PI (variable) via push"
+"ERROR 'test-0001-w42-atsm':50: def (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atsm':51: defa (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atsm':52: defx (presumably) needs (at least) 2 argument(s)
+ERROR 'test-0001-w42-atsm':53: defa1: 2 is not a valid array index
+ERROR 'test-0001-w42-atsm':54: defx1 takes 2 argument(s)
+ERROR 'test-0001-w42-atsm':55: MODTIME_SLOCAL does not take any argument(s)
+ERROR 'test-0001-w42-atsm':56: MODTIME_ALOCAL: cannot modify builtin PI (variable) via push"
 
 ## }}}
 ## pi-if {{{
 
-tcase 'pi-if' 0002-w42-atm \
+tcase 'pi-if' 0002-w42-atsm \
 '<?begin?>
 
 <?def def1<><p>def1-content</p>?>
@@ -563,7 +563,7 @@ tcase 'pi-if' 0002-w42-atm \
 ## }}}
 ## undef {{{
 
-tcase 'undef' 0003-w42-atm \
+tcase 'undef' 0003-w42-atsm \
 '<?begin?>
 
 <?def def1<><p>def1-content</p>?>
@@ -585,15 +585,15 @@ tcase 'undef' 0003-w42-atm \
 \
 '' \
 \
-"ERROR 'test-0003-w42-atm':10: undef takes 1 argument(s)
-ERROR 'test-0003-w42-atm':12: undef: cannot undef builtin PI (variable): undef
-ERROR 'test-0003-w42-atm':14: undef: no such variable: def2
-ERROR 'test-0003-w42-atm':16: undef: no such variable: defx2"
+"ERROR 'test-0003-w42-atsm':10: undef takes 1 argument(s)
+ERROR 'test-0003-w42-atsm':12: undef: cannot undef builtin PI (variable): undef
+ERROR 'test-0003-w42-atsm':14: undef: no such variable: def2
+ERROR 'test-0003-w42-atsm':16: undef: no such variable: defx2"
 
 ## }}}
 ## lref,lreft, href,hreft {{{
 
-tcase 'lref/lreft/href/hreft' 0004-w42-atm \
+tcase 'lref/lreft/href/hreft' 0004-w42-atsm \
 '<?begin?>
 
 <?lref http://www.netbsd.org?>
@@ -627,15 +627,15 @@ tcase 'lref/lreft/href/hreft' 0004-w42-atm \
 <a href="nope">"au"&nbsp;nope</a>
 <a href="nope" title="FreeBSD">"au"&nbsp;<em title="SUB">FreeBSD</em></a>' \
 \
-"ERROR 'test-0004-w42-atm':18: lref takes 1 argument(s)
-ERROR 'test-0004-w42-atm':19: lreft takes 2 argument(s)
-ERROR 'test-0004-w42-atm':20: href takes 1 argument(s)
-ERROR 'test-0004-w42-atm':21: hreft takes 2 argument(s)"
+"ERROR 'test-0004-w42-atsm':18: lref takes 1 argument(s)
+ERROR 'test-0004-w42-atsm':19: lreft takes 2 argument(s)
+ERROR 'test-0004-w42-atsm':20: href takes 1 argument(s)
+ERROR 'test-0004-w42-atsm':21: hreft takes 2 argument(s)"
 
 ## }}}
 ## ?ifdef?.. {{{
 
-tcase 'ifdef/...' 0005-w42-atm \
+tcase 'ifdef/...' 0005-w42-atsm \
 '<?begin?>
 
 <?ifdef 0?>
@@ -764,8 +764,8 @@ yes.13
 467
 9' \
 \
-"ERROR 'test-0005-w42-atm':109: ifn?def: was started here, but where's the <?fi?>?
-ERROR 'test-0005-w42-atm':109: ifn?def: was started here, but where's the <?fi?>?"
+"ERROR 'test-0005-w42-atsm':109: ifn?def: was started here, but where's the <?fi?>?
+ERROR 'test-0005-w42-atsm':109: ifn?def: was started here, but where's the <?fi?>?"
 
 ## }}}
 ## ?x?include?.. {{{
@@ -787,7 +787,7 @@ printf '<?begin?>;<?end?>AFTER END' > ./test-0006-5
 echo 'Embedded file <?def crossfile<>with?><?crossfile?> NL' > ./test-0006-6
 printf 'And an embedded file <?crossfile?>out NL' > ./test-0006-7
 
-tcase 'x?include' 0006-w42-atm \
+tcase 'x?include' 0006-w42-atsm \
 '<?begin?>
 START<?include test-0006-1?>END
 <?include test-0006-4?>
@@ -811,6 +811,15 @@ Passed without errors.' \
 \
 ''
 
+tcase 'x?include (exclusive content)' 6.1-w42-atsm \
+'<?begin?>
+<?include test-0006-5?>
+<?end?>' \
+\
+';' \
+\
+''
+
 # }}}
 ## ?raw_include?.. {{{
 
@@ -819,7 +828,26 @@ printf '4\n  5\n\n6\n' > ./test-0007-2
 printf '7' > ./test-0007-3
 printf '8\n9' > ./test-0007-4
 
-tcase 'raw_include' 0007-w42-atm \
+tcase 'raw_include (direct I/O, I)' 7.1-w42-atsm \
+'<?begin?>
+<?raw_include test-0007-3?>
+<?end?>' \
+\
+'7' \
+\
+''
+
+tcase 'raw_include (direct I/O, II)' 7.2-w42-atsm \
+'<?begin?>
+<?raw_include test-0007-4?>
+<?end?>' \
+\
+'8
+9' \
+\
+''
+
+tcase 'raw_include' 0007-w42-atsm \
 '<?begin?>
 <?raw_include test-0007-1?>
 START<?raw_include test-0007-1?>MID<?raw_include test-0007-2?>END
@@ -850,6 +878,7 @@ START7MID8
 # }}}
 ## pre/xpre.. {{{
 
+# (Note: 's' enabled)
 tcase 'pre/xpre' 0008-w42-atm \
 '<?begin?>
 	1. Beware of bugs in the above code;             
@@ -1030,7 +1059,7 @@ not tried it.' \
 echo 'When the Blitzkrieg raged' > ./test-0009-1
 echo 'And the bodies stank' > ./test-0009-2
 
-tcase 'x?perl/x?sh' 0009-w42-atm \
+tcase 'x?perl/x?sh' 0009-w42-atsm \
 'PERL = perl(1)
 SH = sh(1)
 <?begin?>
@@ -1128,14 +1157,14 @@ Passed without errors.' \
 \
 ''
 
-tcase 'Oneline document (perl(1))' 9.1-w42-atm \
+tcase 'Oneline document (perl(1))' 9.1-w42-atsm \
 '<?begin?>START<?perl?>print "${BEGIN}in${END}"<?perl end?>END<?end?>' \
 \
 'STARTinEND' \
 \
 ''
 
-tcase 'Oneline document (sh(1))' 9.2-w42-atm \
+tcase 'Oneline document (sh(1))' 9.2-w42-atsm \
 '<?begin?>START<?sh?>printf "${BEGIN}in${END}"<?sh end?>END<?end?>' \
 \
 'STARTinEND' \
@@ -1145,7 +1174,7 @@ tcase 'Oneline document (sh(1))' 9.2-w42-atm \
 # }}}
 ## mode {{{
 
-tcase 'mode (but do not use it)' 0010-w42-atm \
+tcase 'mode (but do not use it)' 0010-w42-atsm \
 '<?begin?>
   # Comment
    Hello, Honey   \
@@ -1153,7 +1182,7 @@ tcase 'mode (but do not use it)' 0010-w42-atm \
  Girl
 
     # Comment
-<?mode icew?>
+<?mode icews?>
   # Comment
    Hello, Honey   \
 	Sugar Candy	\
@@ -1192,6 +1221,105 @@ tcase 'MarkLo expansion (disable mode: m)' 0042-w42-ats \
 \
 'START<tt>tt</tt><em>em</em><strong>strong</strong><u>u</u>
 <em>I <strong>really <u>love</u> you</strong>, baby!</em>END' \
+\
+''
+
+## }}}
+## Whitespace normalization {{{
+
+tcase 'Whitespace normalization (disable mode: s)' 0043-w42-at \
+'<?begin?>
+  1   2		3		
+  START   c{tt}			i{em}  b{strong} 	u{u}   \
+    END   
+boing        bum         tschak
+<?xpre?>
+  1   2		3		
+  START   c{tt}			i{em}  b{strong} 	u{u}   \
+    END   
+boing        bum         tschak
+<?xpre end?>
+  1   2		3		
+  START   c{tt}			i{em}  b{strong} 	u{u}   \
+    END   
+boing        bum         tschak
+<?end?>' \
+\
+'1 2 3
+START c{tt} i{em} b{strong} u{u} END
+boing bum tschak
+<pre>
+  1   2		3
+  START   c{tt}			i{em}  b{strong} 	u{u}   \
+    END
+boing        bum         tschak
+</pre>
+1 2 3
+START c{tt} i{em} b{strong} u{u} END
+boing bum tschak' \
+\
+''
+
+## }}}
+## Automatic paragraphs {{{
+
+tcase 'Automatic paragraphs (disable mode: a)' 0044-w42-t \
+'<?begin?>
+1 no empties before.
+
+2 empties before and after.
+
+3 empties before but not after.
+because, yeah, this is a complete textblock.
+
+4 No, i will not use the lazy fox or any ipsum.
+<?xpre?>
+buum
+<?xpre end?>
+
+<p>
+5 this is yet a paragraph!
+</p>
+
+6 empties before and after.
+
+7 empties before and after.
+
+<?mode wt?>\
+
+
+
+<?mode %?><?mode at?>
+
+8 empties before and after, but no AUTOPAR.
+
+<?mode %?>
+
+9 empties before and after.
+
+
+10 empties before but not after.
+<?end?>' \
+\
+'1 no empties before.
+<p>2 empties before and after.</p>
+<p>3 empties before but not after.
+because, yeah, this is a complete textblock.</p>
+4 No, i will not use the lazy fox or any ipsum.
+<pre>
+buum
+</pre>
+<p>
+5 this is yet a paragraph!
+</p>
+<p>6 empties before and after.</p>
+<p>7 empties before and after.</p>
+
+
+
+8 empties before and after, but no AUTOPAR.
+<p>9 empties before and after.</p>
+10 empties before but not after.' \
 \
 ''
 
