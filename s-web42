@@ -931,13 +931,13 @@ jupsums:
       ::xpanic("Failed to open '$TMP_WORK' for writing: $^E")
          unless open CF, '>', $TMP_WORK;
       ::xv("Creating new cache database");
-      sub __au { ::xpanic("Failed to write to '$TMP_WORK': $^E"); }
+      sub __au { ::xpanic("Failed to write to '$TMP_WORK': $^E") }
       __au() unless print CF
          '#S-Web42 cache database.', "\n",
          '# Field separator is a single ASCII space (U+0020).', "\n",
          '# Directories: ^/FLAGS PATH$', "\n",
          '# Files: ^.FLAGS MODTIME IN:CKSUM_BASE64 OUT:CKSUM_BASE64 PATH$',
-            "\n";
+         "\n";
       sub __recur {
          my ($dn) = @_;
          if (defined $dn->parent) {
