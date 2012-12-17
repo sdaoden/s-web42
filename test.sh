@@ -622,10 +622,10 @@ tcase 'lref/lreft/href/hreft' 0004-w42-atsm \
 <a href="http://www.netbsd.org" title="NetBSD"><em>NetBSD</em></a>
 <a href="http://www.freebsd.org">http://www.freebsd.org</a>
 <a href="http://www.freebsd.org" title="FreeBSD">FreeBSD</a>
-<a href="http://www.freebsd.org"><strong>WWW!</strong>&nbsp;http://www.freebsd.org</a>
-<a href="http://www.freebsd.org" title="FreeBSD"><strong>WWW!</strong>&nbsp;FreeBSD</a>
-<a href="nope">"au"&nbsp;nope</a>
-<a href="nope" title="FreeBSD">"au"&nbsp;<em title="SUB">FreeBSD</em></a>' \
+<a href="http://www.freebsd.org"><strong>WWW!</strong>http://www.freebsd.org</a>
+<a href="http://www.freebsd.org" title="FreeBSD"><strong>WWW!</strong>FreeBSD</a>
+<a href="nope">"au"nope</a>
+<a href="nope" title="FreeBSD">"au"<em title="SUB">FreeBSD</em></a>' \
 \
 "ERROR 'test-0004-w42-atsm':18: lref takes 1 argument(s)
 ERROR 'test-0004-w42-atsm':19: lreft takes 2 argument(s)

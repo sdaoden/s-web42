@@ -1173,7 +1173,7 @@ jupsums:
    SymObj::sym_create(SymObj::NONE, {
       _ctx        => undef,   # Ctx object we're exploding
       _mode       => 0,       # ->ctx->mode
-      _dumper     => undef,   # Output ::Dumper (+ AUTOPAR/TAGJOIN/WSNORM hdl.)
+      _dumper     => undef,   # Output (+ AUTOPAR/TAGJOIN/WSNORM hdl.) ::Dumper
       _recursion  => [],      # For <?PAIR?> support, recursion-awareness
       _data       => [],      # Expanded line data, intermediate storage
       _rest_data  => undef,   # Line data for re-evaluation
@@ -1257,7 +1257,7 @@ jupsums:
    # Intermediate data output layer {{{
    sub _add_data {
       my ($self, $dat) = @_;
-      goto jleave if $self->discard || ! $dat;
+      goto jleave if ! $dat || $self->discard;
       $dat = _marklo_ex($dat) if $self->mode & Filter::MARKLO;
       $self->seen_line(1) if $dat;
       $self->data($dat);
@@ -1303,9 +1303,10 @@ jleave_keeplen:
 
       while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/) {
          $self->_add_data($1)->ctx->line($l = defined $4 ? $4 : '');
-         my ($pi, $valarr) = ($2, (defined $3 ? [split '<>', $3, -1] : []));
-
+         my $pi = $2;
          next if $self->discard && ! exists $ALWAYS_REEVAL_PIS{$pi};
+         my $valarr = defined $3 ? [split '<>', $3, -1] : [];
+
          if (exists $PIS{$pi}) {
             $self->_pi_comm($pi, $valarr);
          } elsif (exists $self->ctx->pivars->{$pi}) {
@@ -1347,10 +1348,10 @@ jpivar:     $self->_pi_var($pi, $valarr);
       if (defined $MULTILINE_PIS{$pi}) {
          if (@$valarr > 1 || (@$valarr == 1 && $valarr->[0] ne 'end')) {
             ::e($self->ctx,
-               "$pi is multiline PI, it may only be given 'end' argument");
+               "$pi is a paired PI and only takes an optional 'end' argument");
             goto jleave;
          }
-         # If this ends a multiline PI, check it's a matching one
+         # If this ends a paired PI, check it's a matching one
          if (@$valarr == 1) {
             $i = @{$self->recursion};
             if ($i == 0) {
@@ -1397,10 +1398,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
          } else {
             PIVars::assign($self->ctx, $i, $valarr, undef, 1);
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'pi-if') {
+      } elsif ($pi eq 'pi-if') {
          shift @$valarr;
          $pi = $i;
          if (exists $PIS{$pi}) {
@@ -1410,10 +1408,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
          } else {
             ::vv($self->ctx, "pi-if: unknown PI: $pi");
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'undef') {
+      } elsif ($pi eq 'undef') {
          shift @$valarr;
          if (exists $PIS{$i} || exists $PIVars::builtin->{$i}) {
             ::e($self->ctx, "undef: cannot undef builtin PI (variable): $i");
@@ -1423,35 +1418,24 @@ jpivar:     $self->_pi_var($pi, $valarr);
          } else {
             ::e($self->ctx, "undef: no such variable: $i");
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'href' || $pi eq 'lref') {
+      } elsif ($pi eq 'href' || $pi eq 'lref') {
          $pi = ($pi eq 'href');
          my $w;
          $w = $self->ctx->pivars->{WWW} if $pi;
          $w = '' unless defined $w;
-         $w .= '&nbsp;' if length $w;
          $i = '<a href="' . $i . '">' . $w . $i . '</a>';
-         #if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
          $self->rest_data($i);
-         goto jleave;
       } elsif ($pi eq 'hreft' || $pi eq 'lreft') {
          $pi = ($pi eq 'hreft');
          my ($w, $t, $tm);
          $w = $self->ctx->pivars->{WWW} if $pi;
          $w = '' unless defined $w;
-         $w .= '&nbsp;' if length $w;
          $i = Expander::Markup::link($i);
          $tm = $valarr->[1];
          $t = Expander::Markup::attribute($tm);
          $i = '<a href="' . $i . '" title="' . $t . '">' . $w . $tm . '</a>';
-         #if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
          $self->rest_data($i);
-         goto jleave;
-      }
-
-      elsif ($pi eq 'pre' || $pi eq 'xpre') {
+      } elsif ($pi eq 'pre' || $pi eq 'xpre') {
          if ($i) {
             $self->_end_recursion;
             $self->_add_data('</pre>') if $pi eq 'xpre';
@@ -1460,19 +1444,13 @@ jpivar:     $self->_pi_var($pi, $valarr);
             $self->_prepare_recursion(undef,
                (($self->mode & ~Filter::FILTER_MASK) | Filter::EXPPIS), $pi);
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
+      } elsif ($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
             $pi eq 'fi') {
          $self->_emit;
          $pi = Expander::Ifdef::handle_pi(scalar $self->ifdefs, $self->ctx,
                $pi, $i);
          $self->discard($pi) if $pi >= 0;
-         goto jleave;
-      }
-
-      elsif ($pi eq 'include' || $pi eq 'xinclude') {
+      } elsif ($pi eq 'include' || $pi eq 'xinclude') {
          my $ctx = ($self->mode & ~(Ctx::MODE_INFH|Ctx::MODE_EMBED)) |
                ($pi eq 'xinclude' ? Ctx::MODE_EMBED : 0);
          ($pi, $i) = $self->_expand_include_path($i);
@@ -1482,24 +1460,21 @@ jpivar:     $self->_pi_var($pi, $valarr);
          $ctx->open->read_assignments;
          $self->_consume->_end_recursion;
          $ctx->close;
-         goto jleave;
-      }
-
-      elsif ($pi eq 'raw_include') {
+      } elsif ($pi eq 'raw_include') {
          ($pi, $i) = $self->_expand_include_path($i);
          $self->_prepare_recursion($self->ctx, 0);
          ::panic($self->ctx, "raw_include: can't read '$i': $^E")
             unless open RI, '<', $i;
          # Use direct I/O if possible; we can't if redirection is active
          if (defined ${$self->__data_condome}) {
-            foreach (readline RI) { # XXX readline errs?
+            foreach (readline RI) { # xxx readline errs?
                my $had = chomp;
                $self->_add_data($_);
                $self->_endl if $had;
             }
          } else {
             $self->dumper->direct_start;
-            foreach (readline RI) { # XXX readline errs?
+            foreach (readline RI) { # xxx readline errs?
                my $had = chomp;
                $self->dumper->direct_put($_, $had);
             }
@@ -1508,13 +1483,9 @@ jpivar:     $self->_pi_var($pi, $valarr);
          ::panic($self->ctx, "raw_include: can't close '$i': $^E")
             unless close RI;
          $self->_end_recursion;
-         goto jleave;
-      }
-
-      elsif ($pi eq 'perl' || $pi eq 'xperl' || $pi eq 'sh' || $pi eq 'xsh') {
+      } elsif ($pi eq 'perl' || $pi eq 'xperl' || $pi eq 'sh' || $pi eq 'xsh') {
          if ($i) {
-            $self->_end_recursion;
-            $self->_create_subproc($pi);
+            $self->_end_recursion->_create_subproc($pi);
          } elsif (defined ${$self->__data_condome}) {
             ::panic($self->ctx,
                'There is already one of <?x?perl/x?sh?> active!'); 
@@ -1531,18 +1502,11 @@ jpivar:     $self->_pi_var($pi, $valarr);
                   'BEGIN="<?begin?>" END="<?end?>"')->_endl;
             }
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'end') {
+      } elsif ($pi eq 'end') {
          $self->ctx->line('');
-         ${$self->__mode} |= NL_FLUX
-            if $self->ctx->outer && $self->ctx->outer->line;
+         ${$self->__mode} |= NL_FLUX if ($i = $self->ctx->outer) && $i->line;
          $self->seen_end(1);
-         goto jleave;
-      }
-
-      elsif ($pi eq 'mode') {
+      } elsif ($pi eq 'mode') {
          if ($i eq '%') {
             ::panic($self->ctx, "<?mode?> is NOT IN USE")
                unless exists $self->{__omode};
@@ -1557,9 +1521,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
          }
          $self->_emit->dumper->force_mode_change($self->ctx->mode(
             $self->{_mode} = $i));
-         goto jleave;
       }
-
 jleave:
       $self
    } # }}}
@@ -1689,7 +1651,7 @@ jleave:
             $in = $1 . $s . $3 . $e . $4;
          }
       }
-      $dat .= $in;
+      $dat .= $in
    }
    # }}}
 
@@ -1839,7 +1801,7 @@ jleave:
 
    sub direct_start {
       my ($self) = @_;
-      # FIXME make these expander states an argument - "line exclusive?" or so
+      # XXX make these expander states an argument - "line exclusive?" or so
       $self->{__final_nl} = (! $self->expander->seen_line &&
             ! $self->expander->ctx->line);
       $self->{__endl} = 0;
@@ -1942,7 +1904,7 @@ jleave:
          return 0 unless @$stack;
          $self = $stack->[0];
       }
-      $self->discard;
+      $self->discard
    }
 
    sub check_ctx {
