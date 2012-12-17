@@ -1,8 +1,9 @@
-SCCSID = %Z%%M% %I% %e%T%U%
+SCCSID = %Z%%M% %I% 20%E%T%U%+0000
 # Pack is about heading level (is this file a sub+section?); this value is
 # trimmed and used *directly*, as in '<h<?PACK_LEVEL?>>'!
 PACK_LEVEL = 2
 CHAPTER = Make editors slightly moist!
+# This MUST be set
 TITLE = Qual - Some More
 HEADLINE = Qual
 DESC = A Poem
@@ -15,6 +16,9 @@ PREV = .html
 UP = .html
 NEXT = .html
 LAST = .html
+# And this links to the homepage; on the homepage itself define HOMEPAGE
+# instead (to non-empty); this MUST be set
+HOME = .html
 
 TOPMENU @= <?lreft xy.html<>Xy?>
 TOPMENU @= <?lreft disccopy.html<>Imprint and Disclaimer?>
@@ -23,13 +27,13 @@ TOPMENU @= <?lreft disccopy.html<>Imprint and Disclaimer?>
 #SCRIPT_INJECT = 
 #HEAD_INJECT = 
 
-C = <?ac C?>
-CPP = <?ac C++?>
+C = \c{C}
+CPP = \c{C++}
 FREEBSD = <?hreft http://www.freebsd.org<>FreeBSD?>
 NETBSD = <?hreft http://www.netbsd.org<>NetBSD?>
 OPENBSD = <?hreft http://www.openbsd.org<>OpenBSD?>
 <?begin?>
-<?include +header?>
+<?xinclude +header?>
 
 <?NETBSD?>.
 <?FREEBSD?>.
@@ -51,10 +55,10 @@ respectively,
 likewise &uarr; and &darr; can be used to scroll to the top and the bottom of
 the currently loaded page.
 Hyperlinks which refer to other sites on the internet are
-*explicitly* marked (preceeded) with <?WWW?>.
-As you can see UNICODE characters are used instead of images -
+\i{explicitly} marked (preceeded) with <?WWW?>.
+As you can see UNICODE characters are used instead of images --
 try an UTF-8 aware locale/console/browser if you have display problems.
 
-<?include +footer?>
+<?xinclude +footer?>
 <?end?>
 # vim:set fenc=utf-8 nomod syntax=xml ts=1 sts=1 sw=1 et tw=79:
