@@ -2097,6 +2097,6 @@ __EOT__
    }
 } # }}}
 
-{package main; main_fun();}
+{package main; main_fun()}
 
 # vim:set fenc=utf-8 syntax=perl ts=8 sts=3 sw=3 et tw=79:
