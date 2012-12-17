@@ -386,7 +386,7 @@ sub checksum_path {
    our $builtin = {
       COMPRESS          => '',
       IGNORE_MODTIME    => 0,
-      # Include this for overwrite checks
+      # Include these for overwrite checks
       MODTIME_AUTC      => [ 1972, 6, 25, 4, 42, 0, 'UTC' ],
       MODTIME_ALOCAL    => [ 1972, 6, 25, 5, 42, 0, '+0100' ],
       MODTIME_SUTC      => 0,    MODTIME_SLOCAL => 0
