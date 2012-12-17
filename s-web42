@@ -1966,36 +1966,34 @@ jleave:
       ::xv("Starting write of S-Web42 update archive (yet as '$TMP_UPDATE')");
       ::xpanic("Failed to open new update archive '$TMP_UPDATE': $^E")
          unless open $fh, '>', $TMP_UPDATE;
-      _header();
+      _header()
    }
 
    sub has_content {
-      $delcnt != 0 || $cnt != 0;
+      $delcnt != 0 || $cnt != 0
    }
 
    sub finalize {
       _footer();
-      close($fh) ||
-         ::xpanic("Failed to close new shell archive '$TMP_UPDATE': $^E");
-
-      if (! rename $TMP_UPDATE, $UPDATE) {
-         ::xpanic("Can't rename '$TMP_UPDATE' to '$UPDATE': $^E.",
-            'Busted.  File access rights ok?  Please fix and simply rerun.');
-      }
-      ::xv("S-Web42 update archive finalized as '$UPDATE'");
+      ::xpanic("Failed to close new shell archive '$TMP_UPDATE': $^E")
+         unless close $fh;
+      ::xpanic("Can't rename '$TMP_UPDATE' to '$UPDATE': $^E.",
+            'Busted.  File access rights ok?  Please fix and simply rerun.')
+         unless rename $TMP_UPDATE, $UPDATE;
+      ::xv("S-Web42 update archive finalized as '$UPDATE'")
    }
 
-   sub __ioerr { ::xpanic("Failed to write to '$TMP_UPDATE': $^E"); }
-   sub __pioerr { ::xpanic("Failed to handle shell preparation pipe: $^E"); }
+   sub __ioerr { ::xpanic("Failed to write to '$TMP_UPDATE': $^E") }
+   sub __pioerr { ::xpanic("Failed to handle shell preparation pipe: $^E") }
 
    sub add {
       my ($n) = @_;
       ++$cnt;
       __ioerr() unless print $fh "nomda${cnt}=\"", $n->site_path,
          "\"\ndoda${cnt}() {\n  sed 's/^X//' << \\! | uudecode $uncompress\n";
-      open(PH, '-|', '< ' . ($n->isexpandable ? $TMP_WORK : $n->source_path) .
-            " $compress uuencode -m /dev/stdout | sed 's/^/X/'") ||
-         __pioerr();
+      __pioerr() unless open PH, '-|',
+         ('< ' . ($n->isexpandable ? $TMP_WORK : $n->source_path) .
+         " $compress uuencode -m /dev/stdout | sed 's/^/X/'");
       for (my $b;;) {
          my $l = read PH, $b, 4096 * 8;
          __pioerr() unless defined $l;
@@ -2003,7 +2001,7 @@ jleave:
          __ioerr() unless print $fh $b;
       }
       __pioerr() unless close PH;
-      __ioerr() unless print $fh "!\n}\n";
+      __ioerr() unless print $fh "!\n}\n"
    }
 
    sub _header {
@@ -2050,7 +2048,7 @@ __EOT__
 
       __dels();
       __dirs();
-      __puts();
+      __puts()
    }
 
    sub __dels {
@@ -2061,7 +2059,7 @@ __EOT__
          __ioerr() unless print $fh '  ', 'rm', ($n->isdir ? 'dir ' : 'file '),
             '"', $n->site_path, "\"\n";
       }
-      __ioerr() unless print $fh ':;}', "\n";
+      __ioerr() unless print $fh ':;}', "\n"
    }
 
    sub __dirs {
@@ -2071,7 +2069,7 @@ __EOT__
          next if $n->isknown;
          __ioerr() unless print $fh '  ', 'creatdir "', $n->site_path, "\"\n";
       }
-      __ioerr() unless print $fh ':;}', "\n";
+      __ioerr() unless print $fh ':;}', "\n"
    }
 
    sub __puts {
