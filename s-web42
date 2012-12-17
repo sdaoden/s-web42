@@ -368,17 +368,15 @@ sub checksum_path {
    };
 
    my ($path) = @_;
-   unless (open F, '<', $path) {
-      xe("Failed to open '$path' for checksum calculation: $^E");
-      return -1;
-   }
+   xpanic("Failed to open '$path' for checksum calculation: $^E")
+      unless open F, '<', $path;
    binmode F;
    my ($cksum, $buf, $len) = (&$_digctor($DIGEST), '');
    while (($len = read F, $buf, 1024 * 1024)) {
       $cksum->add($buf);
    }
-   close(F) || xe("Failed to close '$path' after checksum calculation: $^E");
-   $cksum->b64digest;
+   xe("Failed to close '$path' after checksum calculation: $^E") unless close F;
+   $cksum->b64digest
 }
 # }}}
 
