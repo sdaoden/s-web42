@@ -1,7 +1,7 @@
 #!/bin/sh -
 #@ S-Web42 unit test
 
-trap "rm -rf test-*; exit" 0 1 2 15
+trap "rm -rf ./test-*; exit" 0 1 2 15
 
 errs=0
 terr() {
@@ -12,15 +12,23 @@ terr() {
 WEB42=./s-web42
 RC=--no-rc
 
+rm_file() {
+	# This does not work with Heirloom sh(1), even though the construct
+	# works as such; this was reproducable as long as i was tired to find
+	# the problem; let's just use printf(1) instead
+	#: > "${1}"
+	printf '' > "${1}"
+}
+
 tcase() {
 	tno=`expr "${2}-" : '\(.*\)-w42.*'`
-	[ -n "${3}" ] && echo "${3}" > test-${2}
-	[ -n "${4}" ] && echo "${4}" > test-eout || :> test-eout
-	[ -n "${5}" ] && echo "${5}" > test-eerr || :> test-eerr
-	${WEB42} ${RC} --eo test-${2} > test-${tno}-out 2> test-${tno}-err
-	cmp -s test-${tno}-out test-eout
+	[ -n "${3}" ] && echo "${3}" > ./test-${2}
+	[ -n "${4}" ] && echo "${4}" > ./test-eout || rm_file ./test-eout
+	[ -n "${5}" ] && echo "${5}" > ./test-eerr || rm_file ./test-eerr
+	${WEB42} ${RC} --eo test-${2} > ./test-${tno}-out 2> ./test-${tno}-err
+	cmp -s ./test-${tno}-out ./test-eout
 	[ $? -ne 0 ] && o='OUT ' || o=
-	cmp -s test-${tno}-err test-eerr
+	cmp -s ./test-${tno}-err ./test-eerr
 	[ $? -ne 0 ] && e='ERR ' || e=
 	[ -z "${o}${e}" ] && echo "OK: ${tno} - ${1}" ||
 		terr ${tno} "${1}" "${o}${e}"
@@ -762,22 +770,22 @@ ERROR 'test-0005-w42-atm':109: ifn?def: was started here, but where's the <?fi?>
 ## }}}
 ## ?x?include?.. {{{
 
-echo '<?begin?>1.1<?include test-0006-2?>1.2<?end?>AFTER END' > test-0006-1
-echo '<?begin?>2.1<?include test-0006-3?>2.2<?end?>AFTER END' > test-0006-2
+echo '<?begin?>1.1<?include test-0006-2?>1.2<?end?>AFTER END' > ./test-0006-1
+echo '<?begin?>2.1<?include test-0006-3?>2.2<?end?>AFTER END' > ./test-0006-2
 echo '
 MYVAR = :
-<?begin?><?MYVAR?><?end?>AFTER END' > test-0006-3
+<?begin?><?MYVAR?><?end?>AFTER END' > ./test-0006-3
 echo '
 MYVAR = )
 <?begin?>
 4.1
 <?include test-0006-3?><?MYVAR?>
 4.2
-<?end?>' > test-0006-4
-printf '<?begin?>;<?end?>AFTER END' > test-0006-5
+<?end?>' > ./test-0006-4
+printf '<?begin?>;<?end?>AFTER END' > ./test-0006-5
 
-echo 'Embedded file <?def crossfile<>with?><?crossfile?> NL' > test-0006-6
-printf 'And an embedded file <?crossfile?>out NL' > test-0006-7
+echo 'Embedded file <?def crossfile<>with?><?crossfile?> NL' > ./test-0006-6
+printf 'And an embedded file <?crossfile?>out NL' > ./test-0006-7
 
 tcase 'x?include' 0006-w42-atm \
 '<?begin?>
@@ -806,10 +814,10 @@ Passed without errors.' \
 # }}}
 ## ?raw_include?.. {{{
 
-printf '1\n 2\n3\n' > test-0007-1
-printf '4\n  5\n\n6\n' > test-0007-2
-printf '7' > test-0007-3
-printf '8\n9' > test-0007-4
+printf '1\n 2\n3\n' > ./test-0007-1
+printf '4\n  5\n\n6\n' > ./test-0007-2
+printf '7' > ./test-0007-3
+printf '8\n9' > ./test-0007-4
 
 tcase 'raw_include' 0007-w42-atm \
 '<?begin?>
@@ -1019,8 +1027,8 @@ not tried it.' \
 # }}}
 ## x?perl/x?sh {{{
 
-echo 'When the Blitzkrieg raged' > test-0009-1
-echo 'And the bodies stank' > test-0009-2
+echo 'When the Blitzkrieg raged' > ./test-0009-1
+echo 'And the bodies stank' > ./test-0009-2
 
 tcase 'x?perl/x?sh' 0009-w42-atm \
 'PERL = perl(1)
@@ -1177,7 +1185,7 @@ Hello, Honey   Sugar Candy	Girl' \
 
 ## MarkLo {{{
 
-printf '<?begin?>\nSTART\\c{tt}\\i{em}\\b{strong}\\u{u}\n\\i{I \\b{really \\u{love} you}, baby!}END\n<?end?>' > test-0042-w42-ats
+printf '<?begin?>\nSTART\\c{tt}\\i{em}\\b{strong}\\u{u}\n\\i{I \\b{really \\u{love} you}, baby!}END\n<?end?>' > ./test-0042-w42-ats
 
 tcase 'MarkLo expansion (disable mode: m)' 0042-w42-ats \
 '' \
@@ -1202,7 +1210,7 @@ tcase 'MarkLo expansion (disable mode: m)' 0042-w42-ats \
 	}
 	CWD=`pwd`
 
-	echo > config.rc \
+	echo > ./config.rc \
 'PERL = <?perl?>require Cwd; print "${BEGIN}<?FILE?><", Cwd->getcwd, ">${END}"\
 <?perl end?>
 TOPMENU @= {TOP}'
