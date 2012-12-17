@@ -230,7 +230,6 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
          $bn = Cwd::realpath($eo);
          ($dn, $i, $bn) = File::Spec->splitpath($bn);
          $dird = File::Spec->catpath($dn, $i, '');
-         xpanic("S-Web42 BUG #1 - please report this") unless $dird;
       } else {
          $m |= &Ctx::MODE_INFH;
          $eo = 'STDIN';
@@ -265,6 +264,7 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
    foreach my $n (@Site::refresh_nodes) {
       next if $n->isdir;
       if ($n->isexpandable) {
+         xv("Checking '" . $n->site_path);
          my $i = $n->parent->source_path;
          Ctx->new(mode => $n->filters, chdird => $i, incdird => $i,
             sumup => $n->source_path)->full_expand_lifecycle;
@@ -272,12 +272,12 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
          # Site:: has set .ocksum to whatever made sense - we can use it here
          if ($i eq $n->ocksum) {
             $n->unset_refresh;
-            xvv(".. '" . $n->site_path . "'" . ': output checksum matches');
+            xv(".. '" . $n->site_path . "'" . ': output checksum matches');
             next;
          }
          $n->ocksum($i);
       }
-      xv("'" . $n->site_path . "' content changed, including it");
+      print $LOGFH "'", $n->site_path, "' content changed, including it\n";
       Target::add($n);
    }
 
@@ -294,7 +294,7 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
    Cache::update() unless $NO_UPDATE_CACHE;
 
 jEXIT:
-   exit $ERRORS ? 1 : 0;
+   exit($ERRORS ? 1 : 0);
 } # }}}
 
 # Support subs {{{
@@ -368,17 +368,15 @@ sub checksum_path {
    };
 
    my ($path) = @_;
-   unless (open F, '<', $path) {
-      xe("Failed to open '$path' for checksum calculation: $^E");
-      return -1;
-   }
+   xpanic("Failed to open '$path' for checksum calculation: $^E")
+      unless open F, '<', $path;
    binmode F;
    my ($cksum, $buf, $len) = (&$_digctor($DIGEST), '');
    while (($len = read F, $buf, 1024 * 1024)) {
       $cksum->add($buf);
    }
-   close(F) || xe("Failed to close '$path' after checksum calculation: $^E");
-   $cksum->b64digest;
+   xe("Failed to close '$path' after checksum calculation: $^E") unless close F;
+   $cksum->b64digest
 }
 # }}}
 
@@ -388,7 +386,7 @@ sub checksum_path {
    our $builtin = {
       COMPRESS          => '',
       IGNORE_MODTIME    => 0,
-      # Include this for overwrite checks
+      # Include these for overwrite checks
       MODTIME_AUTC      => [ 1972, 6, 25, 4, 42, 0, 'UTC' ],
       MODTIME_ALOCAL    => [ 1972, 6, 25, 5, 42, 0, '+0100' ],
       MODTIME_SUTC      => 0,    MODTIME_SLOCAL => 0
@@ -621,12 +619,12 @@ jresetarr:  $pivars->{$key} = [];
             ::xe("Hook execution failed in '$spath'") if $? >> 8;
          }
 
-         opendir(DH, $spath) || ::xpanic("Can't opendir '$spath': $^E");
+         ::xpanic("Can't opendir '$spath': $^E") unless opendir DH, $spath;
          my @sdirs = grep {
             -d "$spath/$_" &&
             substr($_, 0, 1) ne '.' && $_ ne 'SCCS' && $_ ne 'CVS'
          } readdir DH;
-         closedir DH;
+         closedir DH; # xxx err hdl
 
          foreach (@sdirs) {
             ::xpanic("Can't handle paths with quotation marks: '$_'")
@@ -649,11 +647,11 @@ jresetarr:  $pivars->{$key} = [];
             ::xvv("** <$SITE> **");
          }
 
-         opendir(DH, $i) || ::xpanic("Can't opendir '$i': $^E");
+         ::xpanic("Can't opendir '$i': $^E") unless opendir DH, $i;
          $i = [grep {
             -f "$i/$_" && substr($_, 0, 1) ne '.' && $_ ne $HOOK
          } readdir DH];
-         closedir DH;
+         closedir DH; # xxx err hdl
 
          foreach my $e (@$i) {
             ::xpanic("Can't handle paths with quotation marks: '$e'")
@@ -681,18 +679,18 @@ jresetarr:  $pivars->{$key} = [];
          my ($dnode) = @_;
          if ($dnode->parent) {
             if (! $dnode->isknown) {
-               ::xv('New directory: \'' . $dnode->site_path . '\'');
+               print $LOGFH "New directory: '", $dnode->site_path, "'\n";
                $dnode->set_refresh;
                push @refresh_nodes, $dnode;
             } elsif ($dnode->isdel) {
-               ::xv('Directory deleted: \'' . $dnode->site_path . '\'');
+               print $LOGFH "Directory deleted: '", $dnode->site_path, "'\n";
                push @delete_nodes, $dnode;
             }
          }
 
          for (my $fn = $dnode->files; defined $fn; $fn = $fn->sibling) {
             if ($fn->isdel) {
-               ::xv('File deleted: \'' . $fn->site_path . '\'');
+               print $LOGFH "File deleted: '", $fn->site_path, "'\n";
                push @delete_nodes, $fn;
                next;
             }
@@ -700,27 +698,25 @@ jresetarr:  $pivars->{$key} = [];
             $fn->modtime($ignmod ? 0 : (stat $fn->source_path)[9]);
             my $cos = undef;
             # Sofar ->isrefresh transports users' force-rebuild desire..
-            if (! $fn->isknown || $fn->isrefresh ||
-                  $PIVars::outermost->{IGNORE_MODTIME} ||
+            if (! $fn->isknown || $fn->isrefresh || $ignmod ||
                   $fn->modtime != $fn->cached_modtime) {
                $fn->icksum(::checksum_path($fn->source_path));
                if (! $fn->isknown || $fn->isrefresh) {
-                  ::xv(($fn->isknown ? 'Forced-rebuild: \'' : 'New file: \'')
-                     . $fn->site_path . '\'');
+                  ::xv(($fn->isknown ? 'Forced-rebuild: \'' : 'New file: \'') .
+                     $fn->site_path . '\'');
                } elsif ($fn->icksum ne $fn->cached_icksum) {
                   ::xv('checksum differs: \'' . $fn->site_path . '\'');
                   $cos = $fn->icksum;
                } else {
                   if ($VERBOSE) {
-                     if ($PIVars::outermost->{IGNORE_MODTIME}) {
-                        ::xvv('.. \'' . $fn->site_path .
-                           '\': checksum matches');
+                     if ($ignmod) {
+                        ::xvv('.. \'' .$fn->site_path. '\': checksum matches');
                      } else {
                         ::xvv('.. \'' . $fn->site_path .
                            '\': modtime differs, but checksum matches');
                      }
                   }
-                  next;
+                  goto jupsums;
                }
                $fn->set_refresh;
                push @refresh_nodes, $fn;
@@ -728,7 +724,7 @@ jresetarr:  $pivars->{$key} = [];
                ::xvv('.. \'' . $fn->site_path . '\' seems unchanged');
                $fn->icksum($fn->cached_icksum);
             }
-
+jupsums:
             # Just ensure valid up2date fields at this point; expanded files
             # will be re-checksummed later
             $cos = ($fn->isknown ? $fn->cached_ocksum : $fn->icksum)
@@ -758,35 +754,6 @@ jresetarr:  $pivars->{$key} = [];
    sub STATE_CACHE_MASK()  { 0 }    # Flags transported through cache DB
 
    our $root = undef;
-   SymObj::sym_create(SymObj::NONE, {
-      _state   => STATE_NONE,
-      _path    => '',
-      _parent  => undef,
-      _sibling => undef
-   });
-
-   sub isdir   { exists $_[0]->{_dirs}; }
-   sub isfile  { ! exists $_[0]->{_dirs}; }
-
-   sub isexpandable  { $_[0]->{_state} & STATE_EXPANDABLE; }
-   sub isdel         { $_[0]->{_state} & STATE_DEL; }
-   sub isknown       { $_[0]->{_state} & STATE_KNOWN; }
-   sub isrefresh     { $_[0]->{_state} & STATE_REFRESH; }
-
-   sub set_refresh {
-      my $self = shift;
-      $self->{_state} |= STATE_REFRESH;
-      $self;
-   }
-   sub unset_refresh {
-      my $self = shift;
-      $self->{_state} &= ~STATE_REFRESH;
-      $self;
-   }
-   sub state_for_cache {
-      my $self = shift;
-      $self->{_state} & STATE_CACHE_MASK;
-   }
 
    sub dirnode_for_cached_dirname {
       my ($name) = @_;
@@ -806,25 +773,44 @@ jresetarr:  $pivars->{$key} = [];
          }
          $dnode = $dn;
       }
-      $dnode;
+      $dnode
    }
+
+   SymObj::sym_create(SymObj::NONE, {
+      _state   => STATE_NONE,
+      _path    => '',
+      _parent  => undef,
+      _sibling => undef
+   });
+
+   sub isdir   { exists $_[0]->{_dirs} }
+   sub isfile  { ! exists $_[0]->{_dirs} }
+
+   sub isexpandable  { $_[0]->state & STATE_EXPANDABLE }
+   sub isdel         { $_[0]->state & STATE_DEL }
+   sub isknown       { $_[0]->state & STATE_KNOWN }
+   sub isrefresh     { $_[0]->state & STATE_REFRESH }
+
+   sub set_refresh      { ${$_[0]->__state} |= STATE_REFRESH; $_[0] }
+   sub unset_refresh    { ${$_[0]->__state} &= ~STATE_REFRESH; $_[0] }
+   sub state_for_cache  { ${$_[0]->__state} & STATE_CACHE_MASK }
 
 {package Node::Dir;
    our @ISA = ('Node');
-   SymObj::sym_create(SymObj::NONE, { _dirs => undef, _files => undef });
+   SymObj::sym_create(SymObj::NONE, {_dirs => undef, _files => undef});
 
    sub __ctor {
       my ($self) = @_;
       $Node::root = $self unless defined $Node::root;
       if (defined(my $p = $self->parent)) {
-         $self->sibling($p->{_dirs});
-         $p->{_dirs} = $self;
+         $self->sibling($p->dirs);
+         $p->dirs($self);
       }
    }
 
    sub source_path {
       my $self = shift;
-      $SITE . '/' . $self->site_path;
+      $SITE . '/' . $self->site_path
    }
 
    sub site_path {
@@ -835,7 +821,7 @@ jresetarr:  $pivars->{$key} = [];
          $p = $s->path . '/' . $p;
          $s = $s->parent;
       }
-      $self->{__sitepath} = $p;
+      $self->{__sitepath} = $p
    }
 }
 
@@ -862,7 +848,7 @@ jresetarr:  $pivars->{$key} = [];
          $self->{__sipp} = $cf->{STRIPPED_PATH} if exists $cf->{STRIPPED_PATH};
          $i = Node::STATE_EXPANDABLE;
          $i |= Node::STATE_REFRESH if exists $cf->{ALWAYS_REBUILD};
-         $self->state($self->state | $i);
+         ${$self->__state} |= $i;
          $self->filters($cf->{FILTERS}) if exists $cf->{FILTERS};
       }
    }
@@ -870,18 +856,25 @@ jresetarr:  $pivars->{$key} = [];
    sub source_path {
       my $self = shift;
       my $s = $self->parent->source_path;
-      $s .= '/' if length $s;
-      $s .= $self->path;
+      if (length $s) {
+         File::Spec->catfile($s, $self->path);
+      } else {
+         $self->path;
+      }
    }
 
    sub site_path {
       my $self = shift;
       return $self->{__sitepath} if defined $self->{__sitepath};
+      my $p .= defined $self->{__sipp} ? $self->{__sipp} : $self->path;
+      delete $self->{__sipp};
       my $s = $self->parent->site_path;
-      $s .= '/' if length $s;
-      $s .= defined $self->{__sipp} ? $self->{__sipp} : $self->path;
-      undef $self->{__sipp};
-      $self->{__sitepath} = $s;
+      if (length $s) {
+         $s = File::Spec->catfile($s, $p);
+      } else {
+         $s = $p;
+      }
+      $self->{__sitepath} = $s
    }
 }
 } # }}}
@@ -938,13 +931,13 @@ jresetarr:  $pivars->{$key} = [];
       ::xpanic("Failed to open '$TMP_WORK' for writing: $^E")
          unless open CF, '>', $TMP_WORK;
       ::xv("Creating new cache database");
-      sub __au { ::xpanic("Failed to write to '$TMP_WORK': $^E"); }
+      sub __au { ::xpanic("Failed to write to '$TMP_WORK': $^E") }
       __au() unless print CF
          '#S-Web42 cache database.', "\n",
          '# Field separator is a single ASCII space (U+0020).', "\n",
          '# Directories: ^/FLAGS PATH$', "\n",
          '# Files: ^.FLAGS MODTIME IN:CKSUM_BASE64 OUT:CKSUM_BASE64 PATH$',
-            "\n";
+         "\n";
       sub __recur {
          my ($dn) = @_;
          if (defined $dn->parent) {
@@ -997,7 +990,7 @@ jresetarr:  $pivars->{$key} = [];
       ::e($self, "Failed to close '$TMP_WORK': $^E")
          unless ($self->outer || ($self->mode & MODE_OUTFH) ||
             close $self->outfh);
-      $self->close;
+      $self->close
    }
 
    SymObj::sym_create(SymObj::NONE, {
@@ -1049,7 +1042,7 @@ jresetarr:  $pivars->{$key} = [];
       my $self = shift;
       unless ($self->mode & MODE_INFH) {
          ::panic($self, "Failed to open for reading: $^E")
-            unless open ${$self->__infh}, '<', ${$self->__sumup};
+            unless open ${$self->__infh}, '<', $self->sumup;
       } else {
          $self->infh(*STDIN) unless $self->infh;
       }
@@ -1065,7 +1058,7 @@ jresetarr:  $pivars->{$key} = [];
       }
       ::vv($self, 'Opened context, mode: ' .
          Filter::filters_to_string($self->mode & Filter::FILTER_MASK));
-      $self;
+      $self
    }
 
    sub close {
@@ -1073,7 +1066,7 @@ jresetarr:  $pivars->{$key} = [];
       ::e($self, "Can't close file: $^E")
          unless ($self->mode & MODE_INFH) || close $self->infh;
       ::vv($self, "Closed context");
-      $self;
+      $self
    }
 
    sub read_assignments {
@@ -1094,7 +1087,7 @@ jresetarr:  $pivars->{$key} = [];
       } else {
          ::e($self, 'Premature file exit before <?begin?>') unless defined $l;
       }
-      $self;
+      $self
    }
 
    sub readline_assignments {
@@ -1108,7 +1101,7 @@ jresetarr:  $pivars->{$key} = [];
          $l .= ('\\' x ($bno >> 1)) if $bno > 0;
          last unless $bno & 1;
       }
-      $self->line(length $l ? $l : undef);
+      $self->line(length $l ? $l : undef)
    }
 
    sub readline_full {
@@ -1152,7 +1145,7 @@ jresetarr:  $pivars->{$key} = [];
             $l = undef;
          }
       }
-      $self->line($l);
+      $self->line($l)
    }
 } # }}}
 
@@ -1180,7 +1173,7 @@ jresetarr:  $pivars->{$key} = [];
    SymObj::sym_create(SymObj::NONE, {
       _ctx        => undef,   # Ctx object we're exploding
       _mode       => 0,       # ->ctx->mode
-      _dumper     => undef,   # Output ::Dumper (+ AUTOPAR/TAGJOIN/WSNORM hdl.)
+      _dumper     => undef,   # Output (+ AUTOPAR/TAGJOIN/WSNORM hdl.) ::Dumper
       _recursion  => [],      # For <?PAIR?> support, recursion-awareness
       _data       => [],      # Expanded line data, intermediate storage
       _rest_data  => undef,   # Line data for re-evaluation
@@ -1264,7 +1257,7 @@ jresetarr:  $pivars->{$key} = [];
    # Intermediate data output layer {{{
    sub _add_data {
       my ($self, $dat) = @_;
-      goto jleave if $self->discard || ! $dat;
+      goto jleave if ! $dat || $self->discard;
       $dat = _marklo_ex($dat) if $self->mode & Filter::MARKLO;
       $self->seen_line(1) if $dat;
       $self->data($dat);
@@ -1310,9 +1303,10 @@ jleave_keeplen:
 
       while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/) {
          $self->_add_data($1)->ctx->line($l = defined $4 ? $4 : '');
-         my ($pi, $valarr) = ($2, (defined $3 ? [split '<>', $3, -1] : []));
-
+         my $pi = $2;
          next if $self->discard && ! exists $ALWAYS_REEVAL_PIS{$pi};
+         my $valarr = defined $3 ? [split '<>', $3, -1] : [];
+
          if (exists $PIS{$pi}) {
             $self->_pi_comm($pi, $valarr);
          } elsif (exists $self->ctx->pivars->{$pi}) {
@@ -1354,10 +1348,10 @@ jpivar:     $self->_pi_var($pi, $valarr);
       if (defined $MULTILINE_PIS{$pi}) {
          if (@$valarr > 1 || (@$valarr == 1 && $valarr->[0] ne 'end')) {
             ::e($self->ctx,
-               "$pi is multiline PI, it may only be given 'end' argument");
+               "$pi is a paired PI and only takes an optional 'end' argument");
             goto jleave;
          }
-         # If this ends a multiline PI, check it's a matching one
+         # If this ends a paired PI, check it's a matching one
          if (@$valarr == 1) {
             $i = @{$self->recursion};
             if ($i == 0) {
@@ -1404,10 +1398,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
          } else {
             PIVars::assign($self->ctx, $i, $valarr, undef, 1);
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'pi-if') {
+      } elsif ($pi eq 'pi-if') {
          shift @$valarr;
          $pi = $i;
          if (exists $PIS{$pi}) {
@@ -1417,10 +1408,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
          } else {
             ::vv($self->ctx, "pi-if: unknown PI: $pi");
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'undef') {
+      } elsif ($pi eq 'undef') {
          shift @$valarr;
          if (exists $PIS{$i} || exists $PIVars::builtin->{$i}) {
             ::e($self->ctx, "undef: cannot undef builtin PI (variable): $i");
@@ -1430,35 +1418,24 @@ jpivar:     $self->_pi_var($pi, $valarr);
          } else {
             ::e($self->ctx, "undef: no such variable: $i");
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'href' || $pi eq 'lref') {
+      } elsif ($pi eq 'href' || $pi eq 'lref') {
          $pi = ($pi eq 'href');
          my $w;
          $w = $self->ctx->pivars->{WWW} if $pi;
          $w = '' unless defined $w;
-         $w .= '&nbsp;' if length $w;
          $i = '<a href="' . $i . '">' . $w . $i . '</a>';
-         #if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
          $self->rest_data($i);
-         goto jleave;
       } elsif ($pi eq 'hreft' || $pi eq 'lreft') {
          $pi = ($pi eq 'hreft');
          my ($w, $t, $tm);
          $w = $self->ctx->pivars->{WWW} if $pi;
          $w = '' unless defined $w;
-         $w .= '&nbsp;' if length $w;
          $i = Expander::Markup::link($i);
          $tm = $valarr->[1];
          $t = Expander::Markup::attribute($tm);
          $i = '<a href="' . $i . '" title="' . $t . '">' . $w . $tm . '</a>';
-         #if ($pi) { $self->rest_data($i); } else { $self->_add_data($i); }
          $self->rest_data($i);
-         goto jleave;
-      }
-
-      elsif ($pi eq 'pre' || $pi eq 'xpre') {
+      } elsif ($pi eq 'pre' || $pi eq 'xpre') {
          if ($i) {
             $self->_end_recursion;
             $self->_add_data('</pre>') if $pi eq 'xpre';
@@ -1467,19 +1444,13 @@ jpivar:     $self->_pi_var($pi, $valarr);
             $self->_prepare_recursion(undef,
                (($self->mode & ~Filter::FILTER_MASK) | Filter::EXPPIS), $pi);
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
+      } elsif ($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
             $pi eq 'fi') {
          $self->_emit;
          $pi = Expander::Ifdef::handle_pi(scalar $self->ifdefs, $self->ctx,
                $pi, $i);
          $self->discard($pi) if $pi >= 0;
-         goto jleave;
-      }
-
-      elsif ($pi eq 'include' || $pi eq 'xinclude') {
+      } elsif ($pi eq 'include' || $pi eq 'xinclude') {
          my $ctx = ($self->mode & ~(Ctx::MODE_INFH|Ctx::MODE_EMBED)) |
                ($pi eq 'xinclude' ? Ctx::MODE_EMBED : 0);
          ($pi, $i) = $self->_expand_include_path($i);
@@ -1489,24 +1460,21 @@ jpivar:     $self->_pi_var($pi, $valarr);
          $ctx->open->read_assignments;
          $self->_consume->_end_recursion;
          $ctx->close;
-         goto jleave;
-      }
-
-      elsif ($pi eq 'raw_include') {
+      } elsif ($pi eq 'raw_include') {
          ($pi, $i) = $self->_expand_include_path($i);
          $self->_prepare_recursion($self->ctx, 0);
          ::panic($self->ctx, "raw_include: can't read '$i': $^E")
             unless open RI, '<', $i;
          # Use direct I/O if possible; we can't if redirection is active
          if (defined ${$self->__data_condome}) {
-            foreach (readline RI) { # XXX readline errs?
+            foreach (readline RI) { # xxx readline errs?
                my $had = chomp;
                $self->_add_data($_);
                $self->_endl if $had;
             }
          } else {
             $self->dumper->direct_start;
-            foreach (readline RI) { # XXX readline errs?
+            foreach (readline RI) { # xxx readline errs?
                my $had = chomp;
                $self->dumper->direct_put($_, $had);
             }
@@ -1515,13 +1483,9 @@ jpivar:     $self->_pi_var($pi, $valarr);
          ::panic($self->ctx, "raw_include: can't close '$i': $^E")
             unless close RI;
          $self->_end_recursion;
-         goto jleave;
-      }
-
-      elsif ($pi eq 'perl' || $pi eq 'xperl' || $pi eq 'sh' || $pi eq 'xsh') {
+      } elsif ($pi eq 'perl' || $pi eq 'xperl' || $pi eq 'sh' || $pi eq 'xsh') {
          if ($i) {
-            $self->_end_recursion;
-            $self->_create_subproc($pi);
+            $self->_end_recursion->_create_subproc($pi);
          } elsif (defined ${$self->__data_condome}) {
             ::panic($self->ctx,
                'There is already one of <?x?perl/x?sh?> active!'); 
@@ -1538,18 +1502,11 @@ jpivar:     $self->_pi_var($pi, $valarr);
                   'BEGIN="<?begin?>" END="<?end?>"')->_endl;
             }
          }
-         goto jleave;
-      }
-
-      elsif ($pi eq 'end') {
+      } elsif ($pi eq 'end') {
          $self->ctx->line('');
-         ${$self->__mode} |= NL_FLUX
-            if $self->ctx->outer && $self->ctx->outer->line;
+         ${$self->__mode} |= NL_FLUX if ($i = $self->ctx->outer) && $i->line;
          $self->seen_end(1);
-         goto jleave;
-      }
-
-      elsif ($pi eq 'mode') {
+      } elsif ($pi eq 'mode') {
          if ($i eq '%') {
             ::panic($self->ctx, "<?mode?> is NOT IN USE")
                unless exists $self->{__omode};
@@ -1564,9 +1521,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
          }
          $self->_emit->dumper->force_mode_change($self->ctx->mode(
             $self->{_mode} = $i));
-         goto jleave;
       }
-
 jleave:
       $self
    } # }}}
@@ -1696,7 +1651,7 @@ jleave:
             $in = $1 . $s . $3 . $e . $4;
          }
       }
-      $dat .= $in;
+      $dat .= $in
    }
    # }}}
 
@@ -1846,7 +1801,7 @@ jleave:
 
    sub direct_start {
       my ($self) = @_;
-      # FIXME make these expander states an argument - "line exclusive?" or so
+      # XXX make these expander states an argument - "line exclusive?" or so
       $self->{__final_nl} = (! $self->expander->seen_line &&
             ! $self->expander->ctx->line);
       $self->{__endl} = 0;
@@ -1949,7 +1904,7 @@ jleave:
          return 0 unless @$stack;
          $self = $stack->[0];
       }
-      $self->discard;
+      $self->discard
    }
 
    sub check_ctx {
@@ -2011,36 +1966,34 @@ jleave:
       ::xv("Starting write of S-Web42 update archive (yet as '$TMP_UPDATE')");
       ::xpanic("Failed to open new update archive '$TMP_UPDATE': $^E")
          unless open $fh, '>', $TMP_UPDATE;
-      _header();
+      _header()
    }
 
    sub has_content {
-      $delcnt != 0 || $cnt != 0;
+      $delcnt != 0 || $cnt != 0
    }
 
    sub finalize {
       _footer();
-      close($fh) ||
-         ::xpanic("Failed to close new shell archive '$TMP_UPDATE': $^E");
-
-      if (! rename $TMP_UPDATE, $UPDATE) {
-         ::xpanic("Can't rename '$TMP_UPDATE' to '$UPDATE': $^E.",
-            'Busted.  File access rights ok?  Please fix and simply rerun.');
-      }
-      ::xv("S-Web42 update archive finalized as '$UPDATE'");
+      ::xpanic("Failed to close new shell archive '$TMP_UPDATE': $^E")
+         unless close $fh;
+      ::xpanic("Can't rename '$TMP_UPDATE' to '$UPDATE': $^E.",
+            'Busted.  File access rights ok?  Please fix and simply rerun.')
+         unless rename $TMP_UPDATE, $UPDATE;
+      ::xv("S-Web42 update archive finalized as '$UPDATE'")
    }
 
-   sub __ioerr { ::xpanic("Failed to write to '$TMP_UPDATE': $^E"); }
-   sub __pioerr { ::xpanic("Failed to handle shell preparation pipe: $^E"); }
+   sub __ioerr { ::xpanic("Failed to write to '$TMP_UPDATE': $^E") }
+   sub __pioerr { ::xpanic("Failed to handle shell preparation pipe: $^E") }
 
    sub add {
       my ($n) = @_;
       ++$cnt;
       __ioerr() unless print $fh "nomda${cnt}=\"", $n->site_path,
          "\"\ndoda${cnt}() {\n  sed 's/^X//' << \\! | uudecode $uncompress\n";
-      open(PH, '-|', '< ' . ($n->isexpandable ? $TMP_WORK : $n->source_path) .
-            " $compress uuencode -m /dev/stdout | sed 's/^/X/'") ||
-         __pioerr();
+      __pioerr() unless open PH, '-|',
+         ('< ' . ($n->isexpandable ? $TMP_WORK : $n->source_path) .
+         " $compress uuencode -m /dev/stdout | sed 's/^/X/'");
       for (my $b;;) {
          my $l = read PH, $b, 4096 * 8;
          __pioerr() unless defined $l;
@@ -2048,7 +2001,7 @@ jleave:
          __ioerr() unless print $fh $b;
       }
       __pioerr() unless close PH;
-      __ioerr() unless print $fh "!\n}\n";
+      __ioerr() unless print $fh "!\n}\n"
    }
 
    sub _header {
@@ -2095,7 +2048,7 @@ __EOT__
 
       __dels();
       __dirs();
-      __puts();
+      __puts()
    }
 
    sub __dels {
@@ -2106,7 +2059,7 @@ __EOT__
          __ioerr() unless print $fh '  ', 'rm', ($n->isdir ? 'dir ' : 'file '),
             '"', $n->site_path, "\"\n";
       }
-      __ioerr() unless print $fh ':;}', "\n";
+      __ioerr() unless print $fh ':;}', "\n"
    }
 
    sub __dirs {
@@ -2116,7 +2069,7 @@ __EOT__
          next if $n->isknown;
          __ioerr() unless print $fh '  ', 'creatdir "', $n->site_path, "\"\n";
       }
-      __ioerr() unless print $fh ':;}', "\n";
+      __ioerr() unless print $fh ':;}', "\n"
    }
 
    sub __puts {
@@ -2144,6 +2097,6 @@ __EOT__
    }
 } # }}}
 
-{package main; main_fun();}
+{package main; main_fun()}
 
 # vim:set fenc=utf-8 syntax=perl ts=8 sts=3 sw=3 et tw=79:
