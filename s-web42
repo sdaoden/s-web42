@@ -990,7 +990,7 @@ jupsums:
       ::e($self, "Failed to close '$TMP_WORK': $^E")
          unless ($self->outer || ($self->mode & MODE_OUTFH) ||
             close $self->outfh);
-      $self->close;
+      $self->close
    }
 
    SymObj::sym_create(SymObj::NONE, {
@@ -1042,7 +1042,7 @@ jupsums:
       my $self = shift;
       unless ($self->mode & MODE_INFH) {
          ::panic($self, "Failed to open for reading: $^E")
-            unless open ${$self->__infh}, '<', ${$self->__sumup};
+            unless open ${$self->__infh}, '<', $self->sumup;
       } else {
          $self->infh(*STDIN) unless $self->infh;
       }
@@ -1058,7 +1058,7 @@ jupsums:
       }
       ::vv($self, 'Opened context, mode: ' .
          Filter::filters_to_string($self->mode & Filter::FILTER_MASK));
-      $self;
+      $self
    }
 
    sub close {
@@ -1066,7 +1066,7 @@ jupsums:
       ::e($self, "Can't close file: $^E")
          unless ($self->mode & MODE_INFH) || close $self->infh;
       ::vv($self, "Closed context");
-      $self;
+      $self
    }
 
    sub read_assignments {
@@ -1087,7 +1087,7 @@ jupsums:
       } else {
          ::e($self, 'Premature file exit before <?begin?>') unless defined $l;
       }
-      $self;
+      $self
    }
 
    sub readline_assignments {
@@ -1101,7 +1101,7 @@ jupsums:
          $l .= ('\\' x ($bno >> 1)) if $bno > 0;
          last unless $bno & 1;
       }
-      $self->line(length $l ? $l : undef);
+      $self->line(length $l ? $l : undef)
    }
 
    sub readline_full {
@@ -1145,7 +1145,7 @@ jupsums:
             $l = undef;
          }
       }
-      $self->line($l);
+      $self->line($l)
    }
 } # }}}
 
