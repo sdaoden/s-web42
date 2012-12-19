@@ -110,9 +110,9 @@ Once invoked, the converter script ``s-web42`` requires the subdirectory
 ``site`` to exist in the current working directory, since that is used
 as the input tree.  It'll also assume it can use the filenames
 ``cache.dat`` (the cache database), ``cache.old`` (database state
-before last run), and, temporarily, ``*.tmp`` and ``w42-update.tmp``
-in there.  The generated shell archive will always be ``w42-update.sh``,
-and it will not have any executable bits set.
+before last run), and, temporarily, ``*.tmp`` in there.  The generated
+shell archive will always be ``w42-update.sh``, and it will not have
+any executable bits set.
 
 If the file ``config.rc`` is found in the working directory, and the
 ``--no-rc`` command line option has not been used, it'll be read --
@@ -172,7 +172,7 @@ Any file rebuild non-bitwise is then checksummed again, and will *only*
 be part of the result if the |checksum| of the rebuilt target is
 different from the checksum stored in the cache database, but not
 otherwise.  (The only exception to this rule is if the user uses the
-``--force-rebuild`` command line option, as that'll rebuild anything
+``--force-rebuild`` command line option, as that'll rebuild everything
 from scratch.)
 
 So, what will the result look like?  One may be astonished, but the
@@ -313,12 +313,12 @@ actions:
    characters are squeezed to a single (ASCII) space character.
 
 *MarkLo expansion* (disable mode: ``m``)
-   As a last step some *MarkLo* markers will be converted to markup.
-   Expanded content is reevaluated until no more expansion is possible.
-   *MarkLo* detection and expansion is neither performed across newline
-   boundaries nor PI occurrences, and there is no possibility to escape
-   *MarkLo* expansion (e.g., via backslash escaping) except by turning
-   it off entirely. ::
+   Some *MarkLo* markers will be converted to markup.  Expanded content
+   is reevaluated until no more expansion is possible.  *MarkLo*
+   detection and expansion is neither performed across newline boundaries
+   nor PI occurrences, and there is no possibility to escape *MarkLo*
+   expansion (e.g., via backslash escaping) except by turning it off
+   entirely. ::
 
       \c{CONTENT}  ->  <tt>CONTENT</tt>
       \i{CONTENT}  ->  <em>CONTENT</em>
@@ -616,8 +616,8 @@ _`mode`
    on the fly; the required argument must either be ``%``, in which
    case the previously active mode is restored, or a combination of
    the filter mode configuration characters.  Note that PI expansion
-   mode cannot be disabled like that.  Also note that you should know
-   what you are doing -- you are on your own when using this PI.
+   mode cannot be disabled like that.  Be aware - you should really
+   know what you are doing when you use this PI.
 
 _`perl`, _`sh`, _`xperl`, _`xsh`
    These are paired statements which can be used to embed ``perl(1)``
@@ -675,6 +675,10 @@ _`perl`, _`sh`, _`xperl`, _`xsh`
       > 'printf "${PIS}BEGIN?>IN${PIS}END?>" | tr [:upper:] [:lower:]' \
       > '<?sh end?>END<?end?>' | s-web42 --no-rc --eo
 
+      # An <?eval PERL-EXPR?> may at some time be a regular PI..
+      $ echo '<?begin?><?defx eval<><^xperl^><><^xperl end^>?>\
+      > <?eval my $t=gmtime; print $t?><?end?>' | s-web42 --no-rc --eo
+
    .. note::
       The entire -- expanded -- script is read into memory before
       being passed to the interpreter that runs in the subprocess and
@@ -712,6 +716,12 @@ The convertion phase can be parallelized without much (in fact almost
 no) effort; add a special ``MAXJOBS`` or similar special ``config.rc``
 PI variable to control this, then.
 
+An ``<?eval? PERL-EXPR?>`` could at some time become a regular PI,
+that simply evaluates in the *current* context.  Maybe lazy start a
+concurrent child and communicate with that for this purpose (pay once
+once needed).  If parallelized, one such evalizer for each worker
+thread/process.
+
 Performance could be improved and dependencies could be reduced if
 compression would be restricted to ``gzip(1)`` and if the rather
 standard `perl(1)`_ module ``IO::Compress::Gzip`` would be used to
@@ -722,5 +732,10 @@ is well understood and could be unrolled in perl.  Well, and then the
 ``sed(1)`` call would simply be ``s/^/X/`` in `perl(1)`_.  Like that
 no dependencies for external utilities would remain during S-Web42
 operation, but only when exploding the resulting shell archive.
+
+Of course, a different ``Target`` implementation could be chosen
+dependent on user settings; i.e., a gzip(1) compressed tar(1) archive
+could be piped to STDOUT instead of producing a shell archive.  This
+would not work with file and directory removals though.  :)
 
 .. vim:set fenc=utf-8 syntax=rst ts=8 sts=3 sw=3 et tw=70:
