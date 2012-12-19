@@ -507,6 +507,8 @@ REE<?def reeval1<><^def reeval2<>reeval-output-ok^><^reeval2^><^undef reeval2^>?
 <?defx1 defx1-arg1<>defx1-arg2<>defx1-arg3?>
 <?MODTIME_SLOCAL push<>this is a variable and does not take arguments?>
 <?MODTIME_ALOCAL push<>this is a builtin variable and cannot be modified?>
+<?NOW_SLOCAL push<>this is a variable and does not take arguments?>
+<?NOW_ALOCAL push<>this is a builtin variable and cannot be modified?>
 <?end?>' \
 \
 '<p>def1-cont<>ent</p>
@@ -534,7 +536,9 @@ ERROR 'test-0001-w42-atsm':52: defx (presumably) needs (at least) 2 argument(s)
 ERROR 'test-0001-w42-atsm':53: defa1: 2 is not a valid array index
 ERROR 'test-0001-w42-atsm':54: defx1 takes 2 argument(s)
 ERROR 'test-0001-w42-atsm':55: MODTIME_SLOCAL does not take any argument(s)
-ERROR 'test-0001-w42-atsm':56: MODTIME_ALOCAL: cannot modify builtin PI (variable) via push"
+ERROR 'test-0001-w42-atsm':56: MODTIME_ALOCAL: cannot modify builtin PI (variable) via push
+ERROR 'test-0001-w42-atsm':57: NOW_SLOCAL does not take any argument(s)
+ERROR 'test-0001-w42-atsm':58: NOW_ALOCAL: cannot modify builtin PI (variable) via push"
 
 ## }}}
 ## pi-if {{{

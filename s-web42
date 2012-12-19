@@ -1065,6 +1065,7 @@ jupsums:
       unless ($self->outer || ($self->mode & MODE_CONFIGRC)) {
          $self->mtime((stat($self->infh))[9]);
          PIVars::create_time_pis(scalar $self->pivars, $self->mtime);
+         PIVars::create_time_pis(scalar $self->pivars, undef);
       }
       ::vv($self, 'Opened context, mode: ' .
          Filter::filters_to_string($self->mode & Filter::FILTER_MASK));
