@@ -389,7 +389,10 @@ sub checksum_path {
       # Include these for overwrite checks
       MODTIME_AUTC      => [ 1972, 6, 25, 4, 42, 0, 'UTC' ],
       MODTIME_ALOCAL    => [ 1972, 6, 25, 5, 42, 0, '+0100' ],
-      MODTIME_SUTC      => 0,    MODTIME_SLOCAL => 0
+      MODTIME_SUTC      => 0,    MODTIME_SLOCAL => 0,
+      NOW_AUTC          => [ 2012, 12, 19, 11, 59, 0, 'UTC' ],
+      NOW_ALOCAL        => [ 2012, 12, 19, 12, 59, 0, '+0100' ],
+      NOW_SUTC          => 0,    NOW_SLOCAL => 0
    };
    # ..and the outermost PI variable context formed of them plus those
    # which can be regulary overwritten by users
@@ -473,8 +476,15 @@ jresetarr:  $pivars->{$key} = [];
 
    sub create_time_pis {
       my ($pivars, $secs) = @_;
-      $secs = time unless defined $secs;
-      my (@a, @la, $s);
+      my ($nau, $nal, $nsu, $nsl,  @a, @la, $s);
+      if (defined $secs) {
+         ($nau, $nal, $nsu, $nsl) = ('MODTIME_AUTC', 'MODTIME_ALOCAL',
+               'MODTIME_SUTC', 'MODTIME_SLOCAL');
+      } else {
+         $secs = time;
+         ($nau, $nal, $nsu, $nsl) = ('NOW_AUTC', 'NOW_ALOCAL', 'NOW_SUTC',
+               'NOW_SLOCAL');
+      }
       sub __zpad { ($_[0] < 10 ? '0' : '') . $_[0] }
       unless ($HAVE_TIMEPIECE) {
          $s = [gmtime $secs];
@@ -487,12 +497,12 @@ jresetarr:  $pivars->{$key} = [];
          @la = @a;
          $a[6] = 'UTC';
          $la[6] = '+0000';
-         $pivars->{MODTIME_AUTC} = \@a;
-         $pivars->{MODTIME_ALOCAL} = \@la;
+         $pivars->{$nau} = \@a;
+         $pivars->{$nal} = \@la;
          $s = sprintf "%04d-%02d-%02dT%02d:%02d:%02d ",
             $a[0], $a[1], $a[2], $a[3], $a[4], $a[5];
-         $pivars->{MODTIME_SUTC} = $s . $a[6];
-         $pivars->{MODTIME_SLOCAL} = $s . $la[6];
+         $pivars->{$nsu} = $s . $a[6];
+         $pivars->{$nsl} = $s . $la[6];
       } else {
          sub __fill {
             my ($r, $t, $utc) = @_;
@@ -513,11 +523,11 @@ jresetarr:  $pivars->{$key} = [];
             $r;
          }
          $s = Time::Piece::gmtime($secs);
-         $pivars->{MODTIME_AUTC} = __fill(\@a, $s, 1);
-         $pivars->{MODTIME_SUTC} = $s->datetime . ' UTC';
+         $pivars->{$nau} = __fill(\@a, $s, 1);
+         $pivars->{$nsu} = $s->datetime . ' UTC';
          $s = Time::Piece::localtime($secs);
-         $pivars->{MODTIME_ALOCAL} = __fill(\@la, $s, 0);
-         $pivars->{MODTIME_SLOCAL} = $s->datetime . ' ' . $la[6];
+         $pivars->{$nal} = __fill(\@la, $s, 0);
+         $pivars->{$nsl} = $s->datetime . ' ' . $la[6];
       }
    }
 } # }}}
