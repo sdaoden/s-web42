@@ -471,7 +471,7 @@ jresetarr:  $pivars->{$key} = [];
       }
    }
 
-   sub create_modtime_pis {
+   sub create_time_pis {
       my ($pivars, $secs) = @_;
       $secs = time unless defined $secs;
       my (@a, @la, $s);
@@ -1054,7 +1054,7 @@ jupsums:
       }
       unless ($self->outer || ($self->mode & MODE_CONFIGRC)) {
          $self->mtime((stat($self->infh))[9]);
-         PIVars::create_modtime_pis(scalar $self->pivars, $self->mtime);
+         PIVars::create_time_pis(scalar $self->pivars, $self->mtime);
       }
       ::vv($self, 'Opened context, mode: ' .
          Filter::filters_to_string($self->mode & Filter::FILTER_MASK));
