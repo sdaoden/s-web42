@@ -54,7 +54,7 @@
 \
 <link rel="stylesheet" type="text/css" href="style.css" />\
 <?ifdef STYLE_INJECT?>\
- <style rel="stylesheet" type="text/css">/* <![CDATA[ */\
+ <style type="text/css">/* <![CDATA[ */\
  <?STYLE_INJECT?>/* ]]> */</style>\
 <?fi?>\
 \
