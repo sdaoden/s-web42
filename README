@@ -4,7 +4,7 @@ S-Web42
 :Author:    Steffen "Daode" Nurpmeso
 :Contact:   sdaoden@users.sf.net
 :Copyright: ISC license
-:Date:      1997 - 2005, 2010, 2012
+:Date:      1997 - 2005, 2010, 2012, 2013
 :Version:   0.8.0
 :Status:    Red and Hot!
 
@@ -698,12 +698,13 @@ _`pi-if`
    errors but only produce some log messages if the used PI does not
    exist.
 
-_`pre`, _`xpre`
+_`pre`, _`xpre`, _`xcdata`
    The "preformatted" paired PIs.  While these PIs are active *none*
    of the filters that have been documented in `About.Filter`_ are
-   active except for the PI expansion filter.  Since that is mostly
-   of interest inside of HTML ``<pre>`` tags, the expansion of the
-   ``<?xpre?>`` PI contains this tag already.
+   active except for the PI expansion filter.  Since that is mostly of
+   interest inside of HTML ``<pre>`` tags, the expansion of the
+   ``<?xpre?>`` PI contains this tag already.  And the ``<?xcdata?>``
+   PI enwraps the content in a CDATA section in addition.
 
 _`undef`
    Undefine an user defined array or PI.
