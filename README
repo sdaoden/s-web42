@@ -580,17 +580,23 @@ _`ifdef`, _`ifndef`, _`else`, _`fi`
       <?fi?>
       </p>
 
-_`include`, _`xinclude`, _`raw_include`
+_`include`, _`xinclude`, _`raw_include`, _`frank_include`
    The PI ``<?include?>`` can be used to include a file that itself
    will be subject to the same expansion and filtering that is in use
    for the including file, i.e., it must form a valid S-Web42 document.
-   ``<?xinclude?>`` is similar to ``<?include?>`` except that the
+   Paths are interpreted relative to the source directory of the file
+   which uses the include directive.
+
+   ``<?xinclude?>`` is similar to ``<?include?>``, except that the
    included file is expected to consist of `Content`_ only, so that
-   its inclusion may modify the PI environment of the *current* document.
+   its inclusion may modify the PI environment of the *current*
+   document.
+
    The ``<?raw_include?>`` PI will simply include the given file raw
-   and **without any** S-Web42 processing.  Paths are interpreted
-   relative to the source directory of the file which uses the include
-   directive in question. ::
+   and **without any** S-Web42 processing.  ``<?frank_include?>`` will
+   also include the given file raw, but it'll process the lines and
+   escape ``&``, ``<`` and ``>`` characters, so that HTML parsers will
+   be able to display the (rather) raw content as desired. ::
 
       HOME = ../index.html
       <?begin?>
@@ -599,7 +605,7 @@ _`include`, _`xinclude`, _`raw_include`
       Hello World, v2.
 
       <pre>
-      <?raw_include /etc/passwd?>
+      <?frank_include /etc/passwd?>
       </pre>
 
       <?include ../../footer?>
@@ -714,6 +720,13 @@ _`undef`
       defines the PI ``DOIT`` and then includes ``file2``, then an
       ``<?undef DOIT?>`` from within ``file2`` will **not** affect
       ``file1``, but only ``file2`` and deeper contexts.
+
+Thanks
+======
+
+Thanks to Ian Abbott, who alluded the missing ``<?xcdata?>`` and
+``<?frank_include?>`` PIs (at least indirectly through statements on
+the ``tz AT iana DOT org`` mailing list).
 
 Future Directions
 =================
