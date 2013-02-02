@@ -825,12 +825,40 @@ tcase 'x?include (exclusive content)' 6.1-w42-atsm \
 ''
 
 # }}}
-## ?raw_include?.. {{{
+## ?(raw|frank)_include?.. {{{
 
-printf '1\n 2\n3\n' > ./test-0007-1
-printf '4\n  5\n\n6\n' > ./test-0007-2
+printf '<1\n >2\n&3\n' > ./test-0007-1
+printf '&amp;&4\n  &gt;>5\n\n<&lt;&amp6\n' > ./test-0007-2
 printf '7' > ./test-0007-3
 printf '8\n9' > ./test-0007-4
+
+tcase 'raw_include (direct I/O)' 0007-w42-atsm \
+'<?begin?>
+<?raw_include test-0007-1?>
+START<?raw_include test-0007-1?>MID<?raw_include test-0007-2?>END
+START<?raw_include test-0007-3?>MID<?raw_include test-0007-4?>END
+<?raw_include test-0007-3?>
+<?raw_include test-0007-4?>
+<?end?>' \
+\
+'<1
+ >2
+&3
+START<1
+ >2
+&3
+MID&amp;&4
+  &gt;>5
+
+<&lt;&amp6
+END
+START7MID8
+9END
+7
+8
+9' \
+\
+''
 
 tcase 'raw_include (direct I/O, I)' 7.1-w42-atsm \
 '<?begin?>
@@ -851,25 +879,25 @@ tcase 'raw_include (direct I/O, II)' 7.2-w42-atsm \
 \
 ''
 
-tcase 'raw_include' 0007-w42-atsm \
+tcase 'frank_include (direct I/O, HTML escaping)' 7.3-w42-atsm \
 '<?begin?>
-<?raw_include test-0007-1?>
-START<?raw_include test-0007-1?>MID<?raw_include test-0007-2?>END
-START<?raw_include test-0007-3?>MID<?raw_include test-0007-4?>END
-<?raw_include test-0007-3?>
-<?raw_include test-0007-4?>
+<?frank_include test-0007-1?>
+START<?frank_include test-0007-1?>MID<?frank_include test-0007-2?>END
+START<?frank_include test-0007-3?>MID<?frank_include test-0007-4?>END
+<?frank_include test-0007-3?>
+<?frank_include test-0007-4?>
 <?end?>' \
 \
-'1
- 2
-3
-START1
- 2
-3
-MID4
-  5
+'&lt;1
+ &gt;2
+&amp;3
+START&lt;1
+ &gt;2
+&amp;3
+MID&amp;&amp;4
+  &gt;&gt;5
 
-6
+&lt;&lt;&amp;amp6
 END
 START7MID8
 9END

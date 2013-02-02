@@ -123,11 +123,11 @@ our %IGNORE_PIS = ( xml => 0 );
 our %PIS = (
    def      => -2,   defa        => -2,   defx     => -2,
    end      => 0,
-   href     => 1,    hreft       => 2,    lref     => 1,    lreft => 2,
-   ifdef    => 1,    ifndef      => 1,    'else'   => 0,    fi    => 0,
-   include  => 1,    xinclude    => 1,    raw_include => 1,
+   href     => 1,    hreft       => 2,    lref     => 1,    lreft       => 2,
+   ifdef    => 1,    ifndef      => 1,    'else'   => 0,    fi          => 0,
+   include  => 1,    xinclude    => 1,    raw_include => 1, frank_include => 1,
    mode     => 1,
-   perl     => 0,    xperl       => 0,    sh       => 0,    xsh   => 0,
+   perl     => 0,    xperl       => 0,    sh       => 0,    xsh         => 0,
    'pi-if'  => -1,
    pre      => 0,    xpre        => 0,    xcdata   => 0,
    'undef'  => 1
@@ -1479,15 +1479,17 @@ jpivar:     $self->_pi_var($pi, $valarr);
          $ctx->open->read_assignments;
          $self->_consume->_end_recursion;
          $ctx->close;
-      } elsif ($pi eq 'raw_include') {
+      } elsif ($pi eq 'raw_include' || $pi eq 'frank_include') {
+         my $franky = ($pi eq 'frank_include');
          ($pi, $i) = $self->_expand_include_path($i);
          $self->_prepare_recursion($self->ctx, 0);
-         ::panic($self->ctx, "raw_include: can't read '$i': $^E")
+         ::panic($self->ctx, "<?(raw|frank)_include?>: can't read '$i': $^E")
             unless open RI, '<', $i;
          # Use direct I/O if possible; we can't if redirection is active
          if (defined ${$self->__data_condome}) {
             foreach (readline RI) { # xxx readline errs?
                my $had = chomp;
+               $_ = $self->_franky_quote($_) if $franky;
                $self->_add_data($_);
                $self->_endl if $had;
             }
@@ -1495,11 +1497,12 @@ jpivar:     $self->_pi_var($pi, $valarr);
             $self->dumper->direct_start;
             foreach (readline RI) { # xxx readline errs?
                my $had = chomp;
+               $_ = $self->_franky_quote($_) if $franky;
                $self->dumper->direct_put($_, $had);
             }
             $self->dumper->direct_end;
          }
-         ::panic($self->ctx, "raw_include: can't close '$i': $^E")
+         ::panic($self->ctx, "<?(raw|frank)_include?>: can't close '$i': $^E")
             unless close RI;
          $self->_end_recursion;
       } elsif ($pi eq 'perl' || $pi eq 'xperl' || $pi eq 'sh' || $pi eq 'xsh') {
@@ -1698,6 +1701,14 @@ jset:    $l = $incdir . '/';
          }
       }
       ($incdir, $path)
+   } # }}}
+
+   sub _franky_quote { # {{{
+      my ($self, $line) = @_;
+      $line =~ s/&(?![\w-]+?;)/&amp;/g;
+      $line =~ s/</&lt;/g;
+      $line =~ s/>/&gt;/g;
+      $line
    } # }}}
 
    sub _create_subproc { # {{{
