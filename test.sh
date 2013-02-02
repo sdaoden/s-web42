@@ -880,10 +880,10 @@ START7MID8
 ''
 
 # }}}
-## pre/xpre.. {{{
+## pre/xpre/xcdata.. {{{
 
 # (Note: 's' enabled)
-tcase 'pre/xpre' 0008-w42-atm \
+tcase 'pre/xpre/xcdata' 0008-w42-atm \
 '<?begin?>
 	1. Beware of bugs in the above code;             
 <?pre?>
@@ -973,6 +973,40 @@ not tried it.
 	correct,<?xpre end?>
 not tried it.
 
+	8. Beware of bugs in the above code;             
+<?xcdata?>
+
+     I   
+	have  
+		only       
+			proved 
+		it
+
+
+	correct,          
+
+<?xcdata end?>
+not tried it.
+
+	9. Beware of bugs in the above code;<?xcdata?>    I   
+	have  
+		only       
+			proved 
+		it
+
+
+	correct,<?xcdata end?>not tried it.
+
+10. Beware of bugs in the above code;
+<?xcdata?>    I   
+	have  
+		only       
+			proved 
+		it
+
+	correct,<?xcdata end?>
+not tried it.
+
 <?end?>' \
 \
 '1. Beware of bugs in the above code;
@@ -1053,6 +1087,37 @@ not tried it.
 		it
 
 	correct,</pre>
+not tried it.
+8. Beware of bugs in the above code;
+<pre><![CDATA[
+
+     I
+	have
+		only
+			proved
+		it
+
+
+	correct,
+
+]]></pre>
+not tried it.
+9. Beware of bugs in the above code;<pre><![CDATA[    I
+	have
+		only
+			proved
+		it
+
+
+	correct,]]></pre>not tried it.
+10. Beware of bugs in the above code;
+<pre><![CDATA[    I
+	have
+		only
+			proved
+		it
+
+	correct,]]></pre>
 not tried it.' \
 \
 ''

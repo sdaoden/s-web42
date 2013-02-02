@@ -13,7 +13,7 @@ my $SELF = 's-web42'; #@ One more option to manage your website.
 my $VERSION = '0.8.0';
 my $COPYRIGHT =<<__EOT__;
 Copyright (c) 1997 - 2005, 2010,
-Copyright (c) 2012 Steffen "Daode" Nurpmeso <sdaoden\@users.sf.net>.
+Copyright (c) 2012, 2013 Steffen "Daode" Nurpmeso <sdaoden\@users.sf.net>.
 This software is provided under the terms of the ISC license.
 __EOT__
 # Permission to use, copy, modify, and/or distribute this software for any
@@ -129,12 +129,12 @@ our %PIS = (
    mode     => 1,
    perl     => 0,    xperl       => 0,    sh       => 0,    xsh   => 0,
    'pi-if'  => -1,
-   pre      => 0,    xpre        => 0,
+   pre      => 0,    xpre        => 0,    xcdata   => 0,
    'undef'  => 1
 );
 our %MULTILINE_PIS = (
    perl     => 0,    xperl       => 0,    sh       => 0,    xsh   => 0,
-   pre      => 0,    xpre        => 0
+   pre      => 0,    xpre        => 0,    xcdata   => 0
 );
 our %ALWAYS_REEVAL_PIS = (
    ifdef    => 0,    ifndef      => 0,    'else'   => 0,    fi    => 0,
@@ -1446,12 +1446,20 @@ jpivar:     $self->_pi_var($pi, $valarr);
          $t = Expander::Markup::attribute($tm);
          $i = '<a href="' . $i . '" title="' . $t . '">' . $w . $tm . '</a>';
          $self->rest_data($i);
-      } elsif ($pi eq 'pre' || $pi eq 'xpre') {
+      } elsif ($pi eq 'pre' || $pi eq 'xpre' || $pi eq 'xcdata') {
          if ($i) {
             $self->_end_recursion;
-            $self->_add_data('</pre>') if $pi eq 'xpre';
+            if ($pi eq 'xpre') {
+               $self->_add_data('</pre>');
+            } elsif ($pi eq 'xcdata') {
+               $self->_add_data(']]></pre>');
+            }
          } else {
-            $self->_add_data('<pre>') if $pi eq 'xpre';
+            if ($pi eq 'xpre') {
+               $self->_add_data('<pre>');
+            } elsif ($pi eq 'xcdata') {
+               $self->_add_data('<pre><![CDATA[');
+            }
             $self->_prepare_recursion(undef,
                (($self->mode & ~Filter::FILTER_MASK) | Filter::EXPPIS), $pi);
          }
