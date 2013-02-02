@@ -5,7 +5,7 @@ S-Web42
 :Contact:   sdaoden@users.sf.net
 :Copyright: ISC license
 :Date:      1997 - 2005, 2010, 2012, 2013
-:Version:   0.8.0
+:Version:   0.8.1
 :Status:    Red and Hot!
 
 .. _`perl(1)`: http://www.perl.org
@@ -720,6 +720,18 @@ _`undef`
       defines the PI ``DOIT`` and then includes ``file2``, then an
       ``<?undef DOIT?>`` from within ``file2`` will **not** affect
       ``file1``, but only ``file2`` and deeper contexts.
+
+News
+====
+
+0.8.1
+-----   
+
+* The ``NOW_*`` series of PI variables has been added.
+
+* New PIs: ``<?frank_include?>``, ``<?xcdata?>``.
+
+* Fixed bug in the template ``header`` file.
 
 Thanks
 ======
