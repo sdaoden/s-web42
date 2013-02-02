@@ -444,6 +444,11 @@ _`MODTIME_AUTC`, _`MODTIME_ALOCAL`, _`MODTIME_SUTC`, _`MODTIME_SLOCAL`
       S-Web42 will only provide UTC values, even for the local
       versions.  I.e., the local ones are only aliases, then.
 
+_`NOW_AUTC`, _`NOW_ALOCAL`, _`NOW_SUTC`, _`NOW_SLOCAL`
+   **Readonly**.
+   Identical to `MODTIME_AUTC`_ and friends, as above, but expand to
+   the current time instead.
+
 _`WWW`
    **Injection**.
    Will be injected in expansions of `href`_ and `hreft`_.
