@@ -1394,6 +1394,53 @@ buum
 
 9 empties before and after.
 
+= H1
+
+== H2
+
+=== H3
+
+==== H4
+
+===== H5
+
+====== H6
+For sure.
+
+======Not H6
+
+* Should be a list item.
+
+* Should be yet another list item;
+that continues.
+* Should not be an item, but continue.
+
+*Should not be an item.
+
+1. Should be a numbered list, 1.
+
+55. Should be a numbered list, 55.
+
+100. Should be a numbered list.<p>100.</p>
+
+11.Should not be a numbered list.
+
+----
+
+-----
+
+------
+
+<p>------</p>
+
+_ Should be a blockquote.
+
+_ \\i{Should be a second blockquote;\
+that continues.}
+_ Should not be a blockquote, but continue.
+
+_Should not be a blockquote.
+
 
 10 empties before but not after.
 <?end?>' \
@@ -1416,6 +1463,31 @@ buum
 
 8 empties before and after, but no AUTOPAR.
 <p>9 empties before and after.</p>
+<h1>H1</h1>
+<h2>H2</h2>
+<h3>H3</h3>
+<h4>H4</h4>
+<h5>H5</h5>
+<h6>H6
+For sure.</h6>
+<p>======Not H6</p>
+<ul><li><p>Should be a list item.</p></li></ul>
+<ul><li><p>Should be yet another list item;
+that continues.
+* Should not be an item, but continue.</p></li></ul>
+<p>*Should not be an item.</p>
+<ol><li value="1"><p>Should be a numbered list, 1.</p></li></ol>
+<ol><li value="55"><p>Should be a numbered list, 55.</p></li></ol>
+<ol><li value="100"><p>Should be a numbered list.<p>100.</p></p></li></ol>
+<p>11.Should not be a numbered list.</p>
+<p>----</p>
+<hr />
+<hr />
+<p>------</p>
+<blockquote><p>Should be a blockquote.</p></blockquote>
+<blockquote><p><em>Should be a second blockquote;that continues.</em>
+_ Should not be a blockquote, but continue.</p></blockquote>
+<p>_Should not be a blockquote.</p>
 10 empties before but not after.' \
 \
 ''

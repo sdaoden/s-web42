@@ -1797,9 +1797,38 @@ jset:    $l = $incdir . '/';
          $i = $1;
          $i = undef if $i && $AUTOPAR_IGNORE{$i};
          $llda = $da->[@$da - 2] unless @$llda; # XXX MUST be NL before..
-         if (! $i) { 
-            unshift @$lda, ['<p>'];
-            push @$llda, ['</p>'];
+         if (! $i) {
+            my ($p, $s);
+            $i = $lda->[0]->[0];
+            if ($i =~ /^(?:(={1,6})\s+)(.*)/) {
+               $i = $2;
+               $s = length $1;
+               $p = "<h$s>";
+               $s = "</h$s>";
+            } elsif ($i =~ /^(?:_\s+)(.*)/) {
+               $i = $1;
+               $p = '<blockquote><p>';
+               $s = '</p></blockquote>';
+            } elsif ($i =~ /^(?:\*\s+)(.*)/) {
+               $i = $1;
+               $p = '<ul><li><p>';
+               $s = '</p></li></ul>';
+            } elsif ($i =~ /^(?:([[:digit:]]+)\.\s+)(.*)/) {
+               $i = $2;
+               $p = "<ol><li value=\"$1\"><p>";
+               $s = '</p></li></ol>';
+            } elsif ($i =~ /^-{5,}$/ && @$da == 2 && ! scalar @{$da->[1]}) {
+               $lda->[0]->[0] = '<hr />'; # XXX autopar, ---: wrong?
+               goto jflush;
+            }
+            if ($p) {
+               $lda->[0]->[0] = $i;
+            } else {
+               $p = '<p>';
+               $s = '</p>';
+            }
+            unshift @$lda, [$p];
+            push @$llda, [$s];
          }
       }
 jflush:
@@ -2129,4 +2158,4 @@ __EOT__
 
 {package main; main_fun()}
 
-# vim:set fenc=utf-8 syntax=perl ts=8 sts=3 sw=3 et tw=79:
+# vim:set fenc=utf-8 syntax=perl ts=3 sts=0 sw=3 et tw=79: s-it-mode

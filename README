@@ -4,8 +4,8 @@ S-Web42
 :Author:    Steffen "Daode" Nurpmeso
 :Contact:   sdaoden@users.sf.net
 :Copyright: ISC license
-:Date:      1997 - 2005, 2010, 2012, 2013
-:Version:   0.8.1
+:Date:      1997 - 2005, 2010, 2012 - 2013
+:Version:   0.8.2
 :Status:    Red and Hot!
 
 .. _`perl(1)`: http://www.perl.org
@@ -286,19 +286,66 @@ the mode configuration suffix was ``-x`` or otherwise excluded these
 actions:
 
 *Automatic paragraphs* (disable mode: ``a``)
-   If a textblock is surrounded by empty lines it'll be enclosed in a
-   ``<p></p>`` pair unless the block seems to be enclosed in a tag,
-   or unless so-called "mode-switching" PIs are used within it.  I.e.,
-   no automatic paragraph will be provided for a otherwise perfectly
-   legal textblock if an ``<?include?>`` directive is contained therein,
-   or ``<?perl?>`` or even a ``<?pre?>``.  Automatic paragraphs are
-   ment for human friendly editing of, well, paragraphs, not for fancy
-   markup.
+   If a textblock is surrounded by empty lines it'll be enclosed
+   in a ``<p></p>`` pair unless the block seems to be enclosed in
+   a tag, or unless so-called "mode-switching" PIs are used within
+   it.  I.e., no automatic paragraph will be provided for a otherwise
+   perfectly legal textblock if an ``<?include?>`` directive is
+   contained therein, or ``<?perl?>`` or even a ``<?pre?>``.
+   Automatic paragraphs are ment for human friendly editing of,
+   well, paragraphs, not for fancy markup.  By starting such a
+   paragraph with a special trigger character sequence several
+   different kinds of markup can be generated automatically:
+
+   ``= Text``
+      Generates a heading; ``=`` generates a ``h1``, ``==`` a ``h2``
+      etc., and ``======`` generates a ``h6``.
+
+   ``_ Text``
+      Generates a blockquote.
+
+   ``* Text``
+      Generates a bullet list with a single item.
+
+   ``DecimalDigits. Text``
+      Generates a numbered list with a single item that uses a value
+      that equals "DecimalDigits".
+
+   ``-----``
+      5 or more hyphen characters create a separating horizontal rule.
+      This is a bit special because the textblock must solely consist
+      of this single line.
+
+   Example::
+
+      == It's not a Wiki!
+
+      You wouldn't believe what i saw:
+
+      * Cats.
+
+      * Donkeys.
+
+      * Birds.
+
+      -------
+
+      _ Wow!
+
+      =>
+
+      <h2>It's not a Wiki!</h2>
+      <p>You wouldn't believe what i saw:</p>
+      <ul><li><p>Cats.</p></li></ul>
+      <ul><li><p>Donkeys.</p></li></ul>
+      <ul><li><p>Birds.</p></li></ul>
+      <hr />
+      <blockquote><p>Wow!</p></blockquote>
 
 *Tagsoup joining* (disable mode: ``t`` *TODO: not yet implemented*)
    The DOM standard (http://www.w3.org/TR/DOM-Level-3-Core) is used
    (by browsers and such poor software) to transform site content to
-   DOM objects.  Unfortunately code like ::
+   DOM objects.  Unfortunately code like::
 
       </p>
       <p>
@@ -320,10 +367,10 @@ actions:
    expansion (e.g., via backslash escaping) except by turning it off
    entirely. ::
 
-      \c{CONTENT}  ->  <tt>CONTENT</tt>
-      \i{CONTENT}  ->  <em>CONTENT</em>
-      \b{CONTENT}  ->  <strong>CONTENT</strong>
-      \u{CONTENT}  ->  <u>CONTENT</u>
+      \c{CONTENT} -> <tt>CONTENT</tt>
+      \i{CONTENT} -> <em>CONTENT</em>
+      \b{CONTENT} -> <strong>CONTENT</strong>
+      \u{CONTENT} -> <u>CONTENT</u>
 
       \i{I \b{really \u{love} you}, baby!}
       ->
@@ -725,13 +772,19 @@ News
 ====
 
 0.8.1
------   
+-----
 
 * The ``NOW_*`` series of PI variables has been added.
 
 * New PIs: ``<?frank_include?>``, ``<?xcdata?>``.
 
 * Fixed bug in the template ``header`` file.
+
+0.8.2
+-----
+
+* Automatic paragraphs have been diversed and now support different
+  target markups, like headings, blockquotes and lists.
 
 Thanks
 ======
@@ -769,4 +822,4 @@ dependent on user settings; i.e., a gzip(1) compressed tar(1) archive
 could be piped to STDOUT instead of producing a shell archive.  This
 would not work with file and directory removals though.  :)
 
-.. vim:set fenc=utf-8 syntax=rst ts=8 sts=3 sw=3 et tw=70:
+.. vim:set fenc=utf-8 syntax=rst ts=3 sts=0 sw=3 et tw=70: s-it-mode
