@@ -5,7 +5,7 @@ S-Web42
 :Contact:   sdaoden@users.sf.net
 :Copyright: ISC license
 :Date:      1997 - 2005, 2010, 2012 - 2013
-:Version:   0.8.2
+:Version:   0.8.3
 :Status:    Red and Hot!
 
 .. _`perl(1)`: http://www.perl.org
@@ -793,6 +793,13 @@ News
 
 * Automatic paragraphs have been diversed and now support different
   target markups, like headings, blockquotes and lists.
+
+0.8.3
+-----
+
+* Automatic paragraphs now also support definition lists.
+
+* Added anchor and hyperlink MarkLo support.
 
 Thanks
 ======
