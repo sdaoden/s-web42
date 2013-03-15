@@ -311,6 +311,10 @@ actions:
       Generates a numbered list with a single item that uses a value
       that equals "DecimalDigits".
 
+   ``@ Text1 @ Text2``
+      Generates a definition list.  "Text1" will be the content of the
+      definition term, and "Text" will form the body of the item.
+
    ``-----``
       5 or more hyphen characters create a separating horizontal rule.
       This is a bit special because the textblock must solely consist

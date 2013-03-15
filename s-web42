@@ -1817,6 +1817,10 @@ jset:    $l = $incdir . '/';
                $i = $2;
                $p = "<ol><li value=\"$1\"><p>";
                $s = '</p></li></ol>';
+            } elsif ($i =~ /^(?:\@\s+)(.*?)(?:\s+\@\s*)(.*)/) {
+               $i = $1 . '</dt><dd><p>' . $2;
+               $p = '<dl><dt>';
+               $s = '</p></dd></dl>';
             } elsif ($i =~ /^-{5,}$/ && @$da == 2 && ! scalar @{$da->[1]}) {
                $lda->[0]->[0] = '<hr />'; # XXX autopar, ---: wrong?
                goto jflush;

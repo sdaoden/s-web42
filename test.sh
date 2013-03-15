@@ -1441,6 +1441,18 @@ _ Should not be a blockquote, but continue.
 
 _Should not be a blockquote.
 
+@ A definition list term. @ A definition list
+item,
+i would say.
+
+@ Second dt. @\
+Second dd.
+
+@ Third dt. @
+Third dd.
+
+@Not fourth dt. @
+
 
 10 empties before but not after.
 <?end?>' \
@@ -1488,6 +1500,13 @@ that continues.
 <blockquote><p><em>Should be a second blockquote;that continues.</em>
 _ Should not be a blockquote, but continue.</p></blockquote>
 <p>_Should not be a blockquote.</p>
+<dl><dt>A definition list term.</dt><dd><p>A definition list
+item,
+i would say.</p></dd></dl>
+<dl><dt>Second dt.</dt><dd><p>Second dd.</p></dd></dl>
+<dl><dt>Third dt.</dt><dd><p>
+Third dd.</p></dd></dl>
+<p>@Not fourth dt. @</p>
 10 empties before but not after.' \
 \
 ''
