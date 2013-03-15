@@ -1528,6 +1528,7 @@ jpivar:     $self->_pi_var($pi, $valarr);
          $self->ctx->line('');
          ${$self->__mode} |= NL_FLUX if ($i = $self->ctx->outer) && $i->line;
          $self->seen_end(1);
+         $self->_emit;
       } elsif ($pi eq 'mode') {
          if ($i eq '%') {
             ::panic($self->ctx, "<?mode?> is NOT IN USE")
@@ -1649,12 +1650,12 @@ jleave:
    # Thanks to '$ man perlre' is proper.
    our $nestmlo = qr{
          (.*)
-         \\([cibu])\{
+         \\([alcibu])\{
             (?:
                ([^\}]+)
             |
                (??{ $Expander::nestmlo })
-            )*
+            )*?
          \}
          (.*)
    }x;
@@ -1662,15 +1663,22 @@ jleave:
    sub _marklo_ex {
       my ($in) = @_;
       my $dat = '';
-      while ($in =~ /(.*?)(\\[cibu]\{.*)/) {
+      while ($in =~ /(.*?)(\\[alcibu]\{.*)/) {
          $dat .= $1 if $1;
          $in = $2;
          while ($in =~ /$nestmlo/) {
             my ($s, $e);
-            $s = {c => 'tt', i => 'em', b => 'strong', u => 'u'}->{$2};
-            $e = '</' . $s . '>';
-            $s = '<' . $s . '>';
-            $in = $1 . $s . $3 . $e . $4;
+            $s = {a => 'a', l => 'l',
+                  c => 'tt', i => 'em', b => 'strong', u => 'u'}->{$2};
+            if ($s eq 'a') {
+               $in = $1 . '<a name="' . $3 . '"></a>' . $4;
+            } elsif ($s eq 'l') {
+               $in = $1 . '<a href="' . $3 . '">' . $3 .'</a>' . $4;
+            } else {
+               $e = '</' . $s . '>';
+               $s = '<' . $s . '>';
+               $in = $1 . $s . $3 . $e . $4;
+            }
          }
       }
       $dat .= $in

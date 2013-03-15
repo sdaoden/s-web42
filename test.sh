@@ -1311,13 +1311,13 @@ Hello, Honey   Sugar Candy	Girl' \
 
 ## MarkLo {{{
 
-printf '<?begin?>\nSTART\\c{tt}\\i{em}\\b{strong}\\u{u}\n\\i{I \\b{really \\u{love} you}, baby!}END\n<?end?>' > ./test-0042-w42-ats
+printf '<?begin?>START\\c{tt}\\i{em}\\b{strong}\\u{u}\\i{I \\b{really \\u{love} you}, baby!}END\n\\a{xname}\\l{http://plan9.bell-labs.com/plan9/}<?end?>\n' > ./test-0042-w42-ats
 
 tcase 'MarkLo expansion (disable mode: m)' 0042-w42-ats \
 '' \
 \
-'START<tt>tt</tt><em>em</em><strong>strong</strong><u>u</u>
-<em>I <strong>really <u>love</u> you</strong>, baby!</em>END' \
+'START<tt>tt</tt><em>em</em><strong>strong</strong><u>u</u><em>I <strong>really <u>love</u> you</strong>, baby!</em>END
+<a name="xname"></a><a href="http://plan9.bell-labs.com/plan9/">http://plan9.bell-labs.com/plan9/</a>' \
 \
 ''
 

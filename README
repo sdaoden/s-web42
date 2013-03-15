@@ -369,12 +369,16 @@ actions:
    detection and expansion is neither performed across newline boundaries
    nor PI occurrences, and there is no possibility to escape *MarkLo*
    expansion (e.g., via backslash escaping) except by turning it off
-   entirely. ::
+   entirely::
 
       \c{CONTENT} -> <tt>CONTENT</tt>
       \i{CONTENT} -> <em>CONTENT</em>
       \b{CONTENT} -> <strong>CONTENT</strong>
       \u{CONTENT} -> <u>CONTENT</u>
+
+      # (These are bit special, but nice to use)
+      \a{NAME}    -> <a name="NAME"></a>
+      \l{LINK}    -> <a href="LINK">LINK</a>
 
       \i{I \b{really \u{love} you}, baby!}
       ->
