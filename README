@@ -5,7 +5,7 @@ S-Web42
 :Contact:   sdaoden@users.sf.net
 :Copyright: ISC license
 :Date:      1997 - 2005, 2010, 2012 - 2013
-:Version:   0.8.3
+:Version:   0.8.4
 :Status:    Red and Hot!
 
 .. _`perl(1)`: http://www.perl.org
@@ -383,12 +383,6 @@ actions:
       \i{I \b{really \u{love} you}, baby!}
       ->
       <em>I <strong>really <u>love</u> you</strong>, baby!</em>
-
-   .. note::
-      Due to a bug in the `perl(1)`_ regular expression engine it can
-      happen that S-Web42 enters an endless loop if a *MarkLo*
-      expression isn't properly closed, as in ``\i{Hi`` (instead of
-      ``\i{Hi}``).
 
 Finally a ``-w42`` file content example::
 
@@ -807,12 +801,28 @@ News
 
 * Added anchor and hyperlink MarkLo support.
 
+0.8.4
+-----
+
+* Thanks to the suggestion of Dave Mitchell from perl-porters the
+  MarkLo regular expression is now proof against user input syntax
+  errors and no longer enters a rather endless loop if a closing brace
+  has been forgotten.
+
 Thanks
 ======
 
 Thanks to Ian Abbott, who alluded the missing ``<?xcdata?>`` and
 ``<?frank_include?>`` PIs (at least indirectly through statements on
 the ``tz AT iana DOT org`` mailing list).
+
+Thanks to Dave Mitchell from perl-porters for giving the hint on
+backtracing that made the fancy recursive regular expression that is
+used for MarkLo proof against user syntax misses.  (I never use and
+don't really understand these super-fancy extended regular expressions
+beyond assertions, but remembered the example from the documentation
+and was too lazy to write the hand-driven recursive parser for that,
+so i tried it.)
 
 Future Directions
 =================

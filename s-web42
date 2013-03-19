@@ -10,7 +10,7 @@ my $SELF = 's-web42'; #@ One more option to manage your website.
 #@ "cache.dat" will be used as database to remember timestamps and checksums.
 #@ The generated "w42-update.sh" distributes the latest changes, iff any.
 #@ Please read the README for the complete documentation (:}
-my $VERSION = '0.8.3';
+my $VERSION = '0.8.4';
 my $COPYRIGHT =<<__EOT__;
 Copyright (c) 1997 - 2005, 2010,
 Copyright (c) 2012 - 2013 Steffen "Daode" Nurpmeso <sdaoden\@users.sf.net>.
@@ -60,7 +60,7 @@ eval { require Time::Piece; };
 BEGIN {
    eval { require SymObj };
    if ($@ || $SymObj::VERSION lt '0.8.0') {
-      (my $msg = <<'      __EOT__') =~ s/^      //gm;
+      (my $msg = <<'__EOT__') =~ s/^      //gm;
 
       PANIC PANIC PANIC
         The S-SymObj module cannot be loaded, or it is too old
@@ -85,7 +85,7 @@ BEGIN {
                 : $ s-web42
       PANIC PANIC PANIC
 
-      __EOT__
+__EOT__
       print STDERR $msg;
       exit 2; # What die() would exit with
    }
@@ -1651,7 +1651,7 @@ jleave:
    our $nestmlo = qr{
          (.*)
          \\([alcibu])\{
-            (?:
+            (?>
                ([^\}]+)
             |
                (?2) # (??{ $Expander::nestmlo })
