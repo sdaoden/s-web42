@@ -1654,7 +1654,7 @@ jleave:
             (?:
                ([^\}]+)
             |
-               (??{ $Expander::nestmlo })
+               (?2) # (??{ $Expander::nestmlo })
             )*?
          \}
          (.*)
@@ -1663,22 +1663,18 @@ jleave:
    sub _marklo_ex {
       my ($in) = @_;
       my $dat = '';
-      while ($in =~ /(.*?)(\\[alcibu]\{.*)/) {
-         $dat .= $1 if $1;
-         $in = $2;
-         while ($in =~ /$nestmlo/) {
-            my ($s, $e);
-            $s = {a => 'a', l => 'l',
-                  c => 'tt', i => 'em', b => 'strong', u => 'u'}->{$2};
-            if ($s eq 'a') {
-               $in = $1 . '<a name="' . $3 . '"></a>' . $4;
-            } elsif ($s eq 'l') {
-               $in = $1 . '<a href="' . $3 . '">' . $3 .'</a>' . $4;
-            } else {
-               $e = '</' . $s . '>';
-               $s = '<' . $s . '>';
-               $in = $1 . $s . $3 . $e . $4;
-            }
+      while ($in =~ /$nestmlo/) {
+         my ($s, $e);
+         $s = {a => 'a', l => 'l',
+               c => 'tt', i => 'em', b => 'strong', u => 'u'}->{$2};
+         if ($s eq 'a') {
+            $in = $1 . '<a name="' . $3 . '"></a>' . $4;
+         } elsif ($s eq 'l') {
+            $in = $1 . '<a href="' . $3 . '">' . $3 .'</a>' . $4;
+         } else {
+            $e = '</' . $s . '>';
+            $s = '<' . $s . '>';
+            $in = $1 . $s . $3 . $e . $4;
          }
       }
       $dat .= $in

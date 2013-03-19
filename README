@@ -384,6 +384,12 @@ actions:
       ->
       <em>I <strong>really <u>love</u> you</strong>, baby!</em>
 
+   .. note::
+      Due to a bug in the `perl(1)`_ regular expression engine it can
+      happen that S-Web42 enters an endless loop if a *MarkLo*
+      expression isn't properly closed, as in ``\i{Hi`` (instead of
+      ``\i{Hi}``).
+
 Finally a ``-w42`` file content example::
 
    WHO = Ziggy
