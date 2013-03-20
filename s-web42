@@ -1647,23 +1647,10 @@ jleave:
    } # }}}
 
    # MarkLo {{{
-   # Thanks to '$ man perlre' is proper.
-   our $nestmlo = qr{
-         (.*)
-         \\([alcibu])\{
-            (?>
-               ([^\}]+)
-            |
-               (?2) # (??{ $Expander::nestmlo })
-            )*?
-         \}
-         (.*)
-   }x;
-
    sub _marklo_ex {
       my ($in) = @_;
       my $dat = '';
-      while ($in =~ /$nestmlo/) {
+      while ($in =~ /(.*)\\([alcibu])\{([^\}]*)\}(.*)/) {
          my ($s, $e);
          $s = {a => 'a', l => 'l',
                c => 'tt', i => 'em', b => 'strong', u => 'u'}->{$2};
