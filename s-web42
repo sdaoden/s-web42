@@ -112,7 +112,7 @@ our %UNCOMPRESS = (
 
 # These markup tags will be accepted during automatic paragraph checking, i.e.,
 # even if the textblock in question begins with these tags
-our %AUTOPAR_IGNORE = ( tt => 1, em => 1, strong => 1, u => 1 );
+our %AUTOPAR_IGNORE = ( tt => 1, em => 1, strong => 1, u => 1, a => 1, l => 1 );
 
 # PIs that are passed through unchanged (XXX make configurable?)
 our %IGNORE_PIS = ( xml => 0 );
@@ -1783,10 +1783,13 @@ jset:    $l = $incdir . '/';
       if (defined($i = $self->{__autopar})) {
          my ($lda, $llda) = (scalar $da->[$i], scalar $da->[@$da - 1]);
          goto jflush unless defined $lda && @$lda && defined $llda;
-         $lda->[0]->[0] =~ /^\s*<([^>]+)>/;
 
-         $i = $1;
-         $i = undef if $i && $AUTOPAR_IGNORE{$i};
+         $lda->[0]->[0] =~ /^\s*<([^>]+)>/;
+         if (($i = $1)) {
+            $i =~ s/^([^[:space:]]+).*/$1/;
+            $i = undef if $AUTOPAR_IGNORE{$i};
+         }
+
          $llda = $da->[@$da - 2] unless @$llda; # XXX MUST be NL before..
          if (! $i) {
             my ($p, $s);
@@ -2062,7 +2065,7 @@ jleave:
       __ioerr() unless print $fh <<__EOT__;
 #!/bin/sh -
 #@ This Website update archive has been created by S-Web42, which is
-# Copyright (c) 1997 - 2012 Steffen "Daode" Nurpmeso <sdaoden\@users.sf.net>.
+# Copyright (c) 1997 - 2013 Steffen "Daode" Nurpmeso <sdaoden\@users.sf.net>.
 #@ by means of the ISC license.
 #@ Except for the long output the archive may be easily examined via:
 #@   \$ grep '^[^X#]' w42-update.sh

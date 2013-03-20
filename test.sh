@@ -1453,8 +1453,13 @@ Third dd.
 
 @Not fourth dt. @
 
+\\i{Enclosed in &lt;em;gt;, but still autpar.}
 
-10 empties before but not after.
+\\a{anchored}Begins with anchor, but is still autopar.
+
+Ends with &lt;strong&gt;, but is still \\b{autopar.}
+
+13 empties before but not after.
 <?end?>' \
 \
 '1 no empties before.
@@ -1507,7 +1512,10 @@ i would say.</p></dd></dl>
 <dl><dt>Third dt.</dt><dd><p>
 Third dd.</p></dd></dl>
 <p>@Not fourth dt. @</p>
-10 empties before but not after.' \
+<p><em>Enclosed in &lt;em;gt;, but still autpar.</em></p>
+<p><a name="anchored"></a>Begins with anchor, but is still autopar.</p>
+<p>Ends with &lt;strong&gt;, but is still <strong>autopar.</strong></p>
+13 empties before but not after.' \
 \
 ''
 
