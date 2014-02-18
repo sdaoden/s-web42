@@ -5,15 +5,16 @@ my $SELF = 's-web42'; #@ One more option to manage your website.
 #@ Git       : git.code.sf.net/p/s-web42/code
 #@ Git browse: http://sourceforge.net/p/s-web42/code/
 #@ Requires  : S-SymObj >=v0.8.0 (from CPAN or visit the Web: link from above).
-#@ Use: in CWD "site/" is the source tree, (optional) "hook" will act as a per
-#@ directory hook, (optional) "config.rc" as a global PI variable setter.
+#@ Use: in CWD "site/" is the source tree, (optional) executable "hook" will
+#@ act as a per directory hook for whatever user actions are to be performed,
+#@ (optional) "config.rc" as a global PI variable setter.
 #@ "cache.dat" will be used as database to remember timestamps and checksums.
 #@ The generated "w42-update.sh" distributes the latest changes, iff any.
 #@ Please read the README for the complete documentation (:}
 my $VERSION = '0.8.4';
 my $COPYRIGHT =<<__EOT__;
 Copyright (c) 1997 - 2005, 2010,
-Copyright (c) 2012 - 2013 Steffen "Daode" Nurpmeso <sdaoden\@users.sf.net>.
+Copyright (c) 2012 - 2014 Steffen (Daode) Nurpmeso <sdaoden\@users.sf.net>.
 This software is provided under the terms of the ISC license.
 __EOT__
 # Permission to use, copy, modify, and/or distribute this software for any
@@ -2065,7 +2066,7 @@ jleave:
       __ioerr() unless print $fh <<__EOT__;
 #!/bin/sh -
 #@ This Website update archive has been created by S-Web42, which is
-# Copyright (c) 1997 - 2013 Steffen "Daode" Nurpmeso <sdaoden\@users.sf.net>.
+# Copyright (c) 1997 - 2014 Steffen (Daode) Nurpmeso <sdaoden\@users.sf.net>.
 #@ by means of the ISC license.
 #@ Except for the long output the archive may be easily examined via:
 #@   \$ grep '^[^X#]' w42-update.sh
@@ -2156,4 +2157,4 @@ __EOT__
 
 {package main; main_fun()}
 
-# vim:set fenc=utf-8 syntax=perl ts=3 sts=0 sw=3 et tw=79: s-it-mode
+# vim:set fenc=utf-8 syntax=perl:s-it-mode

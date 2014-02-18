@@ -35,7 +35,7 @@ AUTHOR_AND_EMAIL     = Your Name &lt;YOUR@MAIL&gt;
 AUTHOR_AND_EMAIL_RAW = Your Name, YOUR@MAIL
 WEB            = YOUR-WEB-ADDRESS
 MAIL           = YOUR@MAIL
-COPY_DATE_SPEC = 1972 - 2012
+COPY_DATE_SPEC = 1972 - 2014
 
 ## Don't touch the rest directly, use file-local assignments instead
 
@@ -47,4 +47,4 @@ COPY_DATE_SPEC = 1972 - 2012
 #SCRIPT_INJECT  = undef
 #HEAD_INJECT    =
 
-# vim:set fenc=utf-8 syntax=conf ts=8 sts=3 sw=3 et tw=79:
+# vim:set fenc=utf-8 syntax=conf:s-it-mode

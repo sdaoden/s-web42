@@ -1,10 +1,10 @@
 S-Web42
 #######
 
-:Author:    Steffen "Daode" Nurpmeso
+:Author:    Steffen (Daode) Nurpmeso
 :Contact:   sdaoden@users.sf.net
 :Copyright: ISC license
-:Date:      1997 - 2005, 2010, 2012 - 2013
+:Date:      1997 - 2005, 2010, 2012 - 2014
 :Version:   0.8.4
 :Status:    Red and Hot!
 
@@ -853,4 +853,4 @@ dependent on user settings; i.e., a gzip(1) compressed tar(1) archive
 could be piped to STDOUT instead of producing a shell archive.  This
 would not work with file and directory removals though.  :)
 
-.. vim:set fenc=utf-8 syntax=rst ts=3 sts=0 sw=3 et tw=70: s-it-mode
+.. vim:set fenc=utf-8 syntax=rst:s-it-mode
