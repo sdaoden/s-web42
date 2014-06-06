@@ -767,6 +767,11 @@ _`pre`, _`xpre`, _`xcdata`
    ``<?xpre?>`` PI contains this tag already.  And the ``<?xcdata?>``
    PI enwraps the content in a CDATA section in addition.
 
+   .. note::
+      Leading whitespace on the line of the ``<?xpre end?>`` will of
+      course be copied through to the output.
+      This may look odd in an otherwise beautifully indented source.
+
 _`undef`
    Undefine an user defined array or PI.
 
@@ -853,4 +858,4 @@ dependent on user settings; i.e., a gzip(1) compressed tar(1) archive
 could be piped to STDOUT instead of producing a shell archive.  This
 would not work with file and directory removals though.  :)
 
-.. vim:set fenc=utf-8 syntax=rst:s-it-mode
+.. vim:set fenc=utf-8 ft=rst:s-ts-mode
