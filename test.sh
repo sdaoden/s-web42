@@ -20,11 +20,15 @@ rm_file() {
 	printf '' > "${1}"
 }
 
+# Another problem is backslash escaping performed by echo(1).
+# Finally deal with it
+( [ "`echo -E '\\au'`" = '\au' ] ) && EA=-E || EA=
+
 tcase() {
 	tno=`expr "${2}-" : '\(.*\)-w42.*'`
-	[ -n "${3}" ] && echo "${3}" > ./test-${2}
-	[ -n "${4}" ] && echo "${4}" > ./test-eout || rm_file ./test-eout
-	[ -n "${5}" ] && echo "${5}" > ./test-eerr || rm_file ./test-eerr
+	[ -n "${3}" ] && echo ${EA} "${3}" > ./test-${2}
+	[ -n "${4}" ] && echo ${EA} "${4}" > ./test-eout || rm_file ./test-eout
+	[ -n "${5}" ] && echo ${EA} "${5}" > ./test-eerr || rm_file ./test-eerr
 	${WEB42} ${RC} --eo test-${2} > ./test-${tno}-out 2> ./test-${tno}-err
 	cmp -s ./test-${tno}-out ./test-eout
 	[ $? -ne 0 ] && o='OUT ' || o=
@@ -1435,7 +1439,7 @@ that continues.
 
 _ Should be a blockquote.
 
-_ \\i{Should be a second blockquote;\
+_ \i{Should be a second blockquote;\
 that continues.}
 _ Should not be a blockquote, but continue.
 
@@ -1453,11 +1457,11 @@ Third dd.
 
 @Not fourth dt. @
 
-\\i{Enclosed in &lt;em;gt;, but still autpar.}
+\i{Enclosed in &lt;em;gt;, but still autpar.}
 
-\\a{anchored}Begins with anchor, but is still autopar.
+\a{anchored}Begins with anchor, but is still autopar.
 
-Ends with &lt;strong&gt;, but is still \\b{autopar.}
+Ends with &lt;strong&gt;, but is still \b{autopar.}
 
 13 empties before but not after.
 <?end?>' \
