@@ -47,4 +47,4 @@ Copyright (c) <?COPY_DATE_SPEC?>,\
 </html>\
 \
 <?mode %?>
-# vim:set fenc=utf-8 syntax=xml ts=1 sts=1 sw=1 et tw=79:
+# s-tx-mode
