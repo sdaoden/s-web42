@@ -20,15 +20,11 @@ rm_file() {
 	printf '' > "${1}"
 }
 
-# Another problem is backslash escaping performed by echo(1).
-# Finally deal with it
-( [ "`echo -E '\\au'`" = '\au' ] ) && EA=-E || EA=
-
 tcase() {
 	tno=`expr "${2}-" : '\(.*\)-w42.*'`
-	[ -n "${3}" ] && echo ${EA} "${3}" > ./test-${2}
-	[ -n "${4}" ] && echo ${EA} "${4}" > ./test-eout || rm_file ./test-eout
-	[ -n "${5}" ] && echo ${EA} "${5}" > ./test-eerr || rm_file ./test-eerr
+	[ -n "${3}" ] && printf "${3}" > ./test-${2}
+	[ -n "${4}" ] && printf "${4}" > ./test-eout || rm_file ./test-eout
+	[ -n "${5}" ] && printf "${5}" > ./test-eerr || rm_file ./test-eerr
 	${WEB42} ${RC} --eo test-${2} > ./test-${tno}-out 2> ./test-${tno}-err
 	cmp -s ./test-${tno}-out ./test-eout
 	[ $? -ne 0 ] && o='OUT ' || o=
@@ -51,8 +47,8 @@ A
 	C	
 # TAB SPACE
 	 D	                                        
-E\
-F \
+E\\
+F \\
 G
 <?H?>
 <?end?>' \
@@ -65,10 +61,11 @@ G
 	C
 # TAB SPACE
 	 D
-E\
-F \
+E\\
+F \\
 G
-<?H?>' \
+<?H?>
+' \
 \
 ''
 
@@ -82,8 +79,8 @@ tcase 'Drop of introductional whitespace (disable mode: i)' 843-w42-cewpatsm \
 	C	
 # TAB SPACE
 	 D	                                        
-E\
-F \
+E\\
+F \\
 G
 <?H?><?end?>' \
 \
@@ -95,12 +92,14 @@ B
 C
 # TAB SPACE
 D
-E\
-F \
+E\\
+F \\
 G
-<?H?>' \
+<?H?>
+' \
 \
 ''
+# FIXME wrong: explilicl NO TRAIL NL!
 
 tcase 'Handling of shell style comments (disable mode: c)' 844-w42-ewpatsm \
 'H = H
@@ -113,8 +112,8 @@ A
 	C	
 # TAB SPACE
 	 D	                                        
-E\
-F \
+E\\
+F \\
 G
 <?H?>
 <?end?>' \
@@ -124,10 +123,11 @@ G
 B
 C
 D
-E\
-F \
+E\\
+F \\
 G
-<?H?>' \
+<?H?>
+' \
 \
 ''
 
@@ -141,8 +141,8 @@ tcase 'Escaping of newlines (disable mode: e)' 845-w42-wpatsm \
 	C	
 # TAB SPACE
 	 D	                                        
-E\
-F \
+E\\
+F \\
 G
 <?H?><?end?>' \
 \
@@ -152,7 +152,8 @@ B
 C
 D
 EF G
-<?H?>' \
+<?H?>
+' \
 \
 ''
 
@@ -169,8 +170,8 @@ tcase 'Wiping away empty lines (disable mode: w), 1' 846-w42-wpatsm \
 # TAB SPACE
 	 D	                                        
 
-E\
-F \
+E\\
+F \\
 G
 
 <?H?>
@@ -188,6 +189,7 @@ D
 EF G
 
 <?H?>
+
 ' \
 \
 ''
@@ -205,8 +207,8 @@ tcase 'Wiping away empty lines (disable mode: w), 2' 847-w42-patsm \
 # TAB SPACE
 	 D	                                        
 
-E\
-F \
+E\\
+F \\
 G
 
 <?H?>
@@ -218,7 +220,8 @@ B
 C
 D
 EF G
-<?H?>' \
+<?H?>
+' \
 \
 ''
 
@@ -231,8 +234,8 @@ tcase 'PI expansion (disable mode: p), 1' 848-w42-atsm \
 	C	
 # TAB SPACE
 	 D	                                        
-E\
-F \
+E\\
+F \\
 G
 <?H?><?end?>' \
 \
@@ -255,8 +258,8 @@ A
 	C	
 # TAB SPACE
 	 D	                                        
-E\
-F \
+E\\
+F \\
 G
 <?H?>
 <?end?>' \
@@ -266,7 +269,8 @@ B
 C
 D
 EF G
-H' \
+H
+' \
 \
 ''
 
@@ -280,7 +284,8 @@ tcase 'Assignments: variable, 1' 864-w42-atsm \
 <?X?>
 <?end?>' \
 \
-'one' \
+'one
+' \
 \
 ''
 
@@ -290,7 +295,8 @@ tcase 'Assignments: variable, 2' 865-w42-atsm \
 <?X?>
 <?end?>' \
 \
-'<em>two</em>' \
+'<em>two</em>
+' \
 \
 ''
 
@@ -300,7 +306,8 @@ tcase 'Assignments: variable, 3' 866-w42-atsm \
 <?X?>
 <?end?>' \
 \
-'three' \
+'three
+' \
 \
 ''
 
@@ -310,7 +317,8 @@ tcase 'Assignments: variable, 4' 867-w42-atsm \
 <?X?>
 <?end?>' \
 \
-'<em>four</em>' \
+'<em>four</em>
+' \
 \
 ''
 
@@ -320,9 +328,11 @@ tcase 'Assignments: variable, 5' 868-w42-atsm \
 <?X?>
 <?end?>' \
 \
-'<em>five</em>' \
+'<em>five</em>
+' \
 \
-"ERROR 'test-868-w42-atsm':3: Unknown PI: Y"
+"ERROR 'test-868-w42-atsm':3: Unknown PI: Y
+"
 
 tcase 'Assignments: variable, 6' 869-w42-atsm \
 'X = <?def Y<><em>six</em>?>
@@ -333,9 +343,11 @@ X += <?Y?>
 <?X?>
 <?end?>' \
 \
-'<em>six</em>' \
+'<em>six</em>
+' \
 \
-"ERROR 'test-869-w42-atsm':6: Unknown PI: Y"
+"ERROR 'test-869-w42-atsm':6: Unknown PI: Y
+"
 
 tcase 'Assignments: variable, 7' 870-w42-atsm \
 'X = <?def Y<><em>seven</em>?>
@@ -352,9 +364,11 @@ Z ?= bob
 <?end?>' \
 \
 '<em>seven</em>
-virgin' \
+virgin
+' \
 \
-"ERROR 'test-870-w42-atsm':10: Unknown PI: Y"
+"ERROR 'test-870-w42-atsm':10: Unknown PI: Y
+"
 
 # Array
 tcase 'Assignments: array, 1' 884-w42-atsm \
@@ -363,7 +377,8 @@ tcase 'Assignments: array, 1' 884-w42-atsm \
 <?X 0?>
 <?end?>' \
 \
-'one' \
+'one
+' \
 \
 ''
 
@@ -374,7 +389,8 @@ X @= <em>two</em>
 <?X 0?><?X 1?>
 <?end?>' \
 \
-'one<em>two</em>' \
+'one<em>two</em>
+' \
 \
 ''
 
@@ -386,7 +402,8 @@ X @= three
 <?X loop?>
 <?end?>' \
 \
-'onetwothree' \
+'onetwothree
+' \
 \
 ''
 
@@ -399,7 +416,8 @@ X @= four
 <?X loop<> ?>
 <?end?>' \
 \
-' one two three four' \
+' one two three four
+' \
 \
 ''
 
@@ -412,7 +430,8 @@ X @= four
 <?X loop<><> ?>
 <?end?>' \
 \
-'one two three four ' \
+'one two three four 
+' \
 \
 ''
 
@@ -426,7 +445,8 @@ X @= five
 <?X loop<><em><></em>?>
 <?end?>' \
 \
-'<em>one</em><em>two</em><em>three</em><em>four</em><em>five</em>' \
+'<em>one</em><em>two</em><em>three</em><em>four</em><em>five</em>
+' \
 \
 ''
 
@@ -447,9 +467,11 @@ BEEF @= dead
 \
 'aaa<a href="http://www.netbsd.org">http://www.netbsd.org</a>
 <p>aaa</p><p><a href="http://www.netbsd.org">http://www.netbsd.org</a></p>
- virgin  femme ' \
+ virgin  femme 
+' \
 \
-"ERROR 'test-890-w42-atsm':8: BEEF: array assignment to non-array key"
+"ERROR 'test-890-w42-atsm':8: BEEF: array assignment to non-array key
+"
 
 ## }}}
 ## def/defa/defx {{{
@@ -480,7 +502,7 @@ tcase 'def/defa/defx' 0001-w42-atsm \
 <?defa arrnam<>m 2?>
 <?defa arrnam<>m 3<>m 4?>
 
-<p><?arrnam 0?><?arrnam 1?>\
+<p><?arrnam 0?><?arrnam 1?>\\
          <?arrnam 2?><?arrnam 3?></p>
 
 <p><?arrnam loop<><b><></b>?></p>
@@ -532,7 +554,8 @@ REEreeval-output-okVAL
 entry 0 entry 1 entry 2 <br />
 entry 1 <br />
 <br />
-<em>For subscribers only</em>: nonexistent list.' \
+<em>For subscribers only</em>: nonexistent list.
+' \
 \
 "ERROR 'test-0001-w42-atsm':50: def (presumably) needs (at least) 2 argument(s)
 ERROR 'test-0001-w42-atsm':51: defa (presumably) needs (at least) 2 argument(s)
@@ -542,7 +565,8 @@ ERROR 'test-0001-w42-atsm':54: defx1 takes 2 argument(s)
 ERROR 'test-0001-w42-atsm':55: MODTIME_SLOCAL does not take any argument(s)
 ERROR 'test-0001-w42-atsm':56: MODTIME_ALOCAL: cannot modify builtin PI (variable) via push
 ERROR 'test-0001-w42-atsm':57: NOW_SLOCAL does not take any argument(s)
-ERROR 'test-0001-w42-atsm':58: NOW_ALOCAL: cannot modify builtin PI (variable) via push"
+ERROR 'test-0001-w42-atsm':58: NOW_ALOCAL: cannot modify builtin PI (variable) via push
+"
 
 ## }}}
 ## pi-if {{{
@@ -564,7 +588,8 @@ tcase 'pi-if' 0002-w42-atsm \
 <?end?>' \
 \
 '<p>def1-content</p>
-<p>defx1-c1 defx1-arg1 defx1-c2 defx1-arg2</p>' \
+<p>defx1-c1 defx1-arg1 defx1-c2 defx1-arg2</p>
+' \
 \
 ''
 
@@ -596,7 +621,8 @@ tcase 'undef' 0003-w42-atsm \
 "ERROR 'test-0003-w42-atsm':10: undef takes 1 argument(s)
 ERROR 'test-0003-w42-atsm':12: undef: cannot undef builtin PI (variable): undef
 ERROR 'test-0003-w42-atsm':14: undef: no such variable: def2
-ERROR 'test-0003-w42-atsm':16: undef: no such variable: defx2"
+ERROR 'test-0003-w42-atsm':16: undef: no such variable: defx2
+"
 
 ## }}}
 ## lref,lreft, href,hreft {{{
@@ -633,12 +659,14 @@ tcase 'lref/lreft/href/hreft' 0004-w42-atsm \
 <a href="http://www.freebsd.org"><strong>WWW!</strong>http://www.freebsd.org</a>
 <a href="http://www.freebsd.org" title="FreeBSD"><strong>WWW!</strong>FreeBSD</a>
 <a href="nope">"au"nope</a>
-<a href="nope" title="FreeBSD">"au"<em title="SUB">FreeBSD</em></a>' \
+<a href="nope" title="FreeBSD">"au"<em title="SUB">FreeBSD</em></a>
+' \
 \
 "ERROR 'test-0004-w42-atsm':18: lref takes 1 argument(s)
 ERROR 'test-0004-w42-atsm':19: lreft takes 2 argument(s)
 ERROR 'test-0004-w42-atsm':20: href takes 1 argument(s)
-ERROR 'test-0004-w42-atsm':21: hreft takes 2 argument(s)"
+ERROR 'test-0004-w42-atsm':21: hreft takes 2 argument(s)
+"
 
 ## }}}
 ## ?ifdef?.. {{{
@@ -770,10 +798,12 @@ yes.13
 23578:)
 23
 467
-9' \
+9
+' \
 \
 "ERROR 'test-0005-w42-atsm':109: ifn?def: was started here, but where's the <?fi?>?
-ERROR 'test-0005-w42-atsm':109: ifn?def: was started here, but where's the <?fi?>?"
+ERROR 'test-0005-w42-atsm':109: ifn?def: was started here, but where's the <?fi?>?
+"
 
 ## }}}
 ## ?x?include?.. {{{
@@ -815,7 +845,8 @@ Passed <?crossfile?><?undef crossfile?>out errors.
 5.2;5.3
 :Embedded file with NL
 -And an embedded file without NL.
-Passed without errors.' \
+Passed without errors.
+' \
 \
 ''
 
@@ -824,7 +855,8 @@ tcase 'x?include (exclusive content)' 6.1-w42-atsm \
 <?include test-0006-5?>
 <?end?>' \
 \
-';' \
+';
+' \
 \
 ''
 
@@ -860,7 +892,8 @@ START7MID8
 9END
 7
 8
-9' \
+9
+' \
 \
 ''
 
@@ -869,7 +902,8 @@ tcase 'raw_include (direct I/O, I)' 7.1-w42-atsm \
 <?raw_include test-0007-3?>
 <?end?>' \
 \
-'7' \
+'7
+' \
 \
 ''
 
@@ -879,7 +913,8 @@ tcase 'raw_include (direct I/O, II)' 7.2-w42-atsm \
 <?end?>' \
 \
 '8
-9' \
+9
+' \
 \
 ''
 
@@ -907,7 +942,8 @@ START7MID8
 9END
 7
 8
-9' \
+9
+' \
 \
 ''
 
@@ -1150,7 +1186,8 @@ not tried it.
 		it
 
 	correct,]]></pre>
-not tried it.' \
+not tried it.
+' \
 \
 ''
 
@@ -1254,21 +1291,24 @@ And an embedded sentence without NL.
 Passed without errors.
 :Embedded sentence with NL
 And an embedded sentence without NL.
-Passed without errors.' \
+Passed without errors.
+' \
 \
 ''
 
 tcase 'Oneline document (perl(1))' 9.1-w42-atsm \
 '<?begin?>START<?perl?>print "${BEGIN}in${END}"<?perl end?>END<?end?>' \
 \
-'STARTinEND' \
+'STARTinEND
+' \
 \
 ''
 
 tcase 'Oneline document (sh(1))' 9.2-w42-atsm \
 '<?begin?>START<?sh?>printf "${BEGIN}in${END}"<?sh end?>END<?end?>' \
 \
-'STARTinEND' \
+'STARTinEND
+' \
 \
 ''
 
@@ -1278,22 +1318,22 @@ tcase 'Oneline document (sh(1))' 9.2-w42-atsm \
 tcase 'mode (but do not use it)' 0010-w42-atsm \
 '<?begin?>
   # Comment
-   Hello, Honey   \
-	Sugar Candy	\
+   Hello, Honey   \\
+	Sugar Candy	\\
  Girl
 
     # Comment
 <?mode icews?>
   # Comment
-   Hello, Honey   \
-	Sugar Candy	\
+   Hello, Honey   \\
+	Sugar Candy	\\
  Girl
 
     # Comment
-<?mode %?>
+<?mode %%?>
   # Comment
-   Hello, Honey   \
-	Sugar Candy	\
+   Hello, Honey   \\
+	Sugar Candy	\\
  Girl
 
     # Comment
@@ -1302,12 +1342,13 @@ tcase 'mode (but do not use it)' 0010-w42-atsm \
 'Hello, Honey   Sugar Candy	Girl
 
   # Comment
-   Hello, Honey   \
-	Sugar Candy	\
+   Hello, Honey   \\
+	Sugar Candy	\\
  Girl
 
     # Comment
-Hello, Honey   Sugar Candy	Girl' \
+Hello, Honey   Sugar Candy	Girl
+' \
 \
 ''
 
@@ -1321,7 +1362,8 @@ tcase 'MarkLo expansion (disable mode: m)' 0042-w42-ats \
 '' \
 \
 'START<tt>tt</tt><em>em</em><strong>strong</strong><u>u</u><em>I <strong>really <u>love</u> you</strong>, baby!</em>END
-<a name="xname"></a><a href="http://plan9.bell-labs.com/plan9/">http://plan9.bell-labs.com/plan9/</a>' \
+<a name="xname"></a><a href="http://plan9.bell-labs.com/plan9/">http://plan9.bell-labs.com/plan9/</a>
+' \
 \
 ''
 
@@ -1331,17 +1373,17 @@ tcase 'MarkLo expansion (disable mode: m)' 0042-w42-ats \
 tcase 'Whitespace normalization (disable mode: s)' 0043-w42-at \
 '<?begin?>
   1   2		3		
-  START   c{tt}			i{em}  b{strong} 	u{u}   \
+  START   c{tt}			i{em}  b{strong} 	u{u}   \\
     END   
 boing        bum         tschak
 <?xpre?>
   1   2		3		
-  START   c{tt}			i{em}  b{strong} 	u{u}   \
+  START   c{tt}			i{em}  b{strong} 	u{u}   \\
     END   
 boing        bum         tschak
 <?xpre end?>
   1   2		3		
-  START   c{tt}			i{em}  b{strong} 	u{u}   \
+  START   c{tt}			i{em}  b{strong} 	u{u}   \\
     END   
 boing        bum         tschak
 <?end?>' \
@@ -1351,13 +1393,14 @@ START c{tt} i{em} b{strong} u{u} END
 boing bum tschak
 <pre>
   1   2		3
-  START   c{tt}			i{em}  b{strong} 	u{u}   \
+  START   c{tt}			i{em}  b{strong} 	u{u}   \\
     END
 boing        bum         tschak
 </pre>
 1 2 3
 START c{tt} i{em} b{strong} u{u} END
-boing bum tschak' \
+boing bum tschak
+' \
 \
 ''
 
@@ -1386,15 +1429,15 @@ buum
 
 7 empties before and after.
 
-<?mode wt?>\
+<?mode wt?>\\
 
 
 
-<?mode %?><?mode at?>
+<?mode %%?><?mode at?>
 
 8 empties before and after, but no AUTOPAR.
 
-<?mode %?>
+<?mode %%?>
 
 9 empties before and after.
 
@@ -1439,7 +1482,7 @@ that continues.
 
 _ Should be a blockquote.
 
-_ \i{Should be a second blockquote;\
+_ \\i{Should be a second blockquote;\\
 that continues.}
 _ Should not be a blockquote, but continue.
 
@@ -1449,7 +1492,7 @@ _Should not be a blockquote.
 item,
 i would say.
 
-@ Second dt. @\
+@ Second dt. @\\
 Second dd.
 
 @ Third dt. @
@@ -1457,11 +1500,11 @@ Third dd.
 
 @Not fourth dt. @
 
-\i{Enclosed in &lt;em;gt;, but still autpar.}
+\\i{Enclosed in &lt;em;gt;, but still autpar.}
 
-\a{anchored}Begins with anchor, but is still autopar.
+\\a{anchored}Begins with anchor, but is still autopar.
 
-Ends with &lt;strong&gt;, but is still \b{autopar.}
+Ends with &lt;strong&gt;, but is still \\b{autopar.}
 
 13 empties before but not after.
 <?end?>' \
@@ -1519,7 +1562,8 @@ Third dd.</p></dd></dl>
 <p><em>Enclosed in &lt;em;gt;, but still autpar.</em></p>
 <p><a name="anchored"></a>Begins with anchor, but is still autopar.</p>
 <p>Ends with &lt;strong&gt;, but is still <strong>autopar.</strong></p>
-13 empties before but not after.' \
+13 empties before but not after.
+' \
 \
 ''
 
@@ -1593,7 +1637,8 @@ FILE = (32)
 (22)<${CWD}>Jo-Ho-Ho\
 {TOP}[11][22]\
 {TOP}[11]\
-END" \
+END
+" \
 \
 ''
 
