@@ -858,4 +858,4 @@ dependent on user settings; i.e., a gzip(1) compressed tar(1) archive
 could be piped to STDOUT instead of producing a shell archive.  This
 would not work with file and directory removals though.  :)
 
-.. s-ts-mode
+.. vim:set ft=rst:s-ts-mode
