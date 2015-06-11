@@ -1758,11 +1758,14 @@ jset:    $l = $incdir . '/';
       '?_mode'       => 0,       # Filters of currently hold data
       _expander      => undef,   # Parent
       _data          => [],      # Expanded line data, intermediate storage
+      _delayed_data  => undef,   # With AUTOPAR, delay close tags: continuation
+      _delayed_ref   => undef,   # Ditto: where to push end-tag
       _seen_data     => 0        # 1=yes, 2=ended with NL
    });
 
    sub terminate {
       my ($self) = @_;
+      $self->_delayed_flush;
       $self->_flush if @{$self->data};
       $self
    }
@@ -1770,18 +1773,24 @@ jset:    $l = $incdir . '/';
    sub force_mode_change {
       my ($self, $mode) = @_;
       $mode &= Filter::FILTER_MASK;
-      $self->_flush if $mode != $self->{_mode} && @{$self->data}; # XXX finetune
-      $self->{_mode} = $mode;
+      if ($mode != $self->{_mode}) {
+         $self->_delayed_flush;
+         $self->_flush if @{$self->data}; # XXX finetune
+         $self->{_mode} = $mode;
+      }
       $self
    }
 
    sub seen_empties {
       my ($self) = @_;
-      my ($da, $i) = (scalar $self->data);
       if (!($self->{_mode} & Filter::AUTOPAR)) {
+         $self->_delayed_flush;
          delete $self->{__autopar};
          goto jleave
       }
+
+      my ($da, $i) = (scalar $self->data);
+
       if (defined($i = $self->{__autopar})) {
          my ($lda, $llda) = (scalar $da->[$i], scalar $da->[@$da - 1]);
          goto jflush unless defined $lda && @$lda && defined $llda;
@@ -1795,49 +1804,51 @@ jset:    $l = $incdir . '/';
          $llda = $da->[@$da - 2] unless @$llda; # XXX MUST be NL before..
          if (!$i) {
             my ($p, $s);
+
             $i = $lda->[0]->[0];
             if ($i =~ /^(?:(={1,6})\s+)(.*)/) {
                $i = $2;
                $s = length $1;
-               $p = "<h$s>";
+               $p = $self->_delayed_have . "<h$s>";
                $s = "</h$s>"
             } elsif ($i =~ /^(?:_\s+)(.*)/) {
                $i = $1;
-               $p = '<blockquote><p>';
-               $s = '</p></blockquote>'
+               $p = $self->_delayed_join('blockquote') . '<p>';
+               $s = '</p>';
             } elsif ($i =~ /^(?:\*\s+)(.*)/) {
                $i = $1;
-               $p = '<ul><li><p>';
-               $s = '</p></li></ul>'
+               $p = $self->_delayed_join('ul') . '<li><p>';
+               $s = '</p></li>';
             } elsif ($i =~ /^(?:([[:digit:]]+)\.\s+)(.*)/) {
                $i = $2;
-               $p = "<ol><li value=\"$1\"><p>";
-               $s = '</p></li></ol>'
+               $p = $self->_delayed_join('ol') . "<li value=\"$1\"><p>";
+               $s = '</p></li>';
             } elsif ($i =~ /^(?:\@\s+)(.*?)(?:\s+\@\s*)(.*)/) {
                $i = $1 . '</dt><dd><p>' . $2;
-               $p = '<dl><dt>';
-               $s = '</p></dd></dl>'
+               $p = $self->_delayed_join('dl') . '<dt>';
+               $s = '</p></dd>';
             } elsif ($i =~ /^-{5,}$/ && @$da == 2 && !scalar @{$da->[1]}) {
-               $lda->[0]->[0] = '<hr />'; # XXX autopar, ---: wrong?
+               $lda->[0]->[0] = $self->_delayed_have . '<hr />';
                goto jflush
             }
             if ($p) {
                $lda->[0]->[0] = $i
             } else {
-               $p = '<p>';
+               $p = $self->_delayed_have . '<p>';
                $s = '</p>'
             }
             unshift @$lda, [$p];
-            push @$llda, [$s]
+            push @$llda, [$s];
+            $self->{_delayed_ref} = $llda;
          }
       }
 jflush:
-      $self->_flush;
+      $self->_flush; # TODO MUCH TOO OFTEN! and if not, it doens't work!!
       # Set the starting index of this new paragraph
       # Ensure to not track the empty array for the next line that put() may
       # have placed
       $i = scalar(@$da);
-      $self->{__autopar} = $i;
+      $self->{__autopar} = $i; # TODO so this is always 0 now!!!
 jleave:
       $self
    }
@@ -1864,6 +1875,7 @@ jleave:
       $self->{__final_nl} = (!$self->expander->seen_line &&
             !$self->expander->ctx->line);
       $self->{__endl} = 0;
+      $self->_delayed_flush;
       $self->_flush(1) if @{$self->data};
       delete $self->{__autopar};
       $self
@@ -1885,6 +1897,50 @@ jleave:
          unless print {$self->fh} $data;
       ::xpanic("Failed to perform output: $^E")
          unless !$endl || print {$self->fh} "\n";
+      $self
+   }
+
+   sub _delayed_have {
+      my ($self) = @_;
+      my $i = $self->{_delayed_data};
+      $self->{_delayed_data} = $self->{_delayed_ref} = undef;
+      if ($i) { '</' . $i . '>' }
+      else { '' }
+   }
+
+   sub _delayed_join {
+      my ($self, $tag) = @_;
+      my $i = $self->{_delayed_data};
+      $self->{_delayed_data} = $tag;
+      my $j = $self->{_delayed_ref};
+      $self->{_delayed_ref} = undef;
+      if ($i && $j && (!$tag || $tag ne $i)) {
+         push @$j, '@@</' . $i . '>';
+         $i = undef
+      }
+      if (!$i) {
+         return '<' . $tag . '>'
+      }
+      return '</' . $i . '>' . '<' . $tag . '>' unless $tag eq $i;
+      ''
+   }
+
+   sub _delayed_flush { # TODO NEVER RAN - TEST!
+      my ($self) = @_;
+      if (my $i = $self->_delayed_have) {
+         if (my $j = $self->{_delayed_ref}) {
+            $self->{_delayed_ref} = undef;
+            my $k = @$j;
+            while ($k-- > 0) {
+               last if (length($$j[$k]) > 0);
+            }
+            $k = 0 if $k < 0;
+            splice @$j, $k, 0, '??'.$i.'??';
+         } else {
+            my $j = $self->data;
+           push @{$j->[@{$j} - 1]}, ['!!'.$i.'!!']
+         }
+      }
       $self
    }
 

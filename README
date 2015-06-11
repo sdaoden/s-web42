@@ -305,10 +305,10 @@ actions:
       Generates a blockquote.
 
    ``* Text``
-      Generates a bullet list with a single item.
+      Generates a bullet list.
 
    ``DecimalDigits. Text``
-      Generates a numbered list with a single item that uses a value
+      Generates a numbered list with an item that uses a value
       that equals "DecimalDigits".
 
    ``@ Text1 @ Text2``
@@ -326,25 +326,25 @@ actions:
 
       You wouldn't believe what i saw:
 
-      * Cats.
+      * Cats
 
-      * Donkeys.
+      * Mice
 
-      * Birds.
+      * Birds
 
       -------
 
       _ Wow!
 
+      _ Or Wuff-Wuff!
+
       =>
 
       <h2>It's not a Wiki!</h2>
       <p>You wouldn't believe what i saw:</p>
-      <ul><li><p>Cats.</p></li></ul>
-      <ul><li><p>Donkeys.</p></li></ul>
-      <ul><li><p>Birds.</p></li></ul>
+      <ul><li><p>Cats</p></li><li><p>Mice</p></li><li><p>Birds</p></li></ul>
       <hr />
-      <blockquote><p>Wow!</p></blockquote>
+      <blockquote><p>Wow!</p><p>Or Wuff-Wuff!</p></blockquote>
 
 *Tagsoup joining* (disable mode: ``t`` *TODO: not yet implemented*)
    The DOM standard (http://www.w3.org/TR/DOM-Level-3-Core) is used
