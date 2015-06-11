@@ -5,7 +5,7 @@ S-Web42
 :Contact:   sdaoden@users.sf.net
 :Copyright: ISC license
 :Date:      1997 - 2005, 2010, 2012 - 2015
-:Version:   0.8.4
+:Version:   0.8.5
 :Status:    Red and Hot!
 
 .. _`perl(1)`: http://www.perl.org
@@ -814,6 +814,15 @@ News
   errors and no longer enters a rather endless loop if a closing brace
   has been forgotten.
 
+0.8.5
+-----
+
+* The unit tests should now work with all shells.
+
+* Automatic paragraphs are now able to join successive instances: e.g.,
+  X successive bullet list items are now joined into a single bullet
+  list, instead of producing X bullet lists.
+
 Thanks
 ======
 
@@ -832,15 +841,10 @@ so i tried it.)
 Future Directions
 =================
 
-The convertion phase can be parallelized without much (in fact almost
-no) effort; add a special ``MAXJOBS`` or similar special ``config.rc``
-PI variable to control this, then.
+Add a Markdown compatible syntax block.
 
-An ``<?eval? PERL-EXPR?>`` could at some time become a regular PI,
-that simply evaluates in the *current* context.  Maybe lazy start a
-concurrent child and communicate with that for this purpose (pay once
-once needed).  If parallelized, one such evalizer for each worker
-thread/process.
+With automatic parapraphs too many flushs occur, and tagsoup joining is
+not yet implemented.
 
 Performance could be improved and dependencies could be reduced if
 compression would be restricted to ``gzip(1)`` and if the rather
@@ -852,6 +856,16 @@ is well understood and could be unrolled in perl.  Well, and then the
 ``sed(1)`` call would simply be ``s/^/X/`` in `perl(1)`_.  Like that
 no dependencies for external utilities would remain during S-Web42
 operation, but only when exploding the resulting shell archive.
+
+The convertion phase can be parallelized without much (in fact almost
+no) effort; add a special ``MAXJOBS`` or similar special ``config.rc``
+PI variable to control this, then.
+
+An ``<?eval? PERL-EXPR?>`` could at some time become a regular PI,
+that simply evaluates in the *current* context.  Maybe lazy start a
+concurrent child and communicate with that for this purpose (pay once
+once needed).  If parallelized, one such evalizer for each worker
+thread/process.
 
 Of course, a different ``Target`` implementation could be chosen
 dependent on user settings; i.e., a gzip(1) compressed tar(1) archive
