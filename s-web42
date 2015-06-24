@@ -1798,7 +1798,13 @@ jset:    $l = $incdir . '/';
          $lda->[0]->[0] =~ /^\s*<([^>]+)>/;
          if (($i = $1)) {
             $i =~ s/^([^[:space:]]+).*/$1/;
-            $i = undef if $AUTOPAR_IGNORE{$i}
+            if ($i !~ /^\// && $AUTOPAR_IGNORE{$i}) {
+               $i = undef
+            } else {
+               $self->_delayed_flush;
+               $da = scalar $self->data;
+               goto jflush
+            }
          }
 
          $llda = $da->[@$da - 2] unless @$llda; # XXX MUST be NL before..
@@ -1925,21 +1931,13 @@ jleave:
       ''
    }
 
-   sub _delayed_flush { # TODO NEVER RAN - TEST!
+   sub _delayed_flush {
       my ($self) = @_;
-      if (my $i = $self->_delayed_have) {
-         if (my $j = $self->{_delayed_ref}) {
-            $self->{_delayed_ref} = undef;
-            my $k = @$j;
-            while ($k-- > 0) {
-               last if (length($$j[$k]) > 0);
-            }
-            $k = 0 if $k < 0;
-            splice @$j, $k, 0, '??'.$i.'??';
-         } else {
-            my $j = $self->data;
-           push @{$j->[@{$j} - 1]}, ['!!'.$i.'!!']
-         }
+      if (my $i = $self->{_delayed_data}) {
+         $self->{_delayed_data} = undef;
+         my $da = scalar $self->data;
+         my $lda = scalar $da->[0];
+         unshift @$lda, ['</'.$i.'>'];
       }
       $self
    }

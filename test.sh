@@ -1407,7 +1407,7 @@ boing bum tschak
 ## }}}
 ## Automatic paragraphs {{{
 
-tcase 'OK but BAD Automatic paragraphs (disable mode: a)' 0044-w42-t \
+tcase 'BAD (soup joining) but OK Automatic paragraphs (disable mode: a)' 0044-w42-t \
 '<?begin?>
 1 no empties before.
 
@@ -1488,165 +1488,17 @@ _ Should not be a blockquote, but continue.
 
 _Should not be a blockquote.
 
-@ A definition list term. @ A definition list
-item,
-i would say.
+<dl><dt>Handmade dt</dt><dd>In dd.
 
-@ Second dt. @\\
-Second dd.
+Yeah, we can have automatic paragraphs in handmade dd.
 
-@ Third dt. @
-Third dd.
+_ And blockquotes, too.
+  Really.
 
-@Not fourth dt. @
+_ And blockquote continuations.
+  Inuations.
 
-\\i{Enclosed in &lt;em&gt;, but still autpar.}
-
-\\a{anchored}Begins with anchor, but is still autopar.
-
-Ends with &lt;strong&gt;, but is still \\b{autopar.}
-
-13 empties before but not after.
-<?end?>' \
-\
-'1 no empties before.
-<p>2 empties before and after.</p>
-<p>3 empties before but not after.
-because, yeah, this is a complete textblock.</p>
-4 No, i will not use the lazy fox or any ipsum.
-<pre>
-buum
-</pre>
-<p>
-5 this is yet a paragraph!
-</p>
-<p>6 empties before and after.</p>
-<p>7 empties before and after.</p>
-
-
-
-8 empties before and after, but no AUTOPAR.
-<p>9 empties before and after.</p>
-<h1>H1</h1>
-<h2>H2</h2>
-<h3>H3</h3>
-<h4>H4</h4>
-<h5>H5</h5>
-<h6>H6
-For sure.</h6>
-<p>======Not H6</p>
-<ul><li><p>Should be a list item.</p></li>
-<li><p>Should be yet another list item;
-that continues.
-* Should not be an item, but continue.</p></li></ul>
-<p>*Should not be an item.</p>
-<ol><li value="1"><p>Should be a numbered list, 1.</p></li>
-<li value="55"><p>Should be a numbered list, 55.</p></li>
-<li value="100"><p>Should be a numbered list.<p>100.</p></p></li></ol>
-<p>11.Should not be a numbered list.</p>
-<p>----</p>
-<hr />
-<hr />
-<p>------</p>
-<blockquote><p>Should be a blockquote.</p>
-<p><em>Should be a second blockquote;that continues.</em>
-_ Should not be a blockquote, but continue.</p></blockquote>
-<p>_Should not be a blockquote.</p>
-<dl><dt>A definition list term.</dt><dd><p>A definition list
-item,
-i would say.</p></dd>
-<dt>Second dt.</dt><dd><p>Second dd.</p></dd>
-<dt>Third dt.</dt><dd><p>
-Third dd.</p></dd></dl>
-<p>@Not fourth dt. @</p>
-<p><em>Enclosed in &lt;em&gt;, but still autpar.</em></p>
-<p><a name="anchored"></a>Begins with anchor, but is still autopar.</p>
-<p>Ends with &lt;strong&gt;, but is still <strong>autopar.</strong></p>
-13 empties before but not after.
-' \
-\
-''
-
-tcase 'BAD but OK Automatic paragraphs (disable mode: a)' 0045-w42-t \
-'<?begin?>
-1 no empties before.
-
-2 empties before and after.
-
-3 empties before but not after.
-because, yeah, this is a complete textblock.
-
-4 No, i will not use the lazy fox or any ipsum.
-<?xpre?>
-buum
-<?xpre end?>
-
-<p>
-5 this is yet a paragraph!
-</p>
-
-6 empties before and after.
-
-7 empties before and after.
-
-<?mode wt?>\\
-
-
-
-<?mode %%?><?mode at?>
-
-8 empties before and after, but no AUTOPAR.
-
-<?mode %%?>
-
-9 empties before and after.
-
-= H1
-
-== H2
-
-=== H3
-
-==== H4
-
-===== H5
-
-====== H6
-For sure.
-
-======Not H6
-
-* Should be a list item.
-
-* Should be yet another list item;
-that continues.
-* Should not be an item, but continue.
-
-*Should not be an item.
-
-1. Should be a numbered list, 1.
-
-55. Should be a numbered list, 55.
-
-100. Should be a numbered list.<p>100.</p>
-
-11.Should not be a numbered list.
-
-----
-
------
-
-------
-
-<p>------</p>
-
-_ Should be a blockquote.
-
-_ \\i{Should be a second blockquote;\\
-that continues.}
-_ Should not be a blockquote, but continue.
-
-_Should not be a blockquote.
+</dd></dl>
 
 @ A definition list term. @ A definition list
 item,
@@ -1712,6 +1564,13 @@ that continues.
 <p><em>Should be a second blockquote;that continues.</em>
 _ Should not be a blockquote, but continue.</p>
 </blockquote><p>_Should not be a blockquote.</p>
+<dl><dt>Handmade dt</dt><dd>In dd.
+<p>Yeah, we can have automatic paragraphs in handmade dd.</p>
+<blockquote><p>And blockquotes, too.
+Really.</p>
+<p>And blockquote continuations.
+Inuations.</p>
+</blockquote></dd></dl>
 <dl><dt>A definition list term.</dt><dd><p>A definition list
 item,
 i would say.</p></dd>
@@ -1719,6 +1578,185 @@ i would say.</p></dd>
 <dt>Third dt.</dt><dd><p>
 Third dd.</p></dd>
 </dl><p>@Not fourth dt. @</p>
+<p><em>Enclosed in &lt;em&gt;, but still autpar.</em></p>
+<p><a name="anchored"></a>Begins with anchor, but is still autopar.</p>
+<p>Ends with &lt;strong&gt;, but is still <strong>autopar.</strong></p>
+13 empties before but not after.
+' \
+\
+''
+
+tcase 'OK BUT BAD (soup joining) Automatic paragraphs (disable mode: a)' 0045-w42-t \
+'<?begin?>
+1 no empties before.
+
+2 empties before and after.
+
+3 empties before but not after.
+because, yeah, this is a complete textblock.
+
+4 No, i will not use the lazy fox or any ipsum.
+<?xpre?>
+buum
+<?xpre end?>
+
+<p>
+5 this is yet a paragraph!
+</p>
+
+6 empties before and after.
+
+7 empties before and after.
+
+<?mode wt?>\\
+
+
+
+<?mode %%?><?mode at?>
+
+8 empties before and after, but no AUTOPAR.
+
+<?mode %%?>
+
+9 empties before and after.
+
+= H1
+
+== H2
+
+=== H3
+
+==== H4
+
+===== H5
+
+====== H6
+For sure.
+
+======Not H6
+
+* Should be a list item.
+
+* Should be yet another list item;
+that continues.
+* Should not be an item, but continue.
+
+*Should not be an item.
+
+1. Should be a numbered list, 1.
+
+55. Should be a numbered list, 55.
+
+100. Should be a numbered list.<p>100.</p>
+
+11.Should not be a numbered list.
+
+----
+
+-----
+
+------
+
+<p>------</p>
+
+_ Should be a blockquote.
+
+_ \\i{Should be a second blockquote;\\
+that continues.}
+_ Should not be a blockquote, but continue.
+
+_Should not be a blockquote.
+
+<dl><dt>Handmade dt</dt><dd>In dd.
+
+Yeah, we can have automatic paragraphs in handmade dd.
+
+_ And blockquotes, too.
+  Really.
+
+_ And blockquote continuations.
+  Inuations.
+
+</dd></dl>
+
+@ A definition list term. @ A definition list
+item,
+i would say.
+
+@ Second dt. @\\
+Second dd.
+
+@ Third dt. @
+Third dd.
+
+@Not fourth dt. @
+
+\\i{Enclosed in &lt;em&gt;, but still autpar.}
+
+\\a{anchored}Begins with anchor, but is still autopar.
+
+Ends with &lt;strong&gt;, but is still \\b{autopar.}
+
+13 empties before but not after.
+<?end?>' \
+\
+'1 no empties before.
+<p>2 empties before and after.</p>
+<p>3 empties before but not after.
+because, yeah, this is a complete textblock.</p>
+4 No, i will not use the lazy fox or any ipsum.
+<pre>
+buum
+</pre>
+<p>
+5 this is yet a paragraph!
+</p>
+<p>6 empties before and after.</p>
+<p>7 empties before and after.</p>
+
+
+
+8 empties before and after, but no AUTOPAR.
+<p>9 empties before and after.</p>
+<h1>H1</h1>
+<h2>H2</h2>
+<h3>H3</h3>
+<h4>H4</h4>
+<h5>H5</h5>
+<h6>H6
+For sure.</h6>
+<p>======Not H6</p>
+<ul><li><p>Should be a list item.</p></li>
+<li><p>Should be yet another list item;
+that continues.
+* Should not be an item, but continue.</p></li></ul>
+<p>*Should not be an item.</p>
+<ol><li value="1"><p>Should be a numbered list, 1.</p></li>
+<li value="55"><p>Should be a numbered list, 55.</p></li>
+<li value="100"><p>Should be a numbered list.<p>100.</p></p></li></ol>
+<p>11.Should not be a numbered list.</p>
+<p>----</p>
+<hr />
+<hr />
+<p>------</p>
+<blockquote><p>Should be a blockquote.</p>
+<p><em>Should be a second blockquote;that continues.</em>
+_ Should not be a blockquote, but continue.</p></blockquote>
+<p>_Should not be a blockquote.</p>
+<dl><dt>Handmade dt</dt><dd>In dd.
+<p>Yeah, we can have automatic paragraphs in handmade dd.</p>
+<blockquote><p>And blockquotes, too.
+Really.</p>
+<p>And blockquote continuations.
+Inuations.</p></blockquote>
+</dd></dl>
+<dl><dt>A definition list term.</dt><dd><p>A definition list
+item,
+i would say.</p></dd>
+<dt>Second dt.</dt><dd><p>Second dd.</p></dd>
+<dt>Third dt.</dt><dd><p>
+Third dd.</p></dd></dl>
+<p>@Not fourth dt. @</p>
 <p><em>Enclosed in &lt;em&gt;, but still autpar.</em></p>
 <p><a name="anchored"></a>Begins with anchor, but is still autopar.</p>
 <p>Ends with &lt;strong&gt;, but is still <strong>autopar.</strong></p>
