@@ -400,7 +400,7 @@ sub checksum_path {
    # which can be regulary overwritten by users
    our $outermost = {
       %$builtin,
-      WWW               => ''
+      WWW_PREFIX => '', WWW_SUFFIX => ''
    };
 
    # Handle a complete(d!) ASSIGNMENTS line
@@ -1433,20 +1433,25 @@ jpivar:     $self->_pi_var($pi, $valarr)
          }
       } elsif ($pi eq 'href' || $pi eq 'lref') {
          $pi = ($pi eq 'href');
-         my $w;
-         $w = $self->ctx->pivars->{WWW} if $pi;
-         $w = '' unless defined $w;
-         $i = '<a href="' . $i . '">' . $w . $i . '</a>';
+         my ($wp, $ws);
+         $wp = $self->ctx->pivars->{WWW_PREFIX} if $pi;
+         $wp = '' unless defined $wp;
+         $ws = $self->ctx->pivars->{WWW_SUFFIX} if $pi;
+         $ws = '' unless defined $ws;
+         $i = '<a href="' . $i . '">' . $wp . $i . $ws . '</a>';
          $self->rest_data($i)
       } elsif ($pi eq 'hreft' || $pi eq 'lreft') {
          $pi = ($pi eq 'hreft');
-         my ($w, $t, $tm);
-         $w = $self->ctx->pivars->{WWW} if $pi;
-         $w = '' unless defined $w;
+         my ($wp, $ws, $t, $tm);
+         $wp = $self->ctx->pivars->{WWW_PREFIX} if $pi;
+         $wp = '' unless defined $wp;
+         $ws = $self->ctx->pivars->{WWW_SUFFIX} if $pi;
+         $ws = '' unless defined $ws;
          $i = Expander::Markup::link($i);
          $tm = $valarr->[1];
          $t = Expander::Markup::attribute($tm);
-         $i = '<a href="' . $i . '" title="' . $t . '">' . $w . $tm . '</a>';
+         $i = '<a href="' . $i . '" title="' . $t . '">' .
+               $wp . $tm . $ws . '</a>';
          $self->rest_data($i)
       } elsif ($pi eq 'pre' || $pi eq 'xpre' || $pi eq 'xcdata') {
          if ($i) {

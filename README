@@ -507,10 +507,10 @@ _`NOW_AUTC`, _`NOW_ALOCAL`, _`NOW_SUTC`, _`NOW_SLOCAL`
    Identical to `MODTIME_AUTC`_ and friends, as above, but expand to
    the current time instead.
 
-_`WWW`
+_`WWW_PREFIX`, _`WWW_SUFFIX`
    **Injection**.
-   Will be injected in expansions of `href`_ and `hreft`_.
-   Defaults to the empty string.
+   Will be injected before and after expansions of `href`_ and `hreft`_,
+   respectively.  Default to the empty string.
 
 Processing Instructions (PIs)
 =============================
@@ -613,10 +613,11 @@ _`defx`
 
 _`href`, _`hreft`, _`lref`, _`lreft`
    These purely convenience PIs expand to (X)HTML hyperlinks; the first
-   two should be used to create links which leave the site (see `WWW`_),
-   the other two for site-local ones.  The versions without the ``t``
-   suffix take one argument, the others will also create a ``title``
-   attribute and thus require two arguments. ::
+   two should be used to create links which leave the site (see
+   `WWW_PREFIX`_ and `WWW_SUFFIX`_), the other two for site-local ones.
+   The versions without the ``t`` suffix take one argument, the others
+   will also create a ``title`` attribute and thus require two
+   arguments. ::
 
       <?href http://www.netbsd.org?>
       -> <a href="http://www.netbsd.org">www.netbsd.org</a>
@@ -831,6 +832,12 @@ News
 
 * The automatic paragraph commit and tag v0.8.5 were premature.
   A bit better now.
+
+0.8.7
+-----
+
+* The special PI variable ``WWW`` variable has been removed, instead
+  there are now `WWW_PREFIX`_ and `WWW_SUFFIX`_.
 
 Thanks
 ======
