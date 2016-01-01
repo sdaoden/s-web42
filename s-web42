@@ -2108,7 +2108,8 @@ jleave:
       my ($n) = @_;
       ++$cnt;
       __ioerr() unless print $fh "nomda${cnt}=\"", $n->site_path,
-         "\"\ndoda${cnt}() {\n  sed 's/^X//' << \\! | uudecode $uncompress\n";
+         "\"\ndoda${cnt}() {\n  sed 's/^X//' << \\! | " .
+         "uudecode -o /dev/stdout $uncompress\n";
       __pioerr() unless open PH, '-|',
          ('< ' . ($n->isexpandable ? $TMP_WORK : $n->source_path) .
          " $compress uuencode -m /dev/stdout | sed 's/^/X/'");
