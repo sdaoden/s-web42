@@ -1,8 +1,8 @@
 #!/usr/bin/env perl
 require 5.008_001;
 my $SELF = 's-web42'; #@ One more option to manage your website.
-#@ Web       : http://sdaoden.users.sourceforge.net/code.html
-#@ Git       : git.code.sf.net/p/s-web42/code
+#@ Web       : https://www.sdaoden.eu/code.html
+#@ Git       : git://git.sdaoden.eu/s-web42.git
 #@ Git browse: http://sourceforge.net/p/s-web42/code/
 #@ Requires  : S-SymObj >=v0.8.0 (from CPAN or visit the Web: link from above).
 #@ Use: in CWD "site/" is the source tree, (optional) executable "hook" will
@@ -11,10 +11,10 @@ my $SELF = 's-web42'; #@ One more option to manage your website.
 #@ "cache.dat" will be used as database to remember timestamps and checksums.
 #@ The generated "w42-update.sh" distributes the latest changes, iff any.
 #@ Please read the README for the complete documentation (:}
-my $VERSION = '0.8.6';
+my $VERSION = '0.8.7';
 my $COPYRIGHT =<<__EOT__;
 Copyright (c) 1997 - 2005, 2010,
-Copyright (c) 2012 - 2015 Steffen (Daode) Nurpmeso <sdaoden\@users.sf.net>.
+Copyright (c) 2012 - 2016 Steffen (Daode) Nurpmeso <steffen\@sdaoden.eu>.
 This software is provided under the terms of the ISC license.
 __EOT__
 # Permission to use, copy, modify, and/or distribute this software for any
@@ -74,7 +74,7 @@ BEGIN {
 
         That most likely requires administrator privileges, though.
         You may also simply download and use it directly -- visit
-        http://sdaoden.users.sourceforge.net/code.html#s-symobj.
+        https://www.sdaoden.eu/code.html.
         In that case perl(1) most likely must be given a hint where
         it can find S-SymObj.  This can be accomplished by adjusting
         the @INC path array, so either use Perl's -I option or set
@@ -2127,7 +2127,7 @@ jleave:
       __ioerr() unless print $fh <<__EOT__;
 #!/bin/sh -
 #@ This Website update archive has been created by S-Web42, which is
-# Copyright (c) 1997 - 2014 Steffen (Daode) Nurpmeso <sdaoden\@users.sf.net>.
+# Copyright (c) 1997 - 2016 Steffen (Daode) Nurpmeso <steffen\@sdaoden.eu>.
 #@ by means of the ISC license.
 #@ Except for the long output the archive may be easily examined via:
 #@   \$ grep '^[^X#]' w42-update.sh

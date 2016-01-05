@@ -8,7 +8,7 @@ TITLE = Qual - Some More
 HEADLINE = Qual
 DESC = A Poem
 KEYWORDS = Qual, Poems
-COPY_DATE_SPEC = 1997 - 2015
+COPY_DATE_SPEC = 1997 - 2016
 
 # If set, will be used as target files for navigation (header,footer)
 FIRST = .html

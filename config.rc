@@ -35,7 +35,7 @@ AUTHOR_AND_EMAIL     = Your Name &lt;YOUR@MAIL&gt;
 AUTHOR_AND_EMAIL_RAW = Your Name, YOUR@MAIL
 WEB            = YOUR-WEB-ADDRESS
 MAIL           = YOUR@MAIL
-COPY_DATE_SPEC = 1972 - 2015
+COPY_DATE_SPEC = 1972 - 2016
 
 ## Don't touch the rest directly, use file-local assignments instead
 

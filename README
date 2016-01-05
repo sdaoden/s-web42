@@ -2,14 +2,14 @@ S-Web42
 #######
 
 :Author:    Steffen (Daode) Nurpmeso
-:Contact:   sdaoden@users.sf.net
+:Contact:   steffen@sdaoden.eu
 :Copyright: ISC license
-:Date:      1997 - 2005, 2010, 2012 - 2015
-:Version:   0.8.6
+:Date:      1997 - 2005, 2010, 2012 - 2016
+:Version:   0.8.7
 :Status:    Red and Hot!
 
 .. _`perl(1)`: http://www.perl.org
-.. _`S-SymObj`: http://sdaoden.users.sourceforge.net/code.html#s-symobj
+.. _`S-SymObj`: https://www.sdaoden.eu/code.html#s-symobj
 
 .. Expansions used in the text: file expansion-trigger RE, ..
 .. |fextre| replace:: ``(.*?)(-w42(?:-(x|[icewpatsm]+))?(-new)?)$``
@@ -33,9 +33,9 @@ installed Perl, version 5.8.1 or above.  It also requires the authors
 `S-SymObj`_ module -- you may install it as a regular part of your
 `perl(1)`_ installation by issuing the command ``$ cpan S-SymObj``.
 Alternatively you may also get it from http://www.CPAN.org, clone the
-git repository from ``git://git.code.sf.net/p/ssymobj/code`` or browse
-it at http://sourceforge.net/p/ssymobj/code.
-The repository has also been mirrored to https://GitLab.com:
+git repository from ``git://git.sdaoden.eu/s-symobj.git``, the
+SourceForge.net mirror ``git://git.code.sf.net/p/ssymobj/code`` (browse
+it at http://sourceforge.net/p/ssymobj/code) or the GitLab.com mirror
 ``https://gitlab.com/sdaoden/s-web42.git`` (browse it at
 ``https://gitlab.com/sdaoden/s-web42/``).
 
@@ -838,6 +838,11 @@ News
 
 * The special PI variable ``WWW`` variable has been removed, instead
   there are now `WWW_PREFIX`_ and `WWW_SUFFIX`_.
+
+* We are a bit more relaxed regarding uudecode(1) POSIX compatibility,
+  and now give a ``-o /dev/stdout`` command line option instead of
+  requiring that the in-stream /dev/stdout variant is properly
+  understood.
 
 Thanks
 ======
