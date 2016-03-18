@@ -2,8 +2,8 @@
 require 5.008_001;
 my $SELF = 's-web42'; #@ One more option to manage your website.
 #@ Web       : https://www.sdaoden.eu/code.html
-#@ Git       : git://git.sdaoden.eu/s-web42.git
-#@ Git browse: http://sourceforge.net/p/s-web42/code/
+#@ Git       : https://git.sdaoden.eu/scm/s-web42.git
+#@ Git browse: https://git.sdaoden.eu/cgit/s-web42.git
 #@ Requires  : S-SymObj >=v0.8.0 (from CPAN or visit the Web: link from above).
 #@ Use: in CWD "site/" is the source tree, (optional) executable "hook" will
 #@ act as a per directory hook for whatever user actions are to be performed,

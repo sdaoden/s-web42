@@ -32,12 +32,9 @@ The ``s-web42`` converter is a `perl(1)`_ script, i.e., it needs an
 installed Perl, version 5.8.1 or above.  It also requires the authors
 `S-SymObj`_ module -- you may install it as a regular part of your
 `perl(1)`_ installation by issuing the command ``$ cpan S-SymObj``.
-Alternatively you may also get it from http://www.CPAN.org, clone the
-git repository from ``git://git.sdaoden.eu/s-symobj.git``, the
-SourceForge.net mirror ``git://git.code.sf.net/p/ssymobj/code`` (browse
-it at http://sourceforge.net/p/ssymobj/code) or the GitLab.com mirror
-``https://gitlab.com/sdaoden/s-web42.git`` (browse it at
-``https://gitlab.com/sdaoden/s-web42/``).
+Alternatively you may also get it from http://www.CPAN.org or clone the
+git repository from ``https://git.sdaoden.eu/scm/s-symobj.git`` (browse
+it at https://git.sdaoden.eu/cgit/s-symobj.git).
 
 ``s-web42`` also uses the standard POSIX tools ``sed(1)``, ``sh(1)``,
 ``uudecode(1)``, ``uuencode(1)`` and, optionally, data compressors
