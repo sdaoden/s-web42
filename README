@@ -231,8 +231,8 @@ that cryptic expression:
 (-new)? -- Forced rebuild trigger
    If the suffix ends with a trailing ``-new`` part, then both, the
    modification time and the files input checksum will not be used to
-   decide wether a file has been modified or not.  Instead it'll always
-   be rebuild, and the decision wether to include the file in the
+   decide whether a file has been modified or not.  Instead it'll always
+   be rebuild, and the decision whether to include the file in the
    result or not is based upon the checksum of the generated file.  A
    filename example would be ``index.php-w42-x-new``.
 
@@ -478,7 +478,7 @@ _`COMPRESS`
 _`IGNORE_MODTIME`
    **Only recognized in config.rc**.
    It set, causes file modification times to be ignored when deciding
-   wether a file has to be updated or not.  Maybe necessary if
+   whether a file has to be updated or not.  Maybe necessary if
    ``git(1)`` is used as a source code control system.
 
 _`MODTIME_AUTC`, _`MODTIME_ALOCAL`, _`MODTIME_SUTC`, _`MODTIME_SLOCAL`
@@ -753,7 +753,7 @@ _`perl`, _`sh`, _`xperl`, _`xsh`
       (especially not with each other).
 
 _`pi-if`
-   If it is unsure wether a PI (variable) exists, use this PI to
+   If it is unsure whether a PI (variable) exists, use this PI to
    "invoke" it, instead of the PI itself.  I.e., pass arguments etc.
    just as you would do if you would use the PI directly, but give the
    name of the PI as the first argument.  ``pi-if`` will not cause
