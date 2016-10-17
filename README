@@ -5,20 +5,26 @@ S-Web42
 :Contact:   steffen@sdaoden.eu
 :Copyright: ISC license
 :Date:      1997 - 2005, 2010, 2012 - 2016
-:Version:   0.8.7
+:Version:   0.8.8
 :Status:    Red and Hot!
 
-.. _`perl(1)`: http://www.perl.org
+.. _`S-Web42`: https://www.sdaoden.eu/code.html#s-web42
 .. _`S-SymObj`: https://www.sdaoden.eu/code.html#s-symobj
+.. _`perl(1)`: http://www.perl.org
 
 .. Expansions used in the text: file expansion-trigger RE, ..
+
+.. |ssym| replace:: `S-SymObj`_
+.. |ssymscm| replace:: ``https://git.sdaoden.eu/scm/s-symobj.git``
+.. |ssymcgit| replace:: ``https://git.sdaoden.eu/cgit/s-symobj.git``
+
 .. |fextre| replace:: ``(.*?)(-w42(?:-(x|[icewpatsm]+))?(-new)?)$``
 .. |checksum| replace:: MD5 checksum
 
 Overview
 ========
 
-S-Web42 is one more option to manage your website.  It offers the
+`S-Web42`_ is one more option to manage your website.  It offers the
 possibility to expand a directory hierarchy of input files, some of
 which may consist of a mixture of PIs, (uninterpreted) (X)HTML or XML
 markup and normal text.  In those which do, PIs can be defined and
@@ -30,11 +36,10 @@ some simple MarkLo tags aid in make editing life a bit easier, too.
 
 The ``s-web42`` converter is a `perl(1)`_ script, i.e., it needs an
 installed Perl, version 5.8.1 or above.  It also requires the authors
-`S-SymObj`_ module -- you may install it as a regular part of your
-`perl(1)`_ installation by issuing the command ``$ cpan S-SymObj``.
+|ssym| module -- you may install it as a regular part of your `perl(1)`_
+installation by issuing the command ``$ cpan S-SymObj``.
 Alternatively you may also get it from http://www.CPAN.org or clone the
-git repository from ``https://git.sdaoden.eu/scm/s-symobj.git`` (browse
-it at https://git.sdaoden.eu/cgit/s-symobj.git).
+git repository from |ssymscnm| (browse it at |ssymcgit|).
 
 ``s-web42`` also uses the standard POSIX tools ``sed(1)``, ``sh(1)``,
 ``uudecode(1)``, ``uuencode(1)`` and, optionally, data compressors
@@ -841,6 +846,15 @@ News
   and now give a ``-o /dev/stdout`` command line option instead of
   requiring that the in-stream /dev/stdout variant is properly
   understood.
+
+0.8.8
+-----
+
+* Fix the test which was broken in v0.8.7 after not being updated to
+  reflect the change to `WWW_PREFIX`_ and `WWW_SUFFIX`_.
+
+* MarkLo is now implemented recursively, and closing braces can be
+  embedded by escaping them with a backslash.
 
 Thanks
 ======
