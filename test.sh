@@ -636,11 +636,11 @@ tcase 'lref/lreft/href/hreft' 0004-w42-atsm \
 <?href http://www.freebsd.org?>
 <?hreft http://www.freebsd.org<>FreeBSD?>
 
-<?def WWW<><strong>WWW!</strong>?>
+<?def WWW_PREFIX<><strong>WWW!</strong>?>
 <?href http://www.freebsd.org?>
 <?hreft http://www.freebsd.org<>FreeBSD?>
 
-<?def WWW<>"au"?>
+<?def WWW_PREFIX<>"a"?><?def WWW_SUFFIX<>"u"?>
 <?href nope?>
 <?hreft nope<><em title="SUB">FreeBSD</em>?>
 
@@ -658,8 +658,8 @@ tcase 'lref/lreft/href/hreft' 0004-w42-atsm \
 <a href="http://www.freebsd.org" title="FreeBSD">FreeBSD</a>
 <a href="http://www.freebsd.org"><strong>WWW!</strong>http://www.freebsd.org</a>
 <a href="http://www.freebsd.org" title="FreeBSD"><strong>WWW!</strong>FreeBSD</a>
-<a href="nope">"au"nope</a>
-<a href="nope" title="FreeBSD">"au"<em title="SUB">FreeBSD</em></a>
+<a href="nope">"a"nope"u"</a>
+<a href="nope" title="FreeBSD">"a"<em title="SUB">FreeBSD</em>"u"</a>
 ' \
 \
 "ERROR 'test-0004-w42-atsm':18: lref takes 1 argument(s)
