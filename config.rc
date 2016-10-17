@@ -4,7 +4,7 @@
 
 COMPRESS = gzip
 IGNORE_MODTIME = 1
-WWW = <strong class="_web" title="WEB!">&infin;</strong>&nbsp;
+WWW_PREFIX = <strong class="_web" title="WEB!">&infin;</strong>&nbsp;
 
 ## Example navigation for interaction with example header/footer
 
