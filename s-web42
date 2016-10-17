@@ -1271,7 +1271,7 @@ jupsums:
    sub _add_data {
       my ($self, $dat) = @_;
       goto jleave if !$dat || $self->discard;
-      $dat = _marklo_ex($dat) if $self->mode & Filter::MARKLO;
+      $dat = _marklo_ex($self->ctx, $dat) if $self->mode & Filter::MARKLO;
       $self->seen_line(1) if $dat;
       $self->data($dat);
 jleave:
@@ -1449,7 +1449,7 @@ jpivar:     $self->_pi_var($pi, $valarr)
          $ws = '' unless defined $ws;
          $i = Expander::Markup::link($i);
          $tm = $valarr->[1];
-         $t = Expander::Markup::attribute($tm);
+         $t = Expander::Markup::attribute($self->ctx, $tm);
          $i = '<a href="' . $i . '" title="' . $t . '">' .
                $wp . $tm . $ws . '</a>';
          $self->rest_data($i)
@@ -1655,23 +1655,56 @@ jleave:
 
    # MarkLo {{{
    sub _marklo_ex {
-      my ($in) = @_;
-      my $dat = '';
-      while ($in =~ /(.*)\\([alcibu])\{([^\}]*)\}(.*)/) {
-         my ($s, $e);
-         $s = {a => 'a', l => 'l',
-               c => 'tt', i => 'em', b => 'strong', u => 'u'}->{$2};
-         if ($s eq 'a') {
-            $in = $1 . '<a name="' . $3 . '"></a>' . $4
-         } elsif ($s eq 'l') {
-            $in = $1 . '<a href="' . $3 . '">' . $3 .'</a>' . $4
-         } else {
-            $e = '</' . $s . '>';
-            $s = '<' . $s . '>';
-            $in = $1 . $s . $3 . $e . $4
+      our ($ctx, $dat) = @_;
+
+      sub recur{
+         my ($lvl, $resref, $tailref) = @_;
+         ++$lvl;
+jnext:
+         if($$tailref =~ /(.*?)\\([alcibu])\{(.*)/){
+            my ($m1, $m2, $m3, $i, $res);
+
+            ($m1, $m2, $m3) = ($1, $2, $3);
+            $m1 =~ s/\\}/}/g if $lvl > 0;
+            $$resref .= $m1;
+            $m1 = '';
+            $i = {a => 'a', l => 'l',
+                  c => 'tt', i => 'em', b => 'strong', u => 'u'}->{$m2};
+            $$tailref = $m3;
+jftail:
+            if($$tailref =~ /(.*?)(?<!\\)\}(.*)/){
+               my ($mm1, $mm2) = ($1, $2);
+
+               if($mm1 =~ /\\([alcibu])\{/){
+                  $res = '';
+                  recur($lvl, \$res, $tailref);
+                  $m1 .= $res;
+                  goto jftail
+               }
+
+               $$tailref = $mm2;
+               $mm1 =~ s/\\}/}/g;
+               $m1 .= $mm1;
+
+               if($i eq 'a'){
+                  $i = '<a name="' . $m1 . '"></a>'
+               }elsif($i eq 'l'){
+                  $i = '<a href="' . $m1 . '">' . $m1 .'</a>'
+               }else{
+                  $i = '<' . $i . '>' . $m1 . '</' . $i . '>'
+               }
+               $$resref .= $i;
+               goto jnext if length $$tailref && $lvl == 0
+            }else{
+               ::e($ctx, "MarkLo: \\${m2} not closed (missing right brace)")
+            }
+         }else{
+            $$resref .= $$tailref
          }
+         $$resref
       }
-      $dat .= $in
+      my $res = '';
+      recur(-1, \$res, \$dat)
    }
    # }}}
 
@@ -2057,10 +2090,10 @@ jleave:
    }
 
    sub attribute {
-      my $t = shift;
+      my ($ctx, $t) = @_;
       # We need to expand MarkLo because otherwise that would (XXX possibly)
       # become expanded later and then this attribute would contain markup!
-      $t = Expander::_marklo_ex($t);
+      $t = Expander::_marklo_ex($ctx, $t);
       $t = clean_tags($t);
       $t =~ s/"/\"/g;
       $t

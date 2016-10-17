@@ -369,7 +369,8 @@ actions:
    detection and expansion is neither performed across newline boundaries
    nor PI occurrences, and there is no possibility to escape *MarkLo*
    expansion (e.g., via backslash escaping) except by turning it off
-   entirely::
+   entirely.  It is possible to embed a closing brace by escaping it
+   like that, however::
 
       \c{CONTENT} -> <tt>CONTENT</tt>
       \i{CONTENT} -> <em>CONTENT</em>
@@ -380,9 +381,9 @@ actions:
       \a{NAME}    -> <a name="NAME"></a>
       \l{LINK}    -> <a href="LINK">LINK</a>
 
-      \i{I \b{really \u{love} you}, baby!}
+      \i{I \b{really \u{{love\}} you}, baby!}
       ->
-      <em>I <strong>really <u>love</u> you</strong>, baby!</em>
+      <em>I <strong>really <u>{love}</u> you</strong>, baby!</em>
 
 Finally a ``-w42`` file content example::
 
