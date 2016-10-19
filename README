@@ -856,6 +856,13 @@ News
 * MarkLo is now implemented recursively, and closing braces can be
   embedded by escaping them with a backslash.
 
+0.8.9
+-----
+
+* Bugfix!  Or, at least that is what i think today, it may have been
+  desired (we explicitly warn), but let's just not transport ``mode``
+  changes to outer contexts.
+
 Thanks
 ======
 
