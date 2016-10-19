@@ -1232,8 +1232,12 @@ jupsums:
       ::e($self->ctx, "Deep recursion warning: code is nested 100 times, " .
          "maybe there's a loop?") if @{$self->recursion} >= 99 * 3;
       $self->_emit->recursion($self->ctx, $self->mode,
+         (exists $self->{__omode} ? $self->{__omode} : undef),
          defined $epair ? $epair : '[Recursion was not opened via paired PI!]');
-      $self->ctx($ctx) if defined $ctx;
+      if($ctx){
+         $self->ctx($ctx);
+         delete $self->{__omode}
+      }
       if (defined $mode) {
          my $om = $self->mode;
          $self->mode($self->ctx->mode($mode));
@@ -1252,6 +1256,8 @@ jupsums:
       my $self = shift;
       $self->_emit->seen_end(0);
       pop @{$self->recursion}; # (Simply discard the expected end pair)
+      $self->{__omode} = pop @{$self->recursion};
+      delete $self->{__omode} unless defined $self->{__omode};
       my $m = pop @{$self->recursion};
       $self->ctx(pop @{$self->recursion});
       if (defined $m) {
