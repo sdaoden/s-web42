@@ -165,6 +165,17 @@ WARNING WARNING WARNING
 __EOT__
 
    ## Commline
+   sub _usage(){
+      print "$SELF ($VERSION)\n$COPYRIGHT\n",
+            "Synopsis:\n",
+            "  s-web42 [-v[v]]\n",
+            "  s-web42 [-v[v]] [--no-rc] --no-update-cache|--nuc\n",
+            "  s-web42 [-v[v]] [--no-rc] --force-rebuild [--nuc]\n",
+            "  s-web42 [-v[v]] [--no-rc] --expand-one|--eo\n",
+            "Please see the documentation for more.\n";
+      goto jEXIT
+   }
+
    my $eo = undef;
    while (defined(my $a = shift @ARGV)) {
       if ($a =~ /^-(v+)$/) {
@@ -180,20 +191,13 @@ __EOT__
          $LOGFH = *STDERR
       } elsif ($a !~ /^-?-h(?:elp)?/) {
          xpanic("Unknown argument: $a")
-      } else {
-jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
-            "Synopsis:\n",
-            "  s-web42 [-v[v]]\n",
-            "  s-web42 [-v[v]] [--no-rc] --no-update-cache|--nuc\n",
-            "  s-web42 [-v[v]] [--no-rc] --force-rebuild [--nuc]\n",
-            "  s-web42 [-v[v]] [--no-rc] --expand-one|--eo\n",
-            "Please see the documentation for more.\n";
-         goto jEXIT
+      }else{
+         _usage()
       }
    }
-   if (defined $eo && ($FORCE_REBUILD || $NO_UPDATE_CACHE)) {
+   if(defined $eo && ($FORCE_REBUILD || $NO_UPDATE_CACHE)){
       ++$ERRORS;
-      goto jUSAGE
+      _usage()
    }
 
    ## Phase 1) -- many of the subs called here bail out if an error occurs..
