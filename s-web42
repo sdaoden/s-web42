@@ -54,6 +54,7 @@ use sigtrap qw(die normal-signals);
 
 require Cwd;
 require File::Spec;
+require MIME::Base64;
 eval "require $DIGEST";
 eval {require Time::Piece};
    my $HAVE_TIMEPIECE = $@ ? 0 : 1;
@@ -99,16 +100,16 @@ our ($NO_RC, $FORCE_REBUILD, $NO_UPDATE_CACHE, $LOGFH) = (0, 0, 0, *STDOUT);
 my ($VERBOSE, $DELETE_OK, $ERRORS) = (0, 0, 0);
 
 our %COMPRESS = (
-   compress => 'compress -c -f |',
-   gzip     => 'gzip -c -f |',
-   bzip2    => 'bzip2 --compress --stdout |',
-   xz       => 'xz --compress --stdout |'
+   gzip => 'IO::Compress::Gzip',
+   bzip2 => 'IO::Compress::Bzip2',
+   xz => 'IO::Compress::Xz',
+   lzma => 'IO::Compress::Lzma'
 );
 our %UNCOMPRESS = (
-   compress => '| uncompress -c',
-   gzip     => '| gunzip -c -f',
-   bzip2    => '| bzip2 --decompress --stdout',
-   xz       => '| xz --decompress --stdout'
+   gzip => '| gunzip -c -f',
+   bzip2 => '| bzip2 --decompress --stdout',
+   xz => '| xz --decompress --stdout',
+   lzma => '| lz --decompress --stdout'
 );
 
 # These markup tags will be accepted during automatic paragraph checking, i.e.,
@@ -209,12 +210,13 @@ jUSAGE:  print "$SELF ($VERSION)\n$COPYRIGHT\n",
    }
 
    # Read the global $CONFIG
-   if (-f $CONFIG && !$NO_RC) {
+   if(-f $CONFIG && !$NO_RC){
       Ctx->new(mode => &Ctx::MODE_CONFIGRC, sumup => $CONFIG)
          ->open->read_assignments->close;
-      if (length(my $a = $PIVars::outermost->{COMPRESS})) {
+      if(length(my $a = $PIVars::outermost->{COMPRESS})){
          xpanic('COMPRESS can only be set to one of ' .
-            join(', ', keys %COMPRESS)) unless exists $COMPRESS{$a}
+            join(', ', keys %COMPRESS)) unless exists $COMPRESS{$a};
+         eval "require $COMPRESS{$a}"
       }
    }
 
@@ -2105,12 +2107,14 @@ jleave:
 {package Target; # {{{
    my ($compress, $uncompress, $delcnt, $cnt, $fh);
 
-   sub startup {
-      if (length(my $a = $PIVars::outermost->{COMPRESS})) {
-         $compress = $COMPRESS{$a};
+   sub startup{
+      if(length(my $a = $PIVars::outermost->{COMPRESS})){
+         no strict 'refs';
+         $compress = ${COMPRESS{$a}}; # XXX perl bug? *{"${COMPRESS{$a}}::new"};
          $uncompress = $UNCOMPRESS{$a}
-      } else {
-         $compress = $uncompress = ''
+      }else{
+         $compress = undef;
+         $uncompress = ''
       }
       $cnt = 0;
 
@@ -2120,11 +2124,9 @@ jleave:
       _header()
    }
 
-   sub has_content {
-      $delcnt != 0 || $cnt != 0
-   }
+   sub has_content{ $delcnt != 0 || $cnt != 0 }
 
-   sub finalize {
+   sub finalize{
       _footer();
       ::xpanic("Failed to close new shell archive '$TMP_UPDATE': $^E")
          unless close $fh;
@@ -2134,29 +2136,43 @@ jleave:
       ::xv("S-Web42 update archive finalized as '$UPDATE'")
    }
 
-   sub __ioerr { ::xpanic("Failed to write to '$TMP_UPDATE': $^E") }
-   sub __pioerr { ::xpanic("Failed to handle shell preparation pipe: $^E") }
+   sub __ioerr{ ::xpanic("Failed to prepare '$TMP_UPDATE': $^E") }
 
-   sub add {
+   sub add{
       my ($n) = @_;
       ++$cnt;
       __ioerr() unless print $fh "nomda${cnt}=\"", $n->site_path,
          "\"\ndoda${cnt}() {\n  sed 's/^X//' << \\! | " .
          "uudecode -o /dev/stdout $uncompress\n";
-      __pioerr() unless open PH, '-|',
-         ('< ' . ($n->isexpandable ? $TMP_WORK : $n->source_path) .
-         " $compress uuencode -m /dev/stdout | sed 's/^/X/'");
-      for (my $b;;) {
-         my $l = read PH, $b, 4096 * 8;
-         __pioerr() unless defined $l;
-         last if $l == 0;
-         __ioerr() unless print $fh $b
+
+      my $rawd;
+      do{
+         local $/ = undef;
+         __ioerr() unless open F, '<',
+            ($n->isexpandable ? $TMP_WORK : $n->source_path);
+         binmode F;
+         $rawd = <F>;
+         __ioerr() unless close F
+      };
+      if(defined $compress){
+         my ($d, $comp);
+         eval{ $comp = $compress->new(\$d) };
+         ::xpanic('Cannot create a "' . $PIVars::outermost->{COMPRESS} .
+               "\" compressor instance: $@")
+            unless defined $comp; # XXX perl bug? ($comp = &$compress(\$d));
+         $comp->write($rawd);
+         $comp->close;
+         $rawd = $d
       }
-      __pioerr() unless close PH;
+      $rawd = MIME::Base64::encode($rawd);
+      $rawd =~ s/^/X/mog;
+      __ioerr() unless
+         print $fh 'begin-base64 600 /dev/stdout', "\n", $rawd, "====\n";
+
       __ioerr() unless print $fh "!\n}\n"
    }
 
-   sub _header {
+   sub _header{
       __ioerr() unless print $fh <<__EOT__;
 #!/bin/sh -
 #@ This Website update archive has been created by S-Web42, which is
@@ -2172,17 +2188,17 @@ musage() {
 [ \$# -ne 2 ] && musage 64 # EX_USAGE
 TPATH=\$2
 mlocal() {
-  rmfile()   { rm -f "\$1"; }
-  rmdir()    { rm -rf "\$1"; }
+  rmfile() { rm -f "\$1"; }
+  rmdir() { rm -rf "\$1"; }
   creatdir() { mkdir "\$1"; }
-  putfile()  { \$1 > "\$3"; }
+  putfile() { \$1 > "\$3"; }
   cdtpath; dodarms; dodamkdirs; dodaputs; exit 0
 }
 msftp() {
-  rmfile()   { echo "-rm '\$1'"; }
-  rmdir()    { echo "-rmdir '\$1'"; }
+  rmfile() { echo "-rm '\$1'"; }
+  rmdir() { echo "-rmdir '\$1'"; }
   creatdir() { echo "-mkdir '\$1'"; }
-  putfile()  { echo "-put '\$__cwd/\$2' '\$3'"; }
+  putfile() { echo "-put '\$__cwd/\$2' '\$3'"; }
   mktpath; cdtpath; __cwd=`pwd`; tmpexp; dodarms; dodamkdirs; dodaputs; exit 0
 }
 mktpath() {
@@ -2203,10 +2219,10 @@ __EOT__
       __puts()
    }
 
-   sub __dels {
+   sub __dels{
       __ioerr() unless print $fh 'dodarms() {', "\n";
       $delcnt = @Site::delete_nodes;
-      for (my $i = @Site::delete_nodes - 1; $i >= 0; --$i) {
+      for(my $i = @Site::delete_nodes - 1; $i >= 0; --$i){
          my $n = $Site::delete_nodes[$i];
          __ioerr() unless print $fh '  ', 'rm', ($n->isdir ? 'dir ' : 'file '),
             '"', $n->site_path, "\"\n"
@@ -2214,9 +2230,9 @@ __EOT__
       __ioerr() unless print $fh ':;}', "\n"
    }
 
-   sub __dirs {
+   sub __dirs{
       __ioerr() unless print $fh 'dodamkdirs() {', "\n";
-      foreach my $n (@Site::refresh_nodes) {
+      foreach my $n (@Site::refresh_nodes){
          next unless $n->isdir;
          next if $n->isknown;
          __ioerr() unless print $fh '  ', 'creatdir "', $n->site_path, "\"\n"
@@ -2224,7 +2240,7 @@ __EOT__
       __ioerr() unless print $fh ':;}', "\n"
    }
 
-   sub __puts {
+   sub __puts{
       __ioerr() unless print $fh <<__EOT__;
 dodaputs() {
   cnt=1 rp=
@@ -2237,7 +2253,7 @@ dodaputs() {
 __EOT__
    }
 
-   sub _footer {
+   sub _footer{
       __ioerr() unless print $fh <<__EOT__;
 FNO=$cnt
 case \$1 in

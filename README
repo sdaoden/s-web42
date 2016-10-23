@@ -41,11 +41,6 @@ installation by issuing the command ``$ cpan S-SymObj``.
 Alternatively you may also get it from http://www.CPAN.org or clone the
 git repository from |ssymscnm| (browse it at |ssymcgit|).
 
-``s-web42`` also uses the standard POSIX tools ``sed(1)``, ``sh(1)``,
-``uudecode(1)``, ``uuencode(1)`` and, optionally, data compressors
-(one of ``compress(1)``, ``gzip(1)``, ``bzip2(1)`` and ``xz(1)`` may
-be used).
-
 .. contents::
 
 Synopsis
@@ -477,9 +472,12 @@ PIs that are provided automatically, or because they are used by
 
 _`COMPRESS`
    **Only recognized in config.rc**.
-   If used, it can be set to any of ``compress``, ``gzip``, ``bzip2``
-   or ``xz``; it thus specifies a un-/compression method to be used
-   before ``uuencode(1)``\ ing shell archive members.
+   If used, it can be set to any of ``gzip``, ``bzip2``, ``xz`` and
+   ``lzma``; it thus specifies a un-/compression method to be used
+   before ``uuencode(1)``\ ing shell archive members.  Note that the
+   corresponding `perl(1)`_ module is lazy loaded upon request: at the
+   time of this writing only ``gzip`` and ``bzip2`` are shipped with
+   a standard `perl(1)`_ installation.
 
 _`IGNORE_MODTIME`
    **Only recognized in config.rc**.
@@ -885,17 +883,6 @@ Add a Markdown compatible syntax block.
 
 With automatic parapraphs too many flushs occur, and tagsoup joining is
 not yet implemented.
-
-Performance could be improved and dependencies could be reduced if
-compression would be restricted to ``gzip(1)`` and if the rather
-standard `perl(1)`_ module ``IO::Compress::Gzip`` would be used to
-perform that; this compression method is rather ideal for websites,
-as it is fast and only slightly worse than ``xz(1)``, but which is not
-available everywhere and very time-consuming.  The uuencode algorithm
-is well understood and could be unrolled in perl.  Well, and then the
-``sed(1)`` call would simply be ``s/^/X/`` in `perl(1)`_.  Like that
-no dependencies for external utilities would remain during S-Web42
-operation, but only when exploding the resulting shell archive.
 
 The convertion phase can be parallelized without much (in fact almost
 no) effort; add a special ``MAXJOBS`` or similar special ``config.rc``
