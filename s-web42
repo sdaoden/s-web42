@@ -11,7 +11,7 @@ my $SELF = 's-web42'; #@ One more option to manage your website.
 #@ "cache.dat" will be used as database to remember timestamps and checksums.
 #@ The generated "w42-update.sh" distributes the latest changes, iff any.
 #@ Please read the README for the complete documentation (:}
-my $VERSION = '0.8.9';
+my $VERSION = '0.9.0';
 my $COPYRIGHT =<<__EOT__;
 Copyright (c) 1997 - 2005, 2010,
 Copyright (c) 2012 - 2016 Steffen (Daode) Nurpmeso <steffen\@sdaoden.eu>.
@@ -56,12 +56,12 @@ require Cwd;
 require File::Spec;
 require MIME::Base64;
 eval "require $DIGEST";
-eval {require Time::Piece};
+eval{ require Time::Piece };
    my $HAVE_TIMEPIECE = $@ ? 0 : 1;
 
-BEGIN {
-   eval {require SymObj};
-   if ($@ || $SymObj::VERSION lt '0.8.0') {
+BEGIN{
+   eval{ require SymObj };
+   if($@ || $SymObj::VERSION lt '0.8.0'){
       (my $msg = <<'__EOT__') =~ s/^      //gm;
 
       PANIC PANIC PANIC
@@ -144,7 +144,7 @@ our %ALWAYS_REEVAL_PIS = (
 );
 # }}}
 
-sub main_fun { # {{{
+sub main_fun{ # {{{
    # Don't check for the 'a' and 'A' subflags of -C, but only I/O related ones
    print STDERR <<__EOT__ if !(${^UNICODE} & 0x5FF) && ${^UTF8LOCALE};
 
@@ -177,19 +177,19 @@ __EOT__
    }
 
    my $eo = undef;
-   while (defined(my $a = shift @ARGV)) {
-      if ($a =~ /^-(v+)$/) {
+   while(defined(my $a = shift @ARGV)){
+      if($a =~ /^-(v+)$/){
          $VERBOSE += length $1
-      } elsif ($a eq '--no-rc') {
+      }elsif($a eq '--no-rc'){
          $NO_RC = 1
-      } elsif ($a eq '--force-rebuild') {
+      }elsif($a eq '--force-rebuild'){
          $FORCE_REBUILD = 1
-      } elsif ($a eq '--no-update-cache' || $a eq '--nuc') {
+      }elsif($a eq '--no-update-cache' || $a eq '--nuc'){
          $NO_UPDATE_CACHE = 1
-      } elsif ($a eq '--expand-one' || $a eq '--eo') {
+      }elsif($a eq '--expand-one' || $a eq '--eo'){
          $eo = @ARGV ? shift @ARGV : '';
          $LOGFH = *STDERR
-      } elsif ($a !~ /^-?-h(?:elp)?/) {
+      }elsif($a !~ /^-?-h(?:elp)?/){
          xpanic("Unknown argument: $a")
       }else{
          _usage()
@@ -204,10 +204,10 @@ __EOT__
    xvv('The Time::Piece module couldn\'t be found, ' .
       'localtime support disabled.') unless $HAVE_TIMEPIECE;
 
-   if (!defined $eo) {
+   if(!defined $eo){
       xpanic("The required subdirectory '$SITE' does not exist")
          unless -d $SITE;
-      if (-f $HOOK) {
+      if(-f $HOOK){
          xpanic("Global fallback '$HOOK' must be executable") unless -x $HOOK;
          xv("Found a global fallback '$HOOK'")
       }
@@ -225,10 +225,10 @@ __EOT__
    }
 
    # The very special case..
-   if (defined $eo) {
+   if(defined $eo){
       my $m = &Filter::CONTENT_FILTERS | &Ctx::MODE_OUTFH;
       my $dird = undef;
-      if (length $eo) {
+      if(length $eo){
          my $cf = Filter::classify_filename($eo);
          xe("File '$eo' doesn't seem to be an expandable S-Web42 file!")
             unless exists $cf->{EXPANDABLE};
@@ -237,7 +237,7 @@ __EOT__
          $bn = Cwd::realpath($eo);
          ($dn, $i, $bn) = File::Spec->splitpath($bn);
          $dird = File::Spec->catpath($dn, $i, '')
-      } else {
+      }else{
          $m |= &Ctx::MODE_INFH;
          $eo = 'STDIN'
       }
@@ -254,7 +254,7 @@ __EOT__
    # source checksum
    Site::inspect_tree();
    $DELETE_OK = 1;
-   unless (@Site::delete_nodes || @Site::refresh_nodes) {
+   unless(@Site::delete_nodes || @Site::refresh_nodes){
       print $LOGFH "Nothing to do.\n";
       goto jEXIT
    }
@@ -268,16 +268,16 @@ __EOT__
    undef @Site::delete_nodes;
 
    # DeDoDoDo
-   foreach my $n (@Site::refresh_nodes) {
+   foreach my $n (@Site::refresh_nodes){
       next if $n->isdir;
-      if ($n->isexpandable) {
+      if($n->isexpandable){
          xv("Checking '" . $n->site_path);
          my $i = $n->parent->source_path;
          Ctx->new(mode => $n->filters, chdird => $i, incdird => $i,
             sumup => $n->source_path)->full_expand_lifecycle;
          $i = checksum_path($TMP_WORK);
          # Site:: has set .ocksum to whatever made sense - we can use it here
-         if ($i eq $n->ocksum) {
+         if($i eq $n->ocksum){
             $n->unset_refresh;
             xv(".. '" . $n->site_path . "'" . ': output checksum matches');
             next
@@ -289,7 +289,7 @@ __EOT__
    }
 
    # Now we know for sure
-   if (!Target::has_content()) {
+   if(!Target::has_content()){
       print $LOGFH "Nothing to do, for sure.\n";
       goto jEXIT
    }
@@ -305,72 +305,72 @@ jEXIT:
 } # }}}
 
 # Support subs {{{
-END {
+END{
    return unless $DELETE_OK;
    my $stale = 0;
-   if (-f $TMP_WORK)    { ++$stale unless unlink $TMP_WORK }
-   if (-f $TMP_UPDATE)  { ++$stale unless unlink $TMP_UPDATE }
+   if(-f $TMP_WORK){ ++$stale unless unlink $TMP_WORK }
+   if(-f $TMP_UPDATE){ ++$stale unless unlink $TMP_UPDATE }
    xe('Could not remove all temporary files') if $stale
 }
 
-sub xpanic {
+sub xpanic{
    print STDERR 'PANIC: ', shift, "\n";
-   while (@_ != 0) { print STDERR 'PANIC ++ ', shift, "\n" };
+   while(@_ != 0){ print STDERR 'PANIC ++ ', shift, "\n" };
    exit 21
 }
-sub panic {
+sub panic{
    my $ctx = shift;
    print STDERR "PANIC '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
-   while (@_ != 0) { print STDERR 'PANIC ++ ', shift, "\n" };
+   while(@_ != 0){ print STDERR 'PANIC ++ ', shift, "\n" };
    exit 21
 }
 
-sub xe {
+sub xe{
    ++$ERRORS;
    print STDERR 'ERROR ', shift, "\n";
-   while (@_ != 0) { print STDERR 'ERROR ++ ', shift, "\n" };
+   while(@_ != 0){ print STDERR 'ERROR ++ ', shift, "\n" };
    1
 }
-sub e {
+sub e{
    ++$ERRORS;
    my $ctx = shift;
    print STDERR "ERROR '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
-   while (@_ != 0) { print STDERR 'ERROR ++ ', shift, "\n" };
+   while(@_ != 0){ print STDERR 'ERROR ++ ', shift, "\n" };
    1
 }
 
-sub xv {
+sub xv{
    return unless $VERBOSE > 0;
    print $LOGFH 'V  ', shift, "\n";
-   while (@_ != 0) { print $LOGFH 'V  ++ ', shift, "\n" };
+   while(@_ != 0){ print $LOGFH 'V  ++ ', shift, "\n" };
    1
 }
-sub v {
+sub v{
    return unless $VERBOSE > 0;
    my $ctx = shift;
    print $LOGFH "V  '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
-   while (@_ != 0) { print $LOGFH 'V  ++ ', shift, "\n" };
+   while(@_ != 0){ print $LOGFH 'V  ++ ', shift, "\n" };
    1
 }
 
-sub xvv {
+sub xvv{
    return unless $VERBOSE > 1;
    print $LOGFH 'VV ', shift, "\n";
-   while (@_ != 0) { print $LOGFH 'VV ++ ', shift, "\n" };
+   while(@_ != 0){ print $LOGFH 'VV ++ ', shift, "\n" };
    1
 }
-sub vv {
+sub vv{
    return unless $VERBOSE > 1;
    my $ctx = shift;
    print $LOGFH "VV '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
-   while (@_ != 0) { print $LOGFH 'VV ++ ', shift, "\n" };
+   while(@_ != 0){ print $LOGFH 'VV ++ ', shift, "\n" };
    1
 }
 
 my $_digctor;
-sub checksum_path {
+sub checksum_path{
    # Alternatively always 'eval { $cksum = $DIGEST->new };' below.
-   do {
+   do{
       no strict 'refs';
       $_digctor = *{"${DIGEST}::new"} unless defined $_digctor
    };
@@ -380,7 +380,7 @@ sub checksum_path {
       unless open F, '<', $path;
    binmode F;
    my ($cksum, $buf, $len) = (&$_digctor($DIGEST), '');
-   while (($len = read F, $buf, 1024 * 1024)) {
+   while(($len = read F, $buf, 1024 * 1024)){
       $cksum->add($buf)
    }
    xe("Failed to close '$path' after checksum calculation: $^E") unless close F;
@@ -392,15 +392,15 @@ sub checksum_path {
    # The builtin PI-variables that can only be adjusted in $CONFIG, so give
    # 'em their own hash for testing purposes..
    our $builtin = {
-      COMPRESS          => '',
-      IGNORE_MODTIME    => 0,
+      COMPRESS => '',
+      IGNORE_MODTIME => 0,
       # Include these for overwrite checks
-      MODTIME_AUTC      => [1972, 6, 25, 4, 42, 0, 'UTC'],
-      MODTIME_ALOCAL    => [1972, 6, 25, 5, 42, 0, '+0100'],
-      MODTIME_SUTC      => 0,    MODTIME_SLOCAL => 0,
-      NOW_AUTC          => [2012, 12, 19, 11, 59, 0, 'UTC'],
-      NOW_ALOCAL        => [2012, 12, 19, 12, 59, 0, '+0100'],
-      NOW_SUTC          => 0,    NOW_SLOCAL => 0
+      MODTIME_AUTC => [1972, 6, 25, 4, 42, 0, 'UTC'],
+      MODTIME_ALOCAL => [1972, 6, 25, 5, 42, 0, '+0100'],
+      MODTIME_SUTC => 0, MODTIME_SLOCAL => 0,
+      NOW_AUTC => [2012, 12, 19, 11, 59, 0, 'UTC'],
+      NOW_ALOCAL => [2012, 12, 19, 12, 59, 0, '+0100'],
+      NOW_SUTC => 0, NOW_SLOCAL => 0
    };
    # ..and the outermost PI variable context formed of them plus those
    # which can be regulary overwritten by users
@@ -410,15 +410,15 @@ sub checksum_path {
    };
 
    # Handle a complete(d!) ASSIGNMENTS line
-   sub handle_assignment {
+   sub handle_assignment{
       my ($ctx, $ctxmode, $line) = @_;
-      unless ($line =~ /^([-\w]+)\s*(\?)?(@)?(\+)?=\s*(.+?)$/) {
+      unless($line =~ /^([-\w]+)\s*(\?)?(@)?(\+)?=\s*(.+?)$/){
          ::e($ctx, 'Ignoring non-interpretable assignment line:', $line);
          return
       }
       my ($key, $noovw, $arr, $add, $value) = ($1, $2, $3, $4, $5);
 
-      if (defined $noovw && defined $add) {
+      if(defined $noovw && defined $add){
          ::e($ctx, 'Cannot use KEY?+= or KEY?@+= (no-overwrite and append?)',
             $line);
          return
@@ -426,15 +426,15 @@ sub checksum_path {
       ::e($ctx, 'Array assignment (KEY@=) *always* appends, but ok, continue',
          $line) if defined $arr && defined $add;
 
-      if (exists $PIS{$key}) {
+      if(exists $PIS{$key}){
          ::e($ctx, 'Cannot overwrite builtin PI', $line);
          return
       }
-      if (!($ctxmode & &Ctx::MODE_CONFIGRC) && exists $builtin->{$key}) {
+      if(!($ctxmode & &Ctx::MODE_CONFIGRC) && exists $builtin->{$key}){
          ::e($ctx, "Builtin PI variable can only be handled in $CONFIG", $line);
          return
       }
-      if (defined $noovw && exists $ctx->pivars->{$key}) {
+      if(defined $noovw && exists $ctx->pivars->{$key}){
          ::vv($ctx, 'No-overwrite set, variable exists, skip', $line);
          return
       }
@@ -443,37 +443,36 @@ sub checksum_path {
          defined $arr)
    }
 
-   sub assign {
+   sub assign{
       my ($ctx, $key, $value, $doappend, $isarray) = @_;
       $doappend = 0 unless defined $doappend;
       $isarray = 0 unless defined $isarray;
 
-      if ($key !~ /^[-\w]+$/) {
-            ::e($ctx,
-               "$key: PI/variables may consist only of alphanumerics and -");
-            return
+      if($key !~ /^[-\w]+$/){
+         ::e($ctx, "$key: PI and variable names must match [-a-zA-Z0-9]");
+         return
       }
       my $pivars = $ctx->pivars;
 
-      unless ($isarray) {
-         if (exists $pivars->{$key} && ref $pivars->{$key} eq 'ARRAY') {
+      unless($isarray){
+         if(exists $pivars->{$key} && ref $pivars->{$key} eq 'ARRAY'){
             ::e($ctx, "$key: non-array assignment to array key");
             return
          }
-         if (exists $pivars->{$key} && $doappend) {
+         if(exists $pivars->{$key} && $doappend){
             $pivars->{$key} .= $value
-         } else {
+         }else{
             $pivars->{$key} = $value
          }
          #::vv($ctx, "Assign/Append ok <$key = $value>");
-      } else {
-         if (exists $pivars->{$key}) {
-            if (ref $pivars->{$key} ne 'ARRAY') {
+      }else{
+         if(exists $pivars->{$key}){
+            if(ref $pivars->{$key} ne 'ARRAY'){
                ::e($ctx, "$key: array assignment to non-array key");
                return
             }
             goto jresetarr unless $doappend
-         } else {
+         }else{
 jresetarr:  $pivars->{$key} = []
          }
          push @{$pivars->{$key}}, $value
@@ -482,19 +481,19 @@ jresetarr:  $pivars->{$key} = []
       }
    }
 
-   sub create_time_pis {
+   sub create_time_pis{
       my ($pivars, $secs) = @_;
       my ($nau, $nal, $nsu, $nsl,  @a, @la, $s);
-      if (defined $secs) {
+      if(defined $secs){
          ($nau, $nal, $nsu, $nsl) = ('MODTIME_AUTC', 'MODTIME_ALOCAL',
                'MODTIME_SUTC', 'MODTIME_SLOCAL')
-      } else {
+      }else{
          $secs = time;
          ($nau, $nal, $nsu, $nsl) = ('NOW_AUTC', 'NOW_ALOCAL', 'NOW_SUTC',
                'NOW_SLOCAL')
       }
-      sub __zpad { ($_[0] < 10 ? '0' : '') . $_[0] }
-      unless ($HAVE_TIMEPIECE) {
+      sub __zpad{ ($_[0] < 10 ? '0' : '') . $_[0] }
+      unless($HAVE_TIMEPIECE){
          $s = [gmtime $secs];
          $a[0] = $s->[5] + 1900;
          $a[1] = __zpad($s->[4] + 1);
@@ -511,8 +510,8 @@ jresetarr:  $pivars->{$key} = []
                $a[0], $a[1], $a[2], $a[3], $a[4], $a[5];
          $pivars->{$nsu} = $s . $a[6];
          $pivars->{$nsl} = $s . $la[6]
-      } else {
-         sub __fill {
+      }else{
+         sub __fill{
             my ($r, $t, $utc) = @_;
             $r->[0] = $t->year;
             $r->[1] = __zpad($t->mon);
@@ -520,9 +519,9 @@ jresetarr:  $pivars->{$key} = []
             $r->[3] = __zpad($t->hour);
             $r->[4] = __zpad($t->min);
             $r->[5] = __zpad($t->sec);
-            if ($utc) {
+            if($utc){
                $r->[6] = 'UTC'
-            } else {
+            }else{
                $t = $t->tzoffset->seconds / 60;
                $utc = '+';
                $utc = '-', $t = -$t if $t < 0;
@@ -541,26 +540,26 @@ jresetarr:  $pivars->{$key} = []
 } # }}}
 
 {package Filter; # {{{
-   sub INTROWS()  {1<<0} # Strip leading whitespace
-   sub COMMS()    {1<<1} # Handle shell-style comments
-   sub ESCNLS()   {1<<2} # Handle escaped newlines
-   sub WIPEEL()   {1<<3} # Wipe empty lines
-   sub EXPPIS()   {1<<4} # Expand PIs
-   sub AUTOPAR()  {1<<5} # Automatic <p></p>
-   sub TAGJOIN()  {1<<6} # Join together tagsoup
-   sub WSNORM()   {1<<7} # Normalize whitespace
-   sub MARKLO()   {1<<8} # Expand MarkLo
+   sub INTROWS(){ 1<<0 }   # Strip leading whitespace
+   sub COMMS(){ 1<<1 }     # Handle shell-style comments
+   sub ESCNLS(){ 1<<2 }    # Handle escaped newlines
+   sub WIPEEL(){ 1<<3 }    # Wipe empty lines
+   sub EXPPIS(){ 1<<4 }    # Expand PIs
+   sub AUTOPAR(){ 1<<5 }   # Automatic <p></p>
+   sub TAGJOIN(){ 1<<6 }   # Join together tagsoup
+   sub WSNORM(){ 1<<7 }    # Normalize whitespace
+   sub MARKLO(){ 1<<8 }    # Expand MarkLo
 
-   sub MAXSHIFT()    {8}
-   sub FILTER_MASK() {(1<<(MAXSHIFT + 1)) - 1}
+   sub MAXSHIFT(){ 8 }
+   sub FILTER_MASK(){ (1<<(MAXSHIFT + 1)) - 1 }
 
-   sub ASSIGNMENTS_FILTERS()  {INTROWS | COMMS | ESCNLS | WIPEEL}
-   sub CONTENT_FILTERS()      {(1 << (MAXSHIFT + 1)) - 1}
+   sub ASSIGNMENTS_FILTERS(){ INTROWS | COMMS | ESCNLS | WIPEEL }
+   sub CONTENT_FILTERS(){ (1 << (MAXSHIFT + 1)) - 1 }
 
-   sub classify_filename {
+   sub classify_filename{
       my ($path) = @_;
       my $r = {PATH => $path};
-      if ($path =~ /(.*?)(?:-w42(?:-(x|[icewpatsm]+))?(-new)?)$/) {
+      if($path =~ /(.*?)(?:-w42(?:-(x|[icewpatsm]+))?(-new)?)$/){
          $r->{EXPANDABLE} = 1;
          $r->{STRIPPED_PATH} = $1;
          $r->{ALWAYS_REBUILD} = 1 if defined $3;
@@ -569,31 +568,31 @@ jresetarr:  $pivars->{$key} = []
       $r
    }
 
-   sub string_to_filters {
+   sub string_to_filters{
       my ($s) = @_;
       my $f = 0;
-      if ($s eq 'x') {
+      if($s eq 'x'){
          $f = EXPPIS
-      } else {
+      }else{
          $f |= INTROWS unless $s =~ /i/;
-         $f |= COMMS   unless $s =~ /c/;
-         $f |= ESCNLS  unless $s =~ /e/;
-         $f |= WIPEEL  unless $s =~ /w/;
-         $f |= EXPPIS  unless $s =~ /p/;
+         $f |= COMMS unless $s =~ /c/;
+         $f |= ESCNLS unless $s =~ /e/;
+         $f |= WIPEEL unless $s =~ /w/;
+         $f |= EXPPIS unless $s =~ /p/;
          $f |= AUTOPAR unless $s =~ /a/;
          $f |= TAGJOIN unless $s =~ /t/;
-         $f |= WSNORM  unless $s =~ /s/;
-         $f |= MARKLO  unless $s =~ /m/
+         $f |= WSNORM unless $s =~ /s/;
+         $f |= MARKLO unless $s =~ /m/
       }
       $f
    }
 
-   sub filters_to_string {
+   sub filters_to_string{
       my ($f) = @_;
       my $s = '';
-      if ($f == EXPPIS) {
+      if($f == EXPPIS){
          $s = '-x'
-      } else {
+      }else{
          $s .= 'i' unless $f & INTROWS;
          $s .= 'c' unless $f & COMMS;
          $s .= 'e' unless $f & ESCNLS;
@@ -612,39 +611,39 @@ jresetarr:  $pivars->{$key} = []
 {package Site; # {{{
    our (@delete_nodes, @refresh_nodes) = ((), ());
 
-   sub parse {
+   sub parse{
       ::xv("Entering '$SITE' for first pass (hooks and directory detection)");
-      sub __run1 {
+      sub __run1{
          my ($dnode, $outpath, $spath, $i) = (shift, shift);
          $spath = $dnode->source_path;
          $i = $spath . '/' . $HOOK;
 
-         if (-f $i) {
-            if (-x $i) {
+         if(-f $i){
+            if(-x $i){
                $i = './' . $HOOK
-            } else {
+            }else{
                ::xe("'$i' must be executable");
                $i = undef
             }
-         } elsif (-x $HOOK) {
+         }elsif(-x $HOOK){
             $i = $outpath . $HOOK
-         } else {
+         }else{
             $i = undef
          }
-         if (defined $i) {
+         if(defined $i){
             ::xvv("'$spath': invoking '$i'");
             system "cd $spath && $i $spath"; # TODO fork+chdir+exec
             ::xe("Hook execution failed in '$spath'") if $? >> 8
          }
 
          ::xpanic("Can't opendir '$spath': $^E") unless opendir DH, $spath;
-         my @sdirs = grep {
+         my @sdirs = grep{
             -d "$spath/$_" &&
             substr($_, 0, 1) ne '.' && $_ ne 'SCCS' && $_ ne 'CVS'
          } readdir DH;
          closedir DH; # xxx err hdl
 
-         foreach (@sdirs) {
+         foreach(@sdirs){
             ::xpanic("Can't handle paths with quotation marks: '$_'")
                if $_ =~ /['"]/;
             my $dn = Node::Dir->new(path => $_, parent => $dnode);
@@ -656,12 +655,12 @@ jresetarr:  $pivars->{$key} = []
       ::xpanic('Some hooks failed, bailing out') if $ERRORS;
 
       ::xv("Entering '$SITE' for second pass (collecting file list)");
-      sub __run2 {
+      sub __run2{
          my ($dnode, $lvl, $i) = (shift, (shift) + 1);
          $i = $dnode->source_path;
-         if ($lvl > 0) {
+         if($lvl > 0){
             ::xvv((' ' x $lvl) . '* ' . $dnode->path)
-         } else {
+         }else{
             ::xvv("** <$SITE> **")
          }
 
@@ -671,14 +670,14 @@ jresetarr:  $pivars->{$key} = []
          } readdir DH];
          closedir DH; # xxx err hdl
 
-         foreach my $e (@$i) {
+         foreach my $e (@$i){
             ::xpanic("Can't handle paths with quotation marks: '$e'")
                if $e =~ /['"]/;
             Node::File->new(path => $e, parent => $dnode);
             ::xvv((' ' x $lvl) . ' . ' . $dnode->files->path)
          }
 
-         for (my $d = $dnode->dirs; defined $d; $d = $d->sibling) {
+         for(my $d = $dnode->dirs; defined $d; $d = $d->sibling){
             __run2($d, $lvl)
          }
       }
@@ -688,26 +687,26 @@ jresetarr:  $pivars->{$key} = []
          if $ERRORS
    }
 
-   sub inspect_tree {
+   sub inspect_tree{
       return unless defined $Node::root->files || defined $Node::root->dirs;
 
       ::xv("Testing modification times/input checksums");
       our $ignmod = $PIVars::outermost->{IGNORE_MODTIME};
-      sub __traverse {
+      sub __traverse{
          my ($dnode) = @_;
-         if ($dnode->parent) {
-            if (!$dnode->isknown) {
+         if($dnode->parent){
+            if(!$dnode->isknown){
                print $LOGFH "New directory: '", $dnode->site_path, "'\n";
                $dnode->set_refresh;
                push @refresh_nodes, $dnode
-            } elsif ($dnode->isdel) {
+            }elsif($dnode->isdel){
                print $LOGFH "Directory deleted: '", $dnode->site_path, "'\n";
                push @delete_nodes, $dnode
             }
          }
 
-         for (my $fn = $dnode->files; defined $fn; $fn = $fn->sibling) {
-            if ($fn->isdel) {
+         for(my $fn = $dnode->files; defined $fn; $fn = $fn->sibling){
+            if($fn->isdel){
                print $LOGFH "File deleted: '", $fn->site_path, "'\n";
                push @delete_nodes, $fn;
                next
@@ -716,20 +715,20 @@ jresetarr:  $pivars->{$key} = []
             $fn->modtime($ignmod ? 0 : (stat $fn->source_path)[9]);
             my $cos = undef;
             # Sofar ->isrefresh transports users' force-rebuild desire..
-            if (!$fn->isknown || $fn->isrefresh || $ignmod ||
-                  $fn->modtime != $fn->cached_modtime) {
+            if(!$fn->isknown || $fn->isrefresh || $ignmod ||
+                  $fn->modtime != $fn->cached_modtime){
                $fn->icksum(::checksum_path($fn->source_path));
-               if (!$fn->isknown || $fn->isrefresh) {
+               if(!$fn->isknown || $fn->isrefresh){
                   ::xv(($fn->isknown ? 'Forced-rebuild: \'' : 'New file: \'') .
                      $fn->site_path . '\'')
-               } elsif ($fn->icksum ne $fn->cached_icksum) {
+               }elsif($fn->icksum ne $fn->cached_icksum){
                   ::xv('checksum differs: \'' . $fn->site_path . '\'');
                   $cos = $fn->icksum
-               } else {
-                  if ($VERBOSE) {
-                     if ($ignmod) {
+               }else{
+                  if($VERBOSE){
+                     if($ignmod){
                         ::xvv('.. \'' .$fn->site_path. '\': checksum matches')
-                     } else {
+                     }else{
                         ::xvv('.. \'' . $fn->site_path .
                            '\': modtime differs, but checksum matches')
                      }
@@ -738,7 +737,7 @@ jresetarr:  $pivars->{$key} = []
                }
                $fn->set_refresh;
                push @refresh_nodes, $fn
-            } else {
+            }else{
                ::xvv('.. \'' . $fn->site_path . '\' seems unchanged');
                $fn->icksum($fn->cached_icksum)
             }
@@ -746,13 +745,13 @@ jupsums:
             # Just ensure valid up2date fields at this point; expanded files
             # will be re-checksummed later
             $cos = ($fn->isknown ? $fn->cached_ocksum : $fn->icksum)
-               unless defined $cos;
+                  unless defined $cos;
             $fn->ocksum($cos);
             $fn->cached_icksum($fn->icksum);
             $fn->cached_ocksum($cos)
          }
 
-         for (my $dn = $dnode->dirs; defined $dn; $dn = $dn->sibling) {
+         for(my $dn = $dnode->dirs; defined $dn; $dn = $dn->sibling){
             __traverse($dn)
          }
       }
@@ -763,28 +762,28 @@ jupsums:
 } # }}}
 
 {package Node; # {{{
-   sub STATE_NONE()        {0}
-   sub STATE_EXPANDABLE()  {1<<1} # Is an expandable file
-   sub STATE_DEL()         {1<<2} # Has been deleted
-   sub STATE_KNOWN()       {1<<3} # Cache database knew about entry
-   sub STATE_REFRESH()     {1<<4} # Needs refresh
+   sub STATE_NONE(){ 0 }
+   sub STATE_EXPANDABLE(){ 1<<1 } # Is an expandable file
+   sub STATE_DEL(){ 1<<2 }       # Has been deleted
+   sub STATE_KNOWN(){ 1<<3 }     # Cache database knew about entry
+   sub STATE_REFRESH(){ 1<<4 }   # Needs refresh
 
-   sub STATE_CACHE_MASK()  {0}    # Flags transported through cache DB
+   sub STATE_CACHE_MASK(){ 0 }   # Flags transported through cache DB
 
    our $root = undef;
 
-   sub dirnode_for_cached_dirname {
+   sub dirnode_for_cached_dirname{
       my ($name) = @_;
       $name =~ s/^\/*(.*?)\/*$/$1/;
       my @c = split /\/+/, $name;
       my $dnode = $root; # Always exists
-      for (my $i = 0; $i < @c; ++$i) {
+      for(my $i = 0; $i < @c; ++$i){
          my $dn;
-         for ($dn = $dnode->dirs; defined $dn; $dn = $dn->sibling) {
+         for($dn = $dnode->dirs; defined $dn; $dn = $dn->sibling){
             next unless $dn->path eq $c[$i];
             last
          }
-         unless (defined $dn) {
+         unless(defined $dn){
             # Nonexistent directory
             $dn = Node::Dir->new(state => STATE_DEL, path => $c[-1],
                   parent => $dnode)
@@ -795,47 +794,47 @@ jupsums:
    }
 
    SymObj::sym_create(SymObj::NONE, {
-      _state   => STATE_NONE,
-      _path    => '',
-      _parent  => undef,
+      _state => STATE_NONE,
+      _path => '',
+      _parent => undef,
       _sibling => undef
    });
 
-   sub isdir   { exists $_[0]->{_dirs} }
-   sub isfile  { !exists $_[0]->{_dirs} }
+   sub isdir{ exists $_[0]->{_dirs} }
+   sub isfile{ !exists $_[0]->{_dirs} }
 
-   sub isexpandable  { $_[0]->state & STATE_EXPANDABLE }
-   sub isdel         { $_[0]->state & STATE_DEL }
-   sub isknown       { $_[0]->state & STATE_KNOWN }
-   sub isrefresh     { $_[0]->state & STATE_REFRESH }
+   sub isexpandable{ $_[0]->state & STATE_EXPANDABLE }
+   sub isdel{ $_[0]->state & STATE_DEL }
+   sub isknown{ $_[0]->state & STATE_KNOWN }
+   sub isrefresh{ $_[0]->state & STATE_REFRESH }
 
-   sub set_refresh      { ${$_[0]->__state} |= STATE_REFRESH; $_[0] }
-   sub unset_refresh    { ${$_[0]->__state} &= ~STATE_REFRESH; $_[0] }
-   sub state_for_cache  { ${$_[0]->__state} & STATE_CACHE_MASK }
+   sub set_refresh{ ${$_[0]->__state} |= STATE_REFRESH; $_[0] }
+   sub unset_refresh{ ${$_[0]->__state} &= ~STATE_REFRESH; $_[0] }
+   sub state_for_cache{ ${$_[0]->__state} & STATE_CACHE_MASK }
 
 {package Node::Dir;
    our @ISA = ('Node');
    SymObj::sym_create(SymObj::NONE, {_dirs => undef, _files => undef});
 
-   sub __ctor {
+   sub __ctor{
       my ($self) = @_;
       $Node::root = $self unless defined $Node::root;
-      if (defined(my $p = $self->parent)) {
+      if(defined(my $p = $self->parent)){
          $self->sibling($p->dirs);
          $p->dirs($self)
       }
    }
 
-   sub source_path {
+   sub source_path{
       my $self = shift;
       $SITE . '/' . $self->site_path
    }
 
-   sub site_path {
+   sub site_path{
       my $self = shift;
       return $self->{__sitepath} if defined $self->{__sitepath};
       my ($p, $s) = ($self->path, $self->parent);
-      while (defined $s && defined $s->parent) {
+      while(defined $s && defined $s->parent){
          $p = $s->path . '/' . $p;
          $s = $s->parent
       }
@@ -846,23 +845,23 @@ jupsums:
 {package Node::File;
    our @ISA = ('Node');
    SymObj::sym_create(SymObj::NONE, {
-      _cached_modtime   => -1,
-      _cached_icksum    => '',
-      _cached_ocksum    => '',
-      _modtime          => 0,
-      _icksum           => '',
-      _ocksum           => '',
-      _filters          => 0
+      _cached_modtime => -1,
+      _cached_icksum => '',
+      _cached_ocksum => '',
+      _modtime => 0,
+      _icksum => '',
+      _ocksum => '',
+      _filters => 0
    });
 
-   sub __ctor {
+   sub __ctor{
       my ($self) = @_;
       my $i = $self->parent;
       $self->sibling($i->files);
       $i->files($self);
 
       my $cf = Filter::classify_filename($self->path);
-      if (exists $cf->{EXPANDABLE}) {
+      if(exists $cf->{EXPANDABLE}){
          $self->{__sipp} = $cf->{STRIPPED_PATH} if exists $cf->{STRIPPED_PATH};
          $i = Node::STATE_EXPANDABLE;
          $i |= Node::STATE_REFRESH if exists $cf->{ALWAYS_REBUILD};
@@ -871,25 +870,25 @@ jupsums:
       }
    }
 
-   sub source_path {
+   sub source_path{
       my $self = shift;
       my $s = $self->parent->source_path;
-      if (length $s) {
+      if(length $s){
          File::Spec->catfile($s, $self->path)
-      } else {
+      }else{
          $self->path
       }
    }
 
-   sub site_path {
+   sub site_path{
       my $self = shift;
       return $self->{__sitepath} if defined $self->{__sitepath};
       my $p .= defined $self->{__sipp} ? $self->{__sipp} : $self->path;
       delete $self->{__sipp};
       my $s = $self->parent->site_path;
-      if (length $s) {
+      if(length $s){
          $s = File::Spec->catfile($s, $p)
-      } else {
+      }else{
          $s = $p
       }
       $self->{__sitepath} = $s
@@ -898,8 +897,8 @@ jupsums:
 } # }}}
 
 {package Cache; # {{{
-   sub join_in {
-      unless (-f $CACHE) {
+   sub join_in{
+      unless(-f $CACHE){
          ::xv("No '$CACHE' database, recreating everything from scratch");
          $FORCE_REBUILD = 1;
          return
@@ -908,30 +907,30 @@ jupsums:
       my $ctx = Ctx->new(sumup => $CACHE);
       $ctx->open;
       my $dnode = $Node::root;
-      while (defined(my $l = $ctx->readline_assignments)) {
+      while(defined(my $l = $ctx->readline_assignments)){
          my $lim = ($l =~ /^\//) ? 2 : 5;
          my @e = split / /, substr($l, 1), $lim;
-         if (@e != $lim || grep { !length } @e) {
+         if(@e != $lim || grep{ !length } @e){
             ::e($ctx, 'ignoring corrupted line!', $l);
             next
          }
 
          my $flags = Node::STATE_KNOWN;
-         if ($lim == 2) {
+         if($lim == 2){
             $dnode = Node::dirnode_for_cached_dirname($e[1]);
             $dnode->state($dnode->state | $flags)
-         } else {
+         }else{
             $flags |= $dnode->state & Node::STATE_DEL;
             my $fn;
-            for ($fn = $dnode->files; defined $fn; $fn = $fn->sibling) {
+            for($fn = $dnode->files; defined $fn; $fn = $fn->sibling){
                last if $fn->path eq $e[4]
             }
-            if (defined $fn) {
+            if(defined $fn){
                $fn->state($fn->state | $flags);
                $fn->cached_modtime($e[1]);
                $fn->cached_icksum($e[2]);
                $fn->cached_ocksum($e[3])
-            } else {
+            }else{
                $flags |= Node::STATE_DEL;
                $fn = Node::File->new(state => $flags, path => $e[4],
                      parent => $dnode)
@@ -945,32 +944,32 @@ jupsums:
          'Bailing out') if $ERRORS
    }
 
-   sub update {
+   sub update{
       ::xpanic("Failed to open '$TMP_WORK' for writing: $^E")
          unless open CF, '>', $TMP_WORK;
       ::xv("Creating new cache database");
-      sub __au { ::xpanic("Failed to write to '$TMP_WORK': $^E") }
+      sub __au{ ::xpanic("Failed to write to '$TMP_WORK': $^E") }
       __au() unless print CF
          '#S-Web42 cache database.', "\n",
          '# Field separator is a single ASCII space (U+0020).', "\n",
          '# Directories: ^/FLAGS PATH$', "\n",
          '# Files: ^.FLAGS MODTIME IN:CKSUM_BASE64 OUT:CKSUM_BASE64 PATH$',
          "\n";
-      sub __recur {
+      sub __recur{
          my ($dn) = @_;
-         if (defined $dn->parent) {
+         if(defined $dn->parent){
             __au() unless print CF '/', $dn->state_for_cache, ' ',
                $dn->site_path, "\n"
          }
-         for (my $fn = $dn->files; defined $fn; $fn = $fn->sibling) {
-            next if $fn->state & Node::STATE_DEL;
+         for(my $fn = $dn->files; defined $fn; $fn = $fn->sibling){
+            next if($fn->state & Node::STATE_DEL);
             __au() unless print CF '.', $fn->state_for_cache, ' ',
                $fn->modtime, ' ', $fn->icksum, ' ', $fn->ocksum,
                (80 >= 1+1+1+10+1+2*length($fn->ocksum)+2+length($fn->path) #XXX
                 ? ' ' : " \\\n   "), $fn->path, "\n"
          }
-         for (my $sdn = $dn->dirs; defined $sdn; $sdn = $sdn->sibling) {
-            next if $sdn->state & Node::STATE_DEL;
+         for(my $sdn = $dn->dirs; defined $sdn; $sdn = $sdn->sibling){
+            next if($sdn->state & Node::STATE_DEL);
             __recur($sdn)
          }
       }
@@ -980,7 +979,7 @@ jupsums:
       ::xpanic("Can't rename '$CACHE' to '$CACHE_OLD': $^E.",
             'Busted.  File access rights ok?  Please fix and simply rerun.')
          if -f $CACHE && !rename $CACHE, $CACHE_OLD;
-      if (!rename $TMP_WORK, $CACHE) {
+      if(!rename $TMP_WORK, $CACHE){
          $DELETE_OK = 0;
          ::xpanic("Can't rename '$TMP_WORK' to '$CACHE': $^E.",
             'Oooops!  S-Web42 will not delete temporary files, something is ' .
@@ -993,49 +992,49 @@ jupsums:
 } # }}}
 
 {package Ctx; # {{{
-   sub MODE_INFH()      {1 << (Filter::MAXSHIFT + 1)}
-   sub MODE_OUTFH()     {1 << (Filter::MAXSHIFT + 2)}
-   sub MODE_CONFIGRC()  {1 << (Filter::MAXSHIFT + 3)}
-   sub MODE_EMBED()     {1 << (Filter::MAXSHIFT + 4)} # no ?begin?/?end?
+   sub MODE_INFH(){ 1 << (Filter::MAXSHIFT + 1) }
+   sub MODE_OUTFH(){ 1 << (Filter::MAXSHIFT + 2) }
+   sub MODE_CONFIGRC(){ 1 << (Filter::MAXSHIFT + 3) }
+   sub MODE_EMBED(){ 1 << (Filter::MAXSHIFT + 4) } # no ?begin?/?end?
 
-   sub MAXSHIFT()       {Filter::MAXSHIFT + 4}
+   sub MAXSHIFT(){ Filter::MAXSHIFT + 4 }
 
-   sub full_expand_lifecycle {
+   sub full_expand_lifecycle{
       my ($self) = @_;
       $self->open;
       $self->read_assignments;
       Expander::explode($self);
       ::e($self, "Failed to close '$TMP_WORK': $^E")
-         unless ($self->outer || ($self->mode & MODE_OUTFH) ||
+         unless($self->outer || ($self->mode & MODE_OUTFH) ||
             close $self->outfh);
       $self->close
    }
 
    SymObj::sym_create(SymObj::NONE, {
-      _outer         => undef,   # <?include?> support (Expander:: recursion)
-      _mode          => 0,
-      _chdird        => undef,   # (opt) chdir(2) for ?EXEC? modes (outermost)
-      _incdird       => undef,   # (opt) root path for ?include*?
-      _sumup         => '',      # Input filename or mode description
-      _lineno        => 0,       # Current input line number
-      _line          => '',      # Current input line
-      _infh          => undef,   # for reading
-      _outfh         => undef,   # for writing
-      '%_pivars'     => undef,   # Ctx-local PIVars:: environment
-      _mtime         => undef,   # Modification time (outermost level only)
-      _begin_line    => undef,   # <?begin?> line, if followed by content
-      _empties_seen  => 0,       # No. of empty lines last readline() skipped
-      _seen_endl     => 0        # Last readline_full() saw \s+$
-   }, sub {
+      _outer => undef,     # <?include?> support (Expander:: recursion)
+      _mode => 0,
+      _chdird => undef,    # (opt) chdir(2) for ?EXEC? modes (outermost)
+      _incdird => undef,   # (opt) root path for ?include*?
+      _sumup => '',        # Input filename or mode description
+      _lineno => 0,        # Current input line number
+      _line => '',         # Current input line
+      _infh => undef,      # for reading
+      _outfh => undef,     # for writing
+      '%_pivars' => undef, # Ctx-local PIVars:: environment
+      _mtime => undef,     # Modification time (outermost level only)
+      _begin_line => undef, # <?begin?> line, if followed by content
+      _empties_seen => 0,  # No. of empty lines last readline() skipped
+      _seen_endl => 0      # Last readline_full() saw \s+$
+   }, sub{
       my $self = $_[0];
       my $curr = $self->outer;
-      if ($self->mode & MODE_CONFIGRC) {
+      if($self->mode & MODE_CONFIGRC){
          $self->{_pivars} = $PIVars::outermost;
          return
       }
 
-      if ($curr) {
-         unless ($self->mode & MODE_OUTFH) {
+      if($curr){
+         unless($self->mode & MODE_OUTFH){
             ${$self->__mode} |= MODE_OUTFH;
             $self->outfh($curr->outfh)
          }
@@ -1043,34 +1042,34 @@ jupsums:
          $self->chdird($curr->chdird);
          $self->incdird($curr->incdird) unless defined $self->incdird;
          $curr = $curr->pivars
-      } else {
+      }else{
          $curr = $PIVars::outermost
       }
 
-      if ($self->mode & MODE_EMBED) {
+      if($self->mode & MODE_EMBED){
          $self->{_pivars} = $curr
-      } else {
-         while (my ($i, $j) = each %$curr) {
+      }else{
+         while(my ($i, $j) = each %$curr){
             $self->pivars($i, SymObj::clone_ref($j))
          }
       }
    });
 
-   sub open {
+   sub open{
       my $self = shift;
-      unless ($self->mode & MODE_INFH) {
+      unless($self->mode & MODE_INFH){
          ::panic($self, "Failed to open for reading: $^E")
             unless open ${$self->__infh}, '<', $self->sumup
-      } else {
+      }else{
          $self->infh(*STDIN) unless $self->infh
       }
-      unless ($self->mode & (MODE_OUTFH|MODE_CONFIGRC)) {
+      unless($self->mode & (MODE_OUTFH|MODE_CONFIGRC)){
          ::panic($self, "Failed to open '$TMP_WORK' for writing: $^E")
             unless open ${$self->__outfh}, '>', $TMP_WORK
-      } else {
+      }else{
          $self->outfh(*STDOUT) unless $self->outfh
       }
-      unless ($self->outer || ($self->mode & MODE_CONFIGRC)) {
+      unless($self->outer || ($self->mode & MODE_CONFIGRC)){
          $self->mtime((stat($self->infh))[9]);
          PIVars::create_time_pis(scalar $self->pivars, $self->mtime);
          PIVars::create_time_pis(scalar $self->pivars, undef)
@@ -1080,7 +1079,7 @@ jupsums:
       $self
    }
 
-   sub close {
+   sub close{
       my $self = shift;
       ::e($self, "Can't close file: $^E")
          unless ($self->mode & MODE_INFH) || close $self->infh;
@@ -1088,79 +1087,79 @@ jupsums:
       $self
    }
 
-   sub read_assignments {
+   sub read_assignments{
       my ($self, $l, $saved_mode) = (shift);
       $saved_mode = $self->mode;
       return $self if $saved_mode & MODE_EMBED;
       $self->mode(Filter::ASSIGNMENTS_FILTERS);
-      while (defined($l = $self->readline_assignments)) {
-         if ($l =~ /^<\?begin\?>(.*)$/) {
+      while(defined($l = $self->readline_assignments)){
+         if($l =~ /^<\?begin\?>(.*)$/){
             $self->begin_line($1 ? $1 : undef);
             last
          }
          PIVars::handle_assignment($self, $saved_mode & MODE_CONFIGRC, $l)
       }
       $self->mode($saved_mode);
-      if ($saved_mode & MODE_CONFIGRC) {
+      if($saved_mode & MODE_CONFIGRC){
          ::v($self, "'$CONFIG' file contains non-Assignments") if defined $l
-      } else {
+      }else{
          ::e($self, 'Premature file exit before <?begin?>') unless defined $l
       }
       $self
    }
 
-   sub readline_assignments {
+   sub readline_assignments{
       my ($self, $l, $nl, $bno) = (shift, '');
-      while ($nl = readline $self->infh) {
+      while($nl = readline $self->infh){
          ++${$self->__lineno};
          $nl =~ /^\s*(.*?)(\\+)?\s*$/;
          next if !length $l && ($1 =~ /^#/ || !length $1);
          ($nl, $bno) = ($1, defined $2 ? length $2 : 0);
-         if (length $l) { $l .= $nl; } else { $l = $nl; }
+         if(length $l){ $l .= $nl }else{ $l = $nl }
          $l .= ('\\' x ($bno >> 1)) if $bno > 0;
          last unless $bno & 1
       }
       $self->line(length $l ? $l : undef)
    }
 
-   sub readline_full {
+   sub readline_full{
       my ($self, $l, $af, $nl, $bno) = (shift, '');
       $af = $self->mode & Filter::FILTER_MASK;
       $self->empties_seen(0);
       my $ogoditisanewperl = 0;
-      if (defined($nl = $self->begin_line)) {
+      if(defined($nl = $self->begin_line)){
          $self->begin_line(undef);
          $self->seen_endl(1);
          $ogoditisanewperl = 1 #goto jumpin;
       }
-      while ($ogoditisanewperl || ($nl = readline $self->infh)) {
-         if (!$ogoditisanewperl) {
+      while($ogoditisanewperl || ($nl = readline $self->infh)){
+         if(!$ogoditisanewperl){
             ++${$self->__lineno};
             $self->seen_endl($nl =~ s/(.*?)\s+$/$1/)
          }
          $ogoditisanewperl = 0; #jumpin:
-         $nl =~ s/^\s+(.*)/$1/ if $af & Filter::INTROWS;
-         if (!length $l && ($af & Filter::COMMS)) {
+         $nl =~ s/^\s+(.*)/$1/ if ($af & Filter::INTROWS);
+         if(!length $l && ($af & Filter::COMMS)){
             next if $nl =~ /^#/
          }
-         if (($af & Filter::ESCNLS) && $nl =~ /(.*?)(\\+)$/) {
+         if(($af & Filter::ESCNLS) && $nl =~ /(.*?)(\\+)$/){
             ($nl, $bno) = ($1, length $2);
             $nl .= ('\\' x ($bno >> 1)) if $bno > 0;
-            if ($bno & 1) {
+            if($bno & 1){
                $l .= $nl;
                next
             }
          }
          $l .= $nl;
          last if length $l;
-         last unless $af & Filter::WIPEEL;
+         last unless ($af & Filter::WIPEEL);
          ++${$self->__empties_seen}
       }
-      if (!$l && !defined $nl) {
-         if ($self->mode & MODE_EMBED) {
+      if(!$l && !defined $nl){
+         if($self->mode & MODE_EMBED){
             ${$self->__mode} &= ~MODE_EMBED;
             $l = '<?end?>'
-         } else {
+         }else{
             $l = undef
          }
       }
@@ -1169,46 +1168,45 @@ jupsums:
 } # }}}
 
 {package Expander; # {{{
-   sub NL_FLUX()  {1 << (Ctx::MAXSHIFT + 1)}
-   sub NL_FORCE() {1 << (Ctx::MAXSHIFT + 2)}
+   sub NL_FLUX(){ 1 << (Ctx::MAXSHIFT + 1) }
+   sub NL_FORCE(){ 1 << (Ctx::MAXSHIFT + 2) }
 
-   sub explode {
+   sub explode{
       my $ctx = $_[0];
       my $self = Expander->new(ctx => $ctx, mode => $ctx->mode,
             dumper => Expander::Dumper->new(fh => $ctx->outfh,
             mode => $ctx->mode));
       $self->dumper->expander($self);
       # Force a trailing newline for non-empty output files
-      if ($self->_consume->dumper->seen_data == 1) {
+      if($self->_consume->dumper->seen_data == 1){
          $self->discard(0);
          ${$self->__mode} |= NL_FORCE;
          $self->_endl
       }
       $self->dumper->terminate;
-      ::e($self->ctx, 'At EOF there are paired PIs open')
-         if @{$self->recursion}
+      ::e($self->ctx, 'At EOF there are paired PIs open') if @{$self->recursion}
    }
 
    SymObj::sym_create(SymObj::NONE, {
-      _ctx        => undef,   # Ctx object we're exploding
-      _mode       => 0,       # ->ctx->mode
-      _dumper     => undef,   # Output (+ AUTOPAR/TAGJOIN/WSNORM hdl.) ::Dumper
-      _recursion  => [],      # For <?PAIR?> support, recursion-awareness
-      _data       => [],      # Expanded line data, intermediate storage
-      _rest_data  => undef,   # Line data for re-evaluation
-      _seen_line  => 0,       # Seen any line data?
-      _discard    => 0,       # Discard data, don't output (?ifdef? etc.)
-      _ifdefs     => [],      # Ifdef:: stack
-      _seen_end   => 0,       # Seen <?end?>?
-      _data_condome => undef  # ?perl?/?sh? intermediate layer (see _emit())
+      _ctx => undef,       # Ctx object we're exploding
+      _mode => 0,          # ->ctx->mode
+      _dumper => undef,    # Output (+ AUTOPAR/TAGJOIN/WSNORM hdl.) ::Dumper
+      _recursion => [],    # For <?PAIR?> support, recursion-awareness
+      _data => [],         # Expanded line data, intermediate storage
+      _rest_data => undef, # Line data for re-evaluation
+      _seen_line => 0,     # Seen any line data?
+      _discard => 0,       # Discard data, don't output (?ifdef? etc.)
+      _ifdefs => [],       # Ifdef:: stack
+      _seen_end => 0,      # Seen <?end?>?
+      _data_condome => undef # ?perl?/?sh? intermediate layer (see _emit())
    });
 
-   sub _consume { # {{{
+   sub _consume{ # {{{
       my $self = shift;
 
-      unless ($self->mode & Filter::EXPPIS) {
-         while (defined(my $l = $self->ctx->readline_full)) {
-            if (0 <= index $l, '<?end?>') {
+      unless($self->mode & Filter::EXPPIS){
+         while(defined(my $l = $self->ctx->readline_full)){
+            if(0 <= index $l, '<?end?>'){
                $self->dumper->seen_empties if $self->ctx->empties_seen;
                $l =~ /^(.*)<\?end\?>/;
                $self->_add_data($1)->_endl if $1;
@@ -1218,8 +1216,8 @@ jupsums:
             $self->dumper->seen_empties if $self->ctx->empties_seen;
             $self->_add_data($l)->_endl
          }
-      } else {
-         while (defined(my $l = $self->ctx->readline_full)) {
+      }else{
+         while(defined(my $l = $self->ctx->readline_full)){
             $self->dumper->seen_empties if $self->ctx->empties_seen;
             last if $self->_expand_pis($l)->seen_end
          }
@@ -1232,15 +1230,16 @@ jupsums:
    } # }}}
 
    # Recursion {{{
-   sub _prepare_recursion {
+   sub _prepare_recursion{
       my ($self, $ctx, $mode, $epair) = @_;
       # Ensure we rant before perl(1) on deep recursion
       ::e($self->ctx, "Deep recursion warning: code is nested 100 times, " .
          "maybe there's a loop?") if @{$self->recursion} >= 99 * 3;
+
       $self->_emit->recursion($self->ctx, $self->mode,
          defined $epair ? $epair : '[Recursion was not opened via paired PI!]');
       $self->ctx($ctx) if defined $ctx;
-      if (defined $mode) {
+      if(defined $mode){
          my $om = $self->mode;
          $self->mode($self->ctx->mode($mode));
          # If there is a change in WIPEEL and the changing PI is the only
@@ -1248,19 +1247,20 @@ jupsums:
          # This only applies to paired PIs, though.
          my $noel = ($mode & Filter::WIPEEL);
          ${$self->__mode} |= NL_FLUX
-            if (defined $epair && !$noel && $noel != ($om & Filter::WIPEEL) &&
+            if(defined $epair && !$noel && $noel != ($om & Filter::WIPEEL) &&
                !$self->seen_line && !$self->ctx->line)
       }
       $self
    }
 
-   sub _end_recursion {
+   sub _end_recursion{
       my $self = shift;
+
       $self->_emit->seen_end(0);
       pop @{$self->recursion}; # (Simply discard the expected end pair)
       my $m = pop @{$self->recursion};
       $self->ctx(pop @{$self->recursion});
-      if (defined $m) {
+      if(defined $m){
          my $om = $self->mode;
          $self->mode($self->ctx->mode($m));
          # If there is a change in WIPEEL and there was data on the line before
@@ -1274,22 +1274,22 @@ jupsums:
    # }}}
 
    # Intermediate data output layer {{{
-   sub _add_data {
+   sub _add_data{
       my ($self, $dat) = @_;
       goto jleave if !$dat || $self->discard;
-      $dat = _marklo_ex($self->ctx, $dat) if $self->mode & Filter::MARKLO;
+      $dat = _marklo_ex($self->ctx, $dat) if ($self->mode & Filter::MARKLO);
       $self->seen_line(1) if $dat;
       $self->data($dat);
 jleave:
       $self
    }
 
-   sub _endl {
+   sub _endl{
       my ($self) = @_;
       my $m = $self->mode;
-      if ($self->seen_line) {
-         goto jleave_keeplen if $m & NL_FLUX
-      } elsif (($m & (Filter::WIPEEL | NL_FLUX)) && !($m & NL_FORCE)) {
+      if($self->seen_line){
+         goto jleave_keeplen if ($m & NL_FLUX)
+      }elsif(($m & (Filter::WIPEEL | NL_FLUX)) && !($m & NL_FORCE)){
          goto jleave
       }
       $self->_emit(1);
@@ -1301,13 +1301,13 @@ jleave_keeplen:
       $self
    }
 
-   sub _emit {
+   sub _emit{
       my ($self, $endl) = @_;
       my $data = $self->data;
-      if (defined ${$self->__data_condome}) {
+      if(defined ${$self->__data_condome}){
          push(@{$self->data_condome}, join('', @$data)) if @$data;
          @{$self->data} = ()
-      } elsif (@$data || defined $endl) {
+      }elsif(@$data || defined $endl){
          $self->dumper->put(scalar $data, $self->mode, defined $endl);
          # Neither of @{$self->data} = ();/@{$self->__data} = []; since Dumper
          # simply copies over the reference for simplicity
@@ -1317,27 +1317,27 @@ jleave_keeplen:
    }
    # }}}
 
-   sub _expand_pis { # {{{
+   sub _expand_pis{ # {{{
       my ($self, $l) = @_;
 
-      while ($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/) {
+      while($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/){
          $self->_add_data($1)->ctx->line($l = defined $4 ? $4 : '');
          my $pi = $2;
          next if $self->discard && !exists $ALWAYS_REEVAL_PIS{$pi};
          my $valarr = defined $3 ? [split '<>', $3, -1] : [];
 
-         if (exists $PIS{$pi}) {
+         if(exists $PIS{$pi}){
             $self->_pi_comm($pi, $valarr)
-         } elsif (exists $self->ctx->pivars->{$pi}) {
+         }elsif(exists $self->ctx->pivars->{$pi}){
 jpivar:     $self->_pi_var($pi, $valarr)
-         } elsif (exists $IGNORE_PIS{$pi}) {
+         }elsif(exists $IGNORE_PIS{$pi}){
             $self->_add_data('<?' . $pi . (defined $3 ? " $3" : '') . '?>')
-         } elsif (@$valarr >= 2 && ($valarr->[0] eq 'unshift' ||
-               $valarr->[0] eq 'push')) {
+         }elsif(@$valarr >= 2 && ($valarr->[0] eq 'unshift' ||
+               $valarr->[0] eq 'push')){
             $self->ctx->pivars->{$pi} = [];
             #::vv($self->ctx, "Array $pi has been auto-vivified");
             goto jpivar
-         } else {
+         }else{
             ::e($self->ctx, "Unknown PI: $pi" . (defined $3 ? ", $3" : ''));
             next
          }
@@ -1345,7 +1345,7 @@ jpivar:     $self->_pi_var($pi, $valarr)
          # Integrate expanded content so that it gets re-evaluated, which is
          # necessary since it may contain PIs itself
          $l = $self->ctx->line;
-         if (defined(my $reeval = $self->rest_data)) {
+         if(defined(my $reeval = $self->rest_data)){
             $reeval =~ s/<\^>/<>/g;
             $reeval =~ s/<\^/<\?/g;
             $reeval =~ s/\^>/\?>/g;
@@ -1359,85 +1359,85 @@ jpivar:     $self->_pi_var($pi, $valarr)
       $self
    } # }}}
 
-   sub _pi_comm { # {{{
+   sub _pi_comm{ # {{{
       my ($self, $pi, $valarr) = @_;
       my $i = $PIS{$pi};
 
       # Check argument count
-      if (defined $MULTILINE_PIS{$pi}) {
-         if (@$valarr > 1 || (@$valarr == 1 && $valarr->[0] ne 'end')) {
+      if(defined $MULTILINE_PIS{$pi}){
+         if(@$valarr > 1 || (@$valarr == 1 && $valarr->[0] ne 'end')){
             ::e($self->ctx,
                "$pi is a paired PI and only takes an optional 'end' argument");
             goto jleave
          }
          # If this ends a paired PI, check it's a matching one
-         if (@$valarr == 1) {
+         if(@$valarr == 1){
             $i = @{$self->recursion};
-            if ($i == 0) {
+            if($i == 0){
                ::e($self->ctx, "no $pi to end here");
                goto jleave
             }
             $i = $self->recursion->[$i - 1];
-            if ($i ne $pi) {
+            if($i ne $pi){
                ::e($self->ctx, "a $i is to be ended here, not a $pi");
                goto jleave
             }
          }
-      } elsif ($i == 0) {
-         if (@$valarr != 0) {
+      }elsif($i == 0){
+         if(@$valarr != 0){
             ::e($self->ctx, "$pi doesn't take any arguments");
             goto jleave
          }
-      } elsif ($i < 0) {
-         if (@$valarr < -$i) {
+      }elsif($i < 0){
+         if(@$valarr < -$i){
             ::e($self->ctx, "$pi (presumably) needs (at least) " . -$i .
                ' argument(s)');
             goto jleave
          }
-      } elsif ($i != @$valarr) {
+      }elsif($i != @$valarr){
          ::e($self->ctx, "$pi takes " . $i . ' argument(s)');
          goto jleave
       }
 
       # Then a large block that actually handles the builtins XXX &{HASH->CODE}
       $i = $valarr->[0];
-      if (@$valarr && !length $i) {
+      if(@$valarr && !length $i){
          ::e($self->ctx, "$pi: (first) argument may not be empty");
          goto jleave
       }
 
-      if ($pi eq 'def' || $pi eq 'defa' || $pi eq 'defx') {
+      if($pi eq 'def' || $pi eq 'defa' || $pi eq 'defx'){
          shift @$valarr;
-         if (exists $PIS{$i} || exists $PIVars::builtin->{$i}) {
+         if(exists $PIS{$i} || exists $PIVars::builtin->{$i}){
             ::e($self->ctx, "$pi: cannot overwrite builtin PI (variable): $i")
-         } elsif ($pi eq 'def') {
+         }elsif($pi eq 'def'){
             PIVars::assign($self->ctx, $i, join('<>', @$valarr))
-         } elsif ($pi eq 'defa') {
-            PIVars::assign($self->ctx, $i, $_, 1, 1) foreach (@$valarr)
-         } else {
+         }elsif($pi eq 'defa'){
+            PIVars::assign($self->ctx, $i, $_, 1, 1) foreach(@$valarr)
+         }else{
             PIVars::assign($self->ctx, $i, $valarr, undef, 1)
          }
-      } elsif ($pi eq 'pi-if') {
+      }elsif($pi eq 'pi-if'){
          shift @$valarr;
          $pi = $i;
-         if (exists $PIS{$pi}) {
+         if(exists $PIS{$pi}){
             $self->_pi_comm($pi, $valarr)
-         } elsif (exists $self->ctx->pivars->{$pi}) {
+         }elsif(exists $self->ctx->pivars->{$pi}){
             $self->_pi_var($pi, $valarr)
-         } else {
+         }else{
             ::vv($self->ctx, "pi-if: unknown PI: $pi")
          }
-      } elsif ($pi eq 'undef') {
+      }elsif($pi eq 'undef'){
          shift @$valarr;
-         if (exists $PIS{$i} || exists $PIVars::builtin->{$i}) {
+         if(exists $PIS{$i} || exists $PIVars::builtin->{$i}){
             ::e($self->ctx, "undef: cannot undef builtin PI (variable): $i")
-         } elsif (exists $self->ctx->pivars->{$i}) {
+         }elsif(exists $self->ctx->pivars->{$i}){
             ::vv($self->ctx, "undef: deleting $i");
             delete $self->ctx->pivars->{$i}
-         } else {
+         }else{
             ::e($self->ctx, "undef: no such variable: $i")
          }
-      } elsif ($pi eq 'href' || $pi eq 'lref') {
+      }elsif($pi eq 'href' || $pi eq 'lref'){
          $pi = ($pi eq 'href');
          my ($wp, $ws);
          $wp = $self->ctx->pivars->{WWW_PREFIX} if $pi;
@@ -1446,7 +1446,7 @@ jpivar:     $self->_pi_var($pi, $valarr)
          $ws = '' unless defined $ws;
          $i = '<a href="' . $i . '">' . $wp . $i . $ws . '</a>';
          $self->rest_data($i)
-      } elsif ($pi eq 'hreft' || $pi eq 'lreft') {
+      }elsif($pi eq 'hreft' || $pi eq 'lreft'){
          $pi = ($pi eq 'hreft');
          my ($wp, $ws, $t, $tm);
          $wp = $self->ctx->pivars->{WWW_PREFIX} if $pi;
@@ -1459,30 +1459,29 @@ jpivar:     $self->_pi_var($pi, $valarr)
          $i = '<a href="' . $i . '" title="' . $t . '">' .
                $wp . $tm . $ws . '</a>';
          $self->rest_data($i)
-      } elsif ($pi eq 'pre' || $pi eq 'xpre' || $pi eq 'xcdata') {
-         if ($i) {
+      }elsif($pi eq 'pre' || $pi eq 'xpre' || $pi eq 'xcdata'){
+         if($i){
             $self->_end_recursion;
-            if ($pi eq 'xpre') {
+            if($pi eq 'xpre'){
                $self->_add_data('</pre>')
-            } elsif ($pi eq 'xcdata') {
+            }elsif($pi eq 'xcdata'){
                $self->_add_data(']]></pre>')
             }
-         } else {
-            if ($pi eq 'xpre') {
+         }else{
+            if($pi eq 'xpre'){
                $self->_add_data('<pre>')
-            } elsif ($pi eq 'xcdata') {
+            }elsif($pi eq 'xcdata'){
                $self->_add_data('<pre><![CDATA[')
             }
             $self->_prepare_recursion(undef,
                (($self->mode & ~Filter::FILTER_MASK) | Filter::EXPPIS), $pi)
          }
-      } elsif ($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
-            $pi eq 'fi') {
+      }elsif($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' || $pi eq 'fi'){
          $self->_emit;
          $pi = Expander::Ifdef::handle_pi(scalar $self->ifdefs, $self->ctx,
                $pi, $i);
          $self->discard($pi) if $pi >= 0
-      } elsif ($pi eq 'include' || $pi eq 'xinclude') {
+      }elsif($pi eq 'include' || $pi eq 'xinclude'){
          my $ctx = ($self->mode & ~(Ctx::MODE_INFH | Ctx::MODE_EMBED)) |
                ($pi eq 'xinclude' ? Ctx::MODE_EMBED : 0);
          ($pi, $i) = $self->_expand_include_path($i);
@@ -1492,23 +1491,23 @@ jpivar:     $self->_pi_var($pi, $valarr)
          $ctx->open->read_assignments;
          $self->_consume->_end_recursion;
          $ctx->close
-      } elsif ($pi eq 'raw_include' || $pi eq 'frank_include') {
+      }elsif($pi eq 'raw_include' || $pi eq 'frank_include'){
          my $franky = ($pi eq 'frank_include');
          ($pi, $i) = $self->_expand_include_path($i);
          $self->_prepare_recursion($self->ctx, 0);
          ::panic($self->ctx, "<?(raw|frank)_include?>: can't read '$i': $^E")
             unless open RI, '<', $i;
          # Use direct I/O if possible; we can't if redirection is active
-         if (defined ${$self->__data_condome}) {
-            foreach (readline RI) { # xxx readline errs?
+         if(defined ${$self->__data_condome}){
+            foreach(readline RI){ # xxx readline errs?
                my $had = chomp;
                $_ = $self->_franky_quote($_) if $franky;
                $self->_add_data($_);
                $self->_endl if $had
             }
-         } else {
+         }else{
             $self->dumper->direct_start;
-            foreach (readline RI) { # xxx readline errs?
+            foreach(readline RI){ # xxx readline errs?
                my $had = chomp;
                $_ = $self->_franky_quote($_) if $franky;
                $self->dumper->direct_put($_, $had)
@@ -1518,37 +1517,36 @@ jpivar:     $self->_pi_var($pi, $valarr)
          ::panic($self->ctx, "<?(raw|frank)_include?>: can't close '$i': $^E")
             unless close RI;
          $self->_end_recursion
-      } elsif ($pi eq 'perl' || $pi eq 'xperl' || $pi eq 'sh' || $pi eq 'xsh') {
-         if ($i) {
+      }elsif($pi eq 'perl' || $pi eq 'xperl' || $pi eq 'sh' || $pi eq 'xsh'){
+         if($i){
             $self->_end_recursion->_create_subproc($pi)
-         } elsif (defined ${$self->__data_condome}) {
-            ::panic($self->ctx,
-               'There is already one of <?x?perl/x?sh?> active!')
-         } else {
+         }elsif(defined ${$self->__data_condome}){
+            ::panic($self->ctx, 'There is already an <?x?perl/x?sh?> active!')
+         }else{
             $self->_prepare_recursion(undef,
                (($self->mode & ~(Filter::FILTER_MASK | Ctx::MODE_EMBED)) |
                   Filter::EXPPIS), $pi);
             ${$self->__data_condome} = [];
-            if ($pi eq 'perl' || $pi eq 'xperl') {
+            if($pi eq 'perl' || $pi eq 'xperl'){
                $self->_add_data('my ($PIS, $PIE, $BEGIN, $END) = ' .
                   '("<?", "?>", "<?begin?>", "<?end?>");')->_endl
-            } else {
+            }else{
                $self->_add_data('PIS="<?" PIE="?>" ' .
                   'BEGIN="<?begin?>" END="<?end?>"')->_endl
             }
          }
-      } elsif ($pi eq 'end') {
+      }elsif($pi eq 'end'){
          $self->ctx->line('');
          ${$self->__mode} |= NL_FLUX if ($i = $self->ctx->outer) && $i->line;
          $self->seen_end(1);
          $self->_emit
-      } elsif ($pi eq 'mode') {
-         if ($i eq '%') {
+      }elsif($pi eq 'mode'){
+         if($i eq '%'){
             ::panic($self->ctx, "<?mode?> is NOT IN USE")
                unless exists $self->{__omode};
             $i = $self->{__omode};
             delete $self->{__omode}
-         } else {
+         }else{
             ::panic($self->ctx, "<?mode?> is IN USE already")
                if exists $self->{__omode};
             $i = Filter::string_to_filters($i);
@@ -1562,28 +1560,28 @@ jleave:
       $self
    } # }}}
 
-   sub _pi_var { # {{{
+   sub _pi_var{ # {{{
       my ($self, $pi, $valarr) = @_;
       my $v = $self->ctx->pivars->{$pi};
 
       ## =/def?
-      if (ref $v ne 'ARRAY') {
-         if (@$valarr) {
+      if(ref $v ne 'ARRAY'){
+         if(@$valarr){
             ::e($self->ctx, "$pi does not take any argument(s)")
-         } else {
+         }else{
             $self->rest_data($v)
          }
          goto jleave
       }
 
       ## defx?
-      if (ref $v->[0] eq 'ARRAY') {
+      if(ref $v->[0] eq 'ARRAY'){
          $v = $v->[0];
-         if (0 != @$v - 1 - @$valarr) {
+         if(0 != @$v - 1 - @$valarr){
             ::e($self->ctx, "$pi takes " . scalar(@$v - 1) . ' argument(s)')
-         } else {
+         }else{
             my @dat;
-            foreach (@$v) {
+            foreach(@$v){
                push @dat, $_ if length;
                push @dat, shift @$valarr if @$valarr
             }
@@ -1594,28 +1592,28 @@ jleave:
 
       ## @/defa/auto-vivified (array handling .)
       ## (Auto-vivification has been handled by _expand_pis(), array exists.)
-      if (!@$valarr) {
+      if(!@$valarr){
          ::e($self->ctx, "$pi is an array and requires arguments");
          goto jleave
       }
       my $i = shift @$valarr;
 
-      if ($i =~ /\d+/) {
-         if (@$valarr) {
+      if($i =~ /\d+/){
+         if(@$valarr){
             ::e($self->ctx, "$pi: array index access takes only one " .
                'argument: the index');
             goto jleave
          }
          $i = int $i;
-         if ($i >= @$v) {
+         if($i >= @$v){
             ::e($self->ctx, "$pi: $i is not a valid array index");
             goto jleave
          }
          $i = $v->[$i];
          $self->rest_data($i) if length $i;
          goto jleave
-      } elsif ($i eq 'loop') {
-         if (@$valarr > 2) {
+      }elsif($i eq 'loop'){
+         if(@$valarr > 2){
             ::e($self->ctx, "$pi: array loop mode takes max. 3 arguments: " .
                '"loop", pre-hook, post-hook');
             goto jleave
@@ -1623,33 +1621,33 @@ jleave:
          my ($pre, $post, @dat) = (shift @$valarr, shift @$valarr);
          $pre = undef unless defined $pre && length $pre;
          $post = undef unless defined $post && length $post;
-         foreach (@$v) {
+         foreach(@$v){
             push @dat, $pre if defined $pre;
             push @dat, $_ if length;
             push @dat, $post if defined $post
          }
          $self->rest_data(join '', @dat) if @dat
-      } elsif ($i eq 'unshift' || $i eq 'push' || $i eq 'shift' ||
-            $i eq 'pop' || $i eq 'undef-empty') {
-         if (exists $PIVars::builtin->{$pi}) {
+      }elsif($i eq 'unshift' || $i eq 'push' || $i eq 'shift' ||
+            $i eq 'pop' || $i eq 'undef-empty'){
+         if(exists $PIVars::builtin->{$pi}){
             ::e($self->ctx, "$pi: cannot modify builtin PI (variable) via $i")
-         } elsif ($i eq 'unshift') {
+         }elsif($i eq 'unshift'){
             unshift @$v, join('<>', @$valarr)
-         } elsif ($i eq 'push') {
+         }elsif($i eq 'push'){
             push @$v, join('<>', @$valarr)
-         } elsif ($i eq 'shift' || $i eq 'pop') {
-            if (@$v == 0) {
+         }elsif($i eq 'shift' || $i eq 'pop'){
+            if(@$v == 0){
                ::v($self->ctx, "$pi: $i request on empty array")
-            } elsif ($i eq 'shift') {
+            }elsif($i eq 'shift'){
                shift @$v
-            } else {
+            }else{
                pop @$v
             }
-         } elsif (@$v == 0) { #if ($i eq 'undef-empty' && @$v == 0) {
+         }elsif(@$v == 0){ #if ($i eq 'undef-empty' && @$v == 0) {
             ::vv($self->ctx, "$pi: deleting after undef-empty request");
             delete $self->ctx->pivars->{$pi}
          }
-      } else {
+      }else{
          ::e($self->ctx, "$pi: array argument 1 is neither an index nor " .
             'one of loop/unshift/push/shift/pop/undef-empty.');
          goto jleave
@@ -1660,7 +1658,7 @@ jleave:
    } # }}}
 
    # MarkLo {{{
-   sub _marklo_ex {
+   sub _marklo_ex{
       our ($ctx, $dat) = @_;
 
       sub recur{
@@ -1714,33 +1712,33 @@ jftail:
    }
    # }}}
 
-   sub _expand_include_path { # {{{
+   sub _expand_include_path{ # {{{
       my ($self, $path) = @_;
       my $l = '';
       my $incdir = $self->ctx->incdird;
       $incdir = '.' unless defined $incdir;
 
-      if ($path =~ /^~(.*)$/) {
+      if($path =~ /^~(.*)$/){
          $incdir = $ENV{HOME} if $ENV{HOME};
          goto jset
-      } elsif ($path =~ /^\+(.*)$/) {
+      }elsif($path =~ /^\+(.*)$/){
          $incdir = $ENV{WEB42INC} if $ENV{WEB42INC};
 jset:    $l = $incdir . '/';
          $path = $l . $1
-      } else {
+      }else{
          $path = File::Spec->catfile($incdir, $path);
          $path = Cwd::realpath($path);
-         if (defined $path) {
+         if(defined $path){
             my ($dn, $i, $bn) = File::Spec->splitpath($path);
             $incdir = File::Spec->catpath($dn, $i, '')
-         } else {
+         }else{
             $path = $incdir = '' # ::panic()s later on, pass 'em up
          }
       }
       ($incdir, $path)
    } # }}}
 
-   sub _franky_quote { # {{{
+   sub _franky_quote{ # {{{
       my ($self, $line) = @_;
       $line =~ s/&(?![\w-]+?;)/&amp;/g;
       $line =~ s/</&lt;/g;
@@ -1748,7 +1746,7 @@ jset:    $l = $incdir . '/';
       $line
    } # }}}
 
-   sub _create_subproc { # {{{
+   sub _create_subproc{ # {{{
       my ($self, $type) = @_;
       my $eval_args_ar = join "\n", @{$self->data_condome};
       ${$self->__data_condome} = undef;
@@ -1759,7 +1757,7 @@ jset:    $l = $incdir . '/';
       ::panic($self->ctx, 'cannot create child process: ' . $^E)
          unless defined $pid;
 
-      if ($pid) {
+      if($pid){
          # Parent
          close WRP; # xxx err hdl.
          my $ctx = Ctx->new(outer => $self->ctx,
@@ -1776,7 +1774,7 @@ jset:    $l = $incdir . '/';
          ::e($self->ctx, 'failed to wait for child process')
             unless $pid == waitpid $pid, 0;
          ::e($self->ctx, '[<?'. $type .'?> evaluation errors occurred]') if $?
-      } else {
+      }else{
          # Child
          ::panic($self->ctx, "child cannot perform chdir(2): $^E")
             if defined $self->ctx->chdird && !chdir $self->ctx->chdird;
@@ -1784,10 +1782,10 @@ jset:    $l = $incdir . '/';
             unless close RDC;
          ::panic($self->ctx, "child can't redirect output channel: $^E")
             unless open STDOUT, '>&=', fileno WRP;
-         if ($type eq 'perl' || $type eq 'xperl') {
+         if($type eq 'perl' || $type eq 'xperl'){
             eval $eval_args_ar;
             exit($@ ? 1 : 0)
-         } else {
+         }else{
             ::panic($self->ctx, "child failed to exec /bin/sh: $^E")
                unless exec '/bin/sh', '-c', $eval_args_ar;
             exit 99
@@ -1798,26 +1796,26 @@ jset:    $l = $incdir . '/';
 
 {package Expander::Dumper; # {{{
    SymObj::sym_create(SymObj::NONE, {
-      _fh            => undef,   # Output file handle
-      '?_mode'       => 0,       # Filters of currently hold data
-      _expander      => undef,   # Parent
-      _data          => [],      # Expanded line data, intermediate storage
-      _delayed_data  => undef,   # With AUTOPAR, delay close tags: continuation
-      _delayed_ref   => undef,   # Ditto: where to push end-tag
-      _seen_data     => 0        # 1=yes, 2=ended with NL
+      _fh => undef,           # Output file handle
+      '?_mode' => 0,          # Filters of currently hold data
+      _expander => undef,     # Parent
+      _data => [],            # Expanded line data, intermediate storage
+      _delayed_data => undef, # With AUTOPAR, delay close tags: continuation
+      _delayed_ref => undef,  # Ditto: where to push end-tag
+      _seen_data => 0         # 1=yes, 2=ended with NL
    });
 
-   sub terminate {
+   sub terminate{
       my ($self) = @_;
       $self->_delayed_flush;
       $self->_flush if @{$self->data};
       $self
    }
 
-   sub force_mode_change {
+   sub force_mode_change{
       my ($self, $mode) = @_;
       $mode &= Filter::FILTER_MASK;
-      if ($mode != $self->{_mode}) {
+      if($mode != $self->{_mode}){
          $self->_delayed_flush;
          $self->_flush if @{$self->data}; # XXX finetune
          $self->{_mode} = $mode;
@@ -1825,9 +1823,9 @@ jset:    $l = $incdir . '/';
       $self
    }
 
-   sub seen_empties {
+   sub seen_empties{
       my ($self) = @_;
-      if (!($self->{_mode} & Filter::AUTOPAR)) {
+      if(!($self->{_mode} & Filter::AUTOPAR)){
          $self->_delayed_flush;
          delete $self->{__autopar};
          goto jleave
@@ -1835,16 +1833,16 @@ jset:    $l = $incdir . '/';
 
       my ($da, $i) = (scalar $self->data);
 
-      if (defined($i = $self->{__autopar})) {
+      if(defined($i = $self->{__autopar})){
          my ($lda, $llda) = (scalar $da->[$i], scalar $da->[@$da - 1]);
          goto jflush unless defined $lda && @$lda && defined $llda;
 
          $lda->[0]->[0] =~ /^\s*<([^>]+)>/;
-         if (($i = $1)) {
+         if(($i = $1)){
             $i =~ s/^([^[:space:]]+).*/$1/;
-            if ($i !~ /^\// && $AUTOPAR_IGNORE{$i}) {
+            if($i !~ /^\// && $AUTOPAR_IGNORE{$i}){
                $i = undef
-            } else {
+            }else{
                $self->_delayed_flush;
                $da = scalar $self->data;
                goto jflush
@@ -1852,44 +1850,44 @@ jset:    $l = $incdir . '/';
          }
 
          $llda = $da->[@$da - 2] unless @$llda; # XXX MUST be NL before..
-         if (!$i) {
+         if(!$i){
             my ($p, $s);
 
             $i = $lda->[0]->[0];
-            if ($i =~ /^(?:(={1,6})\s+)(.*)/) {
+            if($i =~ /^(?:(={1,6})\s+)(.*)/){
                $i = $2;
                $s = length $1;
                $p = $self->_delayed_have . "<h$s>";
                $s = "</h$s>"
-            } elsif ($i =~ /^(?:_\s+)(.*)/) {
+            }elsif($i =~ /^(?:_\s+)(.*)/){
                $i = $1;
                $p = $self->_delayed_join('blockquote') . '<p>';
-               $s = '</p>';
-            } elsif ($i =~ /^(?:\*\s+)(.*)/) {
+               $s = '</p>'
+            }elsif($i =~ /^(?:\*\s+)(.*)/){
                $i = $1;
                $p = $self->_delayed_join('ul') . '<li><p>';
-               $s = '</p></li>';
-            } elsif ($i =~ /^(?:([[:digit:]]+)\.\s+)(.*)/) {
+               $s = '</p></li>'
+            }elsif($i =~ /^(?:([[:digit:]]+)\.\s+)(.*)/){
                $i = $2;
                $p = $self->_delayed_join('ol') . "<li value=\"$1\"><p>";
-               $s = '</p></li>';
-            } elsif ($i =~ /^(?:\@\s+)(.*?)(?:\s+\@\s*)(.*)/) {
+               $s = '</p></li>'
+            }elsif($i =~ /^(?:\@\s+)(.*?)(?:\s+\@\s*)(.*)/){
                $i = $1 . '</dt><dd><p>' . $2;
                $p = $self->_delayed_join('dl') . '<dt>';
                $s = '</p></dd>';
-            } elsif ($i =~ /^-{5,}$/ && @$da == 2 && !scalar @{$da->[1]}) {
+            }elsif($i =~ /^-{5,}$/ && @$da == 2 && !scalar @{$da->[1]}){
                $lda->[0]->[0] = $self->_delayed_have . '<hr />';
                goto jflush
             }
-            if ($p) {
+            if($p){
                $lda->[0]->[0] = $i
-            } else {
+            }else{
                $p = $self->_delayed_have . '<p>';
                $s = '</p>'
             }
             unshift @$lda, [$p];
             push @$llda, [$s];
-            $self->{_delayed_ref} = $llda;
+            $self->{_delayed_ref} = $llda
          }
       }
 jflush:
@@ -1903,7 +1901,7 @@ jleave:
       $self
    }
 
-   sub put {
+   sub put{
       my ($self, $data, $mode, $endl) = @_;
       $mode &= Filter::FILTER_MASK;
       $self->force_mode_change($mode) if $mode != $self->{_mode};
@@ -1912,14 +1910,14 @@ jleave:
       push @$da, [] unless @$da;
       my $lda = $da->[@$da - 1];
       push @$lda, $data;
-      if ($endl) {
+      if($endl){
          push @$da, [];
          $self->_flush(1) if @$da > 50 && !($mode & Filter::AUTOPAR)
       }
       $self
    }
 
-   sub direct_start {
+   sub direct_start{
       my ($self) = @_;
       # XXX make these expander states an argument - "line exclusive?" or so
       $self->{__final_nl} = (!$self->expander->seen_line &&
@@ -1931,7 +1929,7 @@ jleave:
       $self
    }
 
-   sub direct_end {
+   sub direct_end{
       my ($self) = @_;
       $self->direct_put('', 1) if $self->{__final_nl} && !$self->{__endl};
       delete $self->{__final_nl};
@@ -1939,7 +1937,7 @@ jleave:
       $self
    }
 
-   sub direct_put {
+   sub direct_put{
       my ($self, $data, $endl) = @_;
       $self->seen_data(1 + $endl) if $self->seen_data < 2;
       $self->{__endl} = $endl;
@@ -1950,53 +1948,53 @@ jleave:
       $self
    }
 
-   sub _delayed_have {
+   sub _delayed_have{
       my ($self) = @_;
       my $i = $self->{_delayed_data};
       $self->{_delayed_data} = $self->{_delayed_ref} = undef;
-      if ($i) { '</' . $i . '>' }
-      else { '' }
+      if($i){ '</' . $i . '>' }
+      else{ '' }
    }
 
-   sub _delayed_join {
+   sub _delayed_join{
       my ($self, $tag) = @_;
       my $i = $self->{_delayed_data};
       $self->{_delayed_data} = $tag;
       my $j = $self->{_delayed_ref};
       $self->{_delayed_ref} = undef;
-      if ($i && $j && (!$tag || $tag ne $i)) {
+      if($i && $j && (!$tag || $tag ne $i)){
          push @$j, '@@</' . $i . '>';
          $i = undef
       }
-      if (!$i) {
+      if(!$i){
          return '<' . $tag . '>'
       }
       return '</' . $i . '>' . '<' . $tag . '>' unless $tag eq $i;
       ''
    }
 
-   sub _delayed_flush {
+   sub _delayed_flush{
       my ($self) = @_;
-      if (my $i = $self->{_delayed_data}) {
+      if(my $i = $self->{_delayed_data}){
          $self->{_delayed_data} = undef;
          my $da = scalar $self->data;
          my $lda = scalar $da->[0];
-         unshift @$lda, ['</'.$i.'>'];
+         unshift @$lda, ['</'.$i.'>']
       }
       $self
    }
 
-   sub _flush {
+   sub _flush{
       my ($self, $maybe_bad_boundary) = @_;
       my $mode = $self->{_mode};
       delete $self->{__autopar};
 
       # Shortpath if no postprocessing is to be applied
-      if (!($mode & (Filter::AUTOPAR | Filter::TAGJOIN | Filter::WSNORM))) {
-         for (my $data = $self->data; @$data;) {
+      if(!($mode & (Filter::AUTOPAR | Filter::TAGJOIN | Filter::WSNORM))){
+         for(my $data = $self->data; @$data;){
             my $lda = shift @$data;
-            foreach my $la (@$lda) {
-               foreach my $d (@$la) {
+            foreach my $la (@$lda){
+               foreach my $d (@$la){
                   ::xpanic("Failed to perform output: $^E")
                      unless print {$self->fh} $d
                }
@@ -2004,12 +2002,12 @@ jleave:
             ::xpanic("Failed to perform output: $^E")
                unless !@$data || print {$self->fh} "\n"
          }
-      } else {
-         for (my $data = $self->data; @$data;) {
+      }else{
+         for(my $data = $self->data; @$data;){
             my $lda = shift @$data;
-            foreach my $la (@$lda) {
+            foreach my $la (@$lda){
                my $d = join '', @$la;
-               if ($mode & Filter::WSNORM) {
+               if($mode & Filter::WSNORM){
                   $d =~ s/^\s*(.*)\s*$/$1/g;
                   $d =~ s/\s+/ /g
                }
@@ -2025,35 +2023,35 @@ jleave:
 } # }}}
 
 {package Expander::Ifdef; # {{{
-   sub handle_pi {
+   sub handle_pi{
       my ($stack, $ctx, $pi, $arg) = @_;
       my $self;
 
-      if ($pi eq 'ifdef' || $pi eq 'ifndef') {
+      if($pi eq 'ifdef' || $pi eq 'ifndef'){
          $self = $stack->[0] if @$stack;
          my $ow = $self ? ($self->outer_won ? 1 : $self->discard) : 0;
          my $d;
-         if (!($d = $ow)) {
+         if(!($d = $ow)){
             $d = ($arg eq '0' || !exists $ctx->pivars->{$arg}) ? 1 : 0;
             $d = !$d if $pi eq 'ifndef'
          }
          $self = Expander::Ifdef->new(ctx => $ctx, outer_won => $ow,
                discard => $d);
          unshift @$stack, $self
-      } elsif ($pi eq 'else') {
-         if (@$stack == 0) {
+      }elsif($pi eq 'else'){
+         if(@$stack == 0){
             ::e($ctx, "else: no ifn?def to continue around here");
             return -1
          }
          $self = $stack->[0];
-         if ($self->if_then_else) {
+         if($self->if_then_else){
             ::e($ctx, "else: else was already seen for current ifn?def")
-         } else {
+         }else{
             $self->if_then_else(1);
             $self->discard(!$self->discard) unless $self->outer_won
          }
-      } else { #if ($pi eq 'fi') {
-         if (@$stack == 0) {
+      }else{ #if ($pi eq 'fi') {
+         if(@$stack == 0){
             ::e($ctx, "fi: no ifn?def..else to be closed around here");
             return -1
          }
@@ -2064,38 +2062,38 @@ jleave:
       $self->discard
    }
 
-   sub check_ctx {
+   sub check_ctx{
       my ($stack, $ctx) = @_;
-      foreach my $self (@$stack) {
+      foreach my $self (@$stack){
          next unless $self->ctx == $ctx;
          ::e($ctx, "ifn?def: was started here, but where's the <?fi?>?")
       }
    }
 
    SymObj::sym_create(SymObj::NONE, {
-      _ctx           => undef,
-      _outer_won     => 0,
-      _discard       => 0,
-      _if_then_else  => 0
+      _ctx => undef,
+      _outer_won => 0,
+      _discard => 0,
+      _if_then_else => 0
    });
 } # }}}
 
 {package Expander::Markup; # {{{ TODO too naive
-   sub link {
+   sub link{
       my $t = shift;
       $t =~ s/"/\"/g;
       $t =~ s/&/&amp;/g;
       $t
    }
 
-   sub clean_tags {
+   sub clean_tags{
       my $t = shift;
-      while ($t =~ s/(.*?)<\/?[^>]+>(.*)/$1$2/)
-         {}
+      while($t =~ s/(.*?)<\/?[^>]+>(.*)/$1$2/){
+      }
       $t
    }
 
-   sub attribute {
+   sub attribute{
       my ($ctx, $t) = @_;
       # We need to expand MarkLo because otherwise that would (XXX possibly)
       # become expanded later and then this attribute would contain markup!
