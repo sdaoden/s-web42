@@ -1547,7 +1547,7 @@ jpivar:     $self->_pi_var($pi, $valarr)
                if exists $self->{__omode};
             $i = Filter::string_to_filters($i);
             $i |= Filter::EXPPIS;
-            $self->{__omode} = $self->{_mode}
+            $i |= ($self->{__omode} = $self->{_mode}) & ~Filter::FILTER_MASK;
          }
          $self->_emit->dumper->force_mode_change($self->ctx->mode(
             $self->{_mode} = $i))
