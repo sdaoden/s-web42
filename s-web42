@@ -1237,11 +1237,13 @@ jupsums:
          "maybe there's a loop?") if @{$self->recursion} >= 99 * 3;
 
       $self->_emit->recursion($self->ctx, $self->mode,
+         (exists $self->{__omode} ? $self->{__omode} : undef),
          defined $epair ? $epair : '[Recursion was not opened via paired PI!]');
       $self->ctx($ctx) if defined $ctx;
       if(defined $mode){
          my $om = $self->mode;
          $self->mode($self->ctx->mode($mode));
+         delete $self->{__omode} unless ($mode & Ctx::MODE_EMBED);
          # If there is a change in WIPEEL and the changing PI is the only
          # content on that line, avoid writing an unwanted empty line.
          # This only applies to paired PIs, though.
@@ -1249,6 +1251,8 @@ jupsums:
          ${$self->__mode} |= NL_FLUX
             if(defined $epair && !$noel && $noel != ($om & Filter::WIPEEL) &&
                !$self->seen_line && !$self->ctx->line)
+      }else{
+         delete $self->{__omode}
       }
       $self
    }
@@ -1258,6 +1262,8 @@ jupsums:
 
       $self->_emit->seen_end(0);
       pop @{$self->recursion}; # (Simply discard the expected end pair)
+      $self->{__omode} = pop @{$self->recursion};
+      delete $self->{__omode} unless defined $self->{__omode};
       my $m = pop @{$self->recursion};
       $self->ctx(pop @{$self->recursion});
       if(defined $m){
@@ -1553,8 +1559,8 @@ jpivar:     $self->_pi_var($pi, $valarr)
             $i |= Filter::EXPPIS;
             $i |= ($self->{__omode} = $self->{_mode}) & ~Filter::FILTER_MASK;
          }
-         $self->_emit->dumper->force_mode_change($self->ctx->mode(
-            $self->{_mode} = $i))
+         $self->_emit->dumper->force_mode_change(
+            $self->ctx->mode($self->{_mode} = $i))
       }
 jleave:
       $self

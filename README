@@ -39,7 +39,7 @@ installed Perl, version 5.8.1 or above.  It also requires the authors
 |ssym| module -- you may install it as a regular part of your `perl(1)`_
 installation by issuing the command ``$ cpan S-SymObj``.
 Alternatively you may also get it from http://www.CPAN.org or clone the
-git repository from |ssymscnm| (browse it at |ssymcgit|).
+git repository from |ssymscm| (browse it at |ssymcgit|).
 
 .. contents::
 
@@ -239,7 +239,8 @@ that cryptic expression:
 Moreover, all files that are subject to S-Web42 content filtering (and
 ``config.rc`` but this is a special case in that S-Web42 will complain
 if it contains anything else but the `Assignments`_ part) have to
-comply to a very specific content layout scheme:
+comply to a very specific content layout scheme, henceforth called
+a S-Web42 *context*:
 
    | `Assignments`_
    | ``<?begin?>``
@@ -251,9 +252,9 @@ About.Filter
 ------------
 
 These filter operations will be performed on the `Assignments`_ part
-of *all* files which are subject to filtering.  They'll also be applied
-to the `Content`_ part unless the mode configuration suffix was ``-x``
-or otherwise excluded these actions:
+of *all* *contexts* which are subject to filtering.  They'll also be
+applied to the `Content`_ part unless the mode configuration suffix was
+``-x`` or otherwise excluded these actions:
 
 *Drop of trailing whitespace* (cannot be disabled)
    A lines' trailing whitespace is discarded.
@@ -453,9 +454,10 @@ until no further expansion is possible.
 
 .. note::
    One should be aware that recursion applies whenever it occurs.
-   E.g., if an ``<?include?>`` file includes itself a file, then this
-   is performed recursively, without closing the first file descriptor
-   first.  Running S-Web42 may thus encounter resource limits.
+   E.g., if an ``<?include?>`` context includes itself a context, then
+   this is performed recursively, without closing the first file
+   descriptor first.  Running S-Web42 may thus encounter resource
+   limits.
 
 Ignored
 -------
@@ -643,18 +645,18 @@ _`ifdef`, _`ifndef`, _`else`, _`fi`
 _`include`, _`xinclude`, _`raw_include`, _`frank_include`
    The PI ``<?include?>`` can be used to include a file that itself
    will be subject to the same expansion and filtering that is in use
-   for the including file, i.e., it must form a valid S-Web42 document.
+   for the including file, i.e., it must form a valid S-Web42 *context*.
    Paths are interpreted relative to the source directory of the file
    which uses the include directive.
 
    ``<?xinclude?>`` is similar to ``<?include?>``, except that the
-   included file is expected to consist of `Content`_ only, so that
-   its inclusion may modify the PI environment of the *current*
-   document.
+   included file is expected to (implicitly) consist of `Content`_ only,
+   so that its inclusion may modify the PI environment of the *current*
+   *context*.
 
    The ``<?raw_include?>`` PI will simply include the given file raw
    and **without any** S-Web42 processing.  ``<?frank_include?>`` will
-   also include the given file raw, but it'll process the lines and
+   also include the given file raw, but it will process the lines and
    escape ``&``, ``<`` and ``>`` characters, so that HTML parsers will
    be able to display the (rather) raw content as desired. ::
 
@@ -686,27 +688,28 @@ _`mode`
    This PI can be used to change the modes described in `About.Filter`_
    on the fly; the required argument must either be ``%``, in which
    case the previously active mode is restored, or a combination of
-   the filter mode configuration characters.  Note that PI expansion
-   mode cannot be disabled like that.  Be aware - you should really
-   know what you are doing when you use this PI.
+   the filter mode configuration characters.  Mode changes are inherited
+   by deeper contexts, but they won't be propagated to outer ones.
+   Note that PI expansion mode cannot be disabled like that.  Be aware -
+   you should really know what you are doing when you use this PI.
 
 _`perl`, _`sh`, _`xperl`, _`xsh`
    These are paired statements which can be used to embed ``perl(1)``
    or ``sh(1)`` code, respectively.  The code will be executed in a
    subprocess, with its working directory set to that of the *topmost*
-   file, i.e., the file that is currently being produced output for.
+   *context*, i.e., the file that is currently being produced output for.
 
    The output that the subprocess produces on its standard output
-   channel will be subject to the same expansion and filtering that
-   is in use for the surrounding text.  In fact the output is expected
-   to form a valid S-Web42 document except for the *x*\ -versions,
-   which are expected to produce `Content`_ output only, and which
-   thus modify the PI environment of the *current* document.
+   channel will be subject to the same expansion and filtering that is
+   in use for the surrounding *context*.  In fact the output is expected
+   to form a valid S-Web42 *context* except for the *x*\ -versions,
+   which are expected to produce `Content`_ output (implicitly) only,
+   and which thus modify the PI environment of the *current* *context*.
 
    The code is subject to the normal S-Web42 processing before it is
    passed through to the subprocess that runs the interpreter.  I.e.,
    PI expansion can be used to "pass arguments" through.  This raises
-   the question how a valid S-Web42 document can be produced if PIs
+   the question how a valid S-Web42 *context* can be produced if PIs
    are expanded during code evaluation.  Well, it turns out that S-Web42
    injects four variables automatically:
 
@@ -765,12 +768,13 @@ _`pi-if`
    exist.
 
 _`pre`, _`xpre`, _`xcdata`
-   The "preformatted" paired PIs.  While these PIs are active *none*
-   of the filters that have been documented in `About.Filter`_ are
-   active except for the PI expansion filter.  Since that is mostly of
-   interest inside of HTML ``<pre>`` tags, the expansion of the
-   ``<?xpre?>`` PI contains this tag already.  And the ``<?xcdata?>``
-   PI enwraps the content in a CDATA section in addition.
+   The "preformatted" paired PIs.  While these PIs are active *none* of
+   the filters that have been documented in `About.Filter`_ are active
+   except for the PI expansion filter (indeed they create a new
+   *context* for their content).  Since that is mostly of interest inside
+   of HTML ``<pre>`` tags, the expansion of the ``<?xpre?>`` PI contains
+   this tag already.  And the ``<?xcdata?>`` PI enwraps the content in
+   a CDATA section in addition.
 
    .. note::
       Leading whitespace on the line of the ``<?xpre end?>`` will of
@@ -781,10 +785,10 @@ _`undef`
    Undefine an user defined array or PI.
 
    .. note::
-      This undefines in the current context **only**!  I.e., if ``file1``
-      defines the PI ``DOIT`` and then includes ``file2``, then an
-      ``<?undef DOIT?>`` from within ``file2`` will **not** affect
-      ``file1``, but only ``file2`` and deeper contexts.
+      This undefines in the current *context* **only**!  I.e., if
+      ``file1`` defines the PI ``DOIT`` and then includes ``file2``,
+      then an ``<?undef DOIT?>`` from within ``file2`` will **not**
+      affect ``file1``, but only ``file2`` and deeper *contexts*.
 
 News
 ====
