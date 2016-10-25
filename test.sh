@@ -44,6 +44,80 @@ tcase() {
 		terr ${tno} "${1}" "${o}${e}"
 }
 
+
+## mode {{{
+
+tcase 'mode (plain setting + switchback)' 0010-w42-atsm \
+'<?begin?>
+  # Comment
+   Hello, Honey   \\
+	Sugar Candy	\\
+ Girl
+
+    # Comment
+<?mode icews?>
+  # Comment
+   Hello, Honey   \\
+	Sugar Candy	\\
+ Girl
+
+    # Comment
+<?mode %%?>
+  # Comment
+   Hello, Honey   \\
+	Sugar Candy	\\
+ Girl
+
+    # Comment
+<?end?>' \
+\
+'Hello, Honey   Sugar Candy	Girl
+
+  # Comment
+   Hello, Honey   \\
+	Sugar Candy	\\
+ Girl
+
+    # Comment
+Hello, Honey   Sugar Candy	Girl
+' \
+\
+''
+
+echo '<?mode %?>' > ./test-0011-1
+echo '<?mode +c?>' > ./test-0011-2
+
+tcase 'mode (-+=, stack)' 0011-w42 \
+'<?begin?>
+# C1
+<?mode +c?>
+# C2
+<?mode -c?>
+# C3
+<?mode %%?><?mode %%?><?mode -i?><?mode +c?>
+      # C4
+<?xinclude test-0011-1?>
+   # C5
+<?mode %%?><?xinclude test-0011-2?>
+   # C6
+<?xinclude test-0011-1?>
+# C7
+<?end?>' \
+\
+'# C2
+# C4
+# C6
+' \
+\
+''
+
+
+
+
+## }}}
+
+exit
+
 ## Basic filter test series (icewp) {{{
 
 tcase 'Drop of trailing whitespace (cannot be disabled)' 842-w42-icewpatsm \
@@ -1358,46 +1432,8 @@ tcase 'Oneline document (sh(1))' 9.2-w42-atsm \
 ''
 
 # }}}
-## mode {{{
 
-tcase 'mode (but do not use it)' 0010-w42-atsm \
-'<?begin?>
-  # Comment
-   Hello, Honey   \\
-	Sugar Candy	\\
- Girl
 
-    # Comment
-<?mode icews?>
-  # Comment
-   Hello, Honey   \\
-	Sugar Candy	\\
- Girl
-
-    # Comment
-<?mode %%?>
-  # Comment
-   Hello, Honey   \\
-	Sugar Candy	\\
- Girl
-
-    # Comment
-<?end?>' \
-\
-'Hello, Honey   Sugar Candy	Girl
-
-  # Comment
-   Hello, Honey   \\
-	Sugar Candy	\\
- Girl
-
-    # Comment
-Hello, Honey   Sugar Candy	Girl
-' \
-\
-''
-
-## }}}
 ## MarkLo {{{
 
 printf '<?begin?>START\\c{t{e\\}st}\\c{tt}\\i{em}\\b{strong}\\u{u}\\i{I \\b{really \\u{{love\\}} you}, baby!}END\n\\a{xname}\\l{http://plan9.bell-labs.com/plan9/}\\b{OPEN-ERROR<?end?>\n' > ./test-0042-w42-ats

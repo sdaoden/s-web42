@@ -608,15 +608,15 @@ jresetarr:  $pivars->{$key} = []
       if($f == EXPPIS){
          $s = '-x'
       }else{
-         $s .= 'i' unless $f & INTROWS;
-         $s .= 'c' unless $f & COMMS;
-         $s .= 'e' unless $f & ESCNLS;
-         $s .= 'w' unless $f & WIPEEL;
-         $s .= 'p' unless $f & EXPPIS;
-         $s .= 'a' unless $f & AUTOPAR;
-         $s .= 't' unless $f & TAGJOIN;
-         $s .= 's' unless $f & WSNORM;
-         $s .= 'm' unless $f & MARKLO;
+         $s .= 'i' unless ($f & INTROWS);
+         $s .= 'c' unless ($f & COMMS);
+         $s .= 'e' unless ($f & ESCNLS);
+         $s .= 'w' unless ($f & WIPEEL);
+         $s .= 'p' unless ($f & EXPPIS);
+         $s .= 'a' unless ($f & AUTOPAR);
+         $s .= 't' unless ($f & TAGJOIN);
+         $s .= 's' unless ($f & WSNORM);
+         $s .= 'm' unless ($f & MARKLO);
          $s = length $s ? '-' . $s : 'UNLIMITED'
       }
       $s
@@ -1312,6 +1312,7 @@ jset:    $l = $incdir . '/';
    SymObj::sym_create(SymObj::NONE, {
       _ctx => undef, # Ctx object we are exploding
       _mode => 0, # ->ctx->mode
+      _mode_stack => [], # <?mode?> stack
       _dumper => undef, # Output (+ AUTOPAR/TAGJOIN/WSNORM hdl.) ::Dumper
       _recursion => [], # For <?PAIR?> support, recursion-awareness
       _data => [], # Expanded line data, intermediate storage
@@ -1358,14 +1359,31 @@ jset:    $l = $incdir . '/';
       ::e($self->ctx, "Deep recursion warning: code is nested 100 times, " .
          "maybe there is a loop?") if @{$self->recursion} >= 99 * 3;
 
-      $self->_emit->recursion($self->ctx, $self->mode,
-         (exists $self->{__omode} ? $self->{__omode} : undef),
+print STDERR "PREPARE_RECURSION\n";
+      # The <?mode?> stack may not be popped to the active level but for <?x*?>.
+      # For MODE_EMBED, simply inherit from the outer (so we propagate the
+      # outermost that may be popped)
+      my $modeslim = @{$self->mode_stack};
+      if(defined $mode && ($mode & Ctx::MODE_EMBED)){
+         my $i = @{$self->recursion};
+         $modeslim = $self->recursion->[$i - 2] if $i > 0;
+print STDERR "1 = modeslim $modeslim\n";
+      }else{
+         ++$modeslim;
+print STDERR "2 = modeslim $modeslim\n";
+      }
+
+      $self->_emit->recursion($self->ctx, $self->mode, $modeslim,
+         defined $epair ? $epair : '[Recursion was not opened via paired PI!]');
+
+
+      $self->_emit->recursion($self->ctx, $self->mode, $modslim,
          defined $epair ? $epair : '[Recursion was not opened via paired PI]');
+
       $self->ctx($ctx) if defined $ctx;
       if(defined $mode){
          my $om = $self->mode;
          $self->mode($self->ctx->mode($mode));
-         delete $self->{__omode} unless ($mode & Ctx::MODE_EMBED);
          # If there is a change in WIPEEL and the changing PI is the only
          # content on that line, avoid writing an unwanted empty line.
          # This only applies to paired PIs, though.
@@ -1374,8 +1392,6 @@ jset:    $l = $incdir . '/';
             if(defined $epair && !$noel && $noel != ($om & Filter::WIPEEL) &&
                !$self->seen_line && (!defined $self->ctx->line ||
                   length($self->ctx->line) == 0))
-      }else{
-         delete $self->{__omode}
       }
       $self
    }
@@ -1383,21 +1399,45 @@ jset:    $l = $incdir . '/';
    sub _end_recursion{
       my $self = shift;
 
+print STDERR "END_RECURSION\n";
       $self->_emit->seen_end(0);
       pop @{$self->recursion}; # (Simply discard the expected end pair)
-      $self->{__omode} = pop @{$self->recursion};
-      delete $self->{__omode} unless defined $self->{__omode};
+
+      # Automatically pop the <?mode?> stack to the outermost possible level
+      my $modeslim = pop @{$self->recursion};
+      if($modeslim != 0){
+print STDERR "1 - modeslim $modeslim\n";
+         my $i = @{$self->recursion};
+         if($i > 2){
+            $i = $self->recursion->[$i - (2 + 2)];
+print STDERR "1.1 - modeslim=$modeslim i=$i\n";
+            if($modeslim != $i){
+               while($modeslim-- > $i){
+                  pop @{$self->mode_stack};
+               }
+            }
+         }else{
+            $i = @{$self->mode_stack};
+print STDERR "1.2 - modeslim=$modeslim i=$i\n";
+            while($modeslim-- >= $i){
+               pop @{$self->mode_stack};
+            }
+         }
+      }
+else{
+print STDERR "2 - MODESLIM == 0\n";
+}
+
       my $m = pop @{$self->recursion};
       $self->ctx(pop @{$self->recursion});
-      if(defined $m){
-         my $om = $self->mode;
-         $self->mode($self->ctx->mode($m));
-         # If there is a change in WIPEEL and there was data on the line before
-         # the changing PI, do not forget to write wanted separating newline
-         my $noel = ($om & Filter::WIPEEL);
-         ${$self->__mode} |= NL_FORCE
-            if (!$noel && $noel != ($m & Filter::WIPEEL) && $self->seen_line)
-      }
+
+      my $om = $self->mode;
+      $self->mode($self->ctx->mode($m));
+      # If there is a change in WIPEEL and there was data on the line before
+      # the changing PI, don't forget to write the wanted separating newline
+      my $noel = ($om & Filter::WIPEEL);
+      ${$self->__mode} |= NL_FORCE
+         if (!$noel && $noel != ($m & Filter::WIPEEL) && $self->seen_line);
       $self
    }
    # }}}
@@ -1704,17 +1744,39 @@ jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
          $self->_emit
       }elsif($pi eq 'mode'){
          if($i eq '%'){
+            my $mss = @{$self->mode_stack};
             ::panic($self->ctx, "<?mode?> is NOT IN USE")
-               unless exists $self->{__omode};
-            $i = $self->{__omode};
-            delete $self->{__omode}
+               unless $mss > 0;
+            $i = @{$self->recursion};
+            ::panic($self->ctx, "<?mode?> stack overpop")
+               if $i > 0 && $self->recursion->[$i - 2] < $mss;
+            $i = $self->mode | pop @{$self->mode_stack};
+print STDERR "POPPED MODE_STACK ", $i, " size ", scalar @{$self->mode_stack}, "\n";
          }else{
-            ::panic($self->ctx, "<?mode?> is IN USE already")
-               if exists $self->{__omode};
+            push @{$self->mode_stack}, ($self->{_mode} & Filter::FILTER_MASK);
+print STDERR "PUSHED for $i MODE_STACK ", $self->{_mode}, " size ", scalar @{$self->mode_stack}, "\n";
+
+            my $act = substr($i, 0, 1);
+            if($act eq '+' || $act eq '-' || $act eq '='){
+               $i = substr($i, 1)
+            }else{
+               $act = undef
+            }
             $i = Filter::string_to_filters($i);
+            if(defined $act){
+               my $fm = ($self->{_mode} & Filter::FILTER_MASK);
+print STDERR " >>>>>>> $act: $fm +=- $i\n";
+               if($act eq '-'){
+                  $i = $fm | (Filter::FILTER_MASK & ~$i);
+               }elsif($act eq '+'){
+                  $i = $fm & $i;
+               }
+print STDERR " <<<<<<< $i\n";
+            }
             $i |= Filter::EXPPIS;
-            $i |= ($self->{__omode} = $self->{_mode}) & ~Filter::FILTER_MASK;
+            $i |= ($self->{_mode} & ~Filter::FILTER_MASK);
          }
+print STDERR "SET MODE $i\n";
          $self->_emit->dumper->force_mode_change(
             $self->ctx->mode($self->{_mode} = $i))
       }

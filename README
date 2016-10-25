@@ -705,10 +705,16 @@ _`mode`
    This PI can be used to change the modes described in `About.Filter`_
    on the fly; the required argument must either be ``%``, in which
    case the previously active mode is restored, or a combination of
-   the filter mode configuration characters.  Mode changes are inherited
-   by deeper contexts, but they will not be propagated to outer ones.
-   Note that PI expansion mode cannot be disabled like that.  Be aware -
-   you should really know what you are doing when you use this PI.
+   the filter mode configuration characters, optionally prefixed with
+   ``+``, which means to disable the given modes (add restrictions),
+   ``-`` to enable the given modes (remove their restriction),
+   and ``=`` to set the list of disabled filters.
+
+   Mode changes form a stack that is inherited by deeper contexts, but
+   which won't be capable to pop mode changes of their outer context(s)
+   unless embedding context inclusions like, e.g., ``<?xinclude?>``,
+   were used.
+   Note that PI expansion mode cannot be disabled like that.
 
 _`perl`, _`sh`, _`xperl`, _`xsh`
    These are paired statements which can be used to embed ``perl(1)``
@@ -886,7 +892,7 @@ News
 -----
 
 * S-Web42 no longer needs external programs for creating the shell
-  archive.  (My performance increasement was pretty dramatical.)
+  archive.  (My performance improvement was pretty dramatical.)
 
 * The ``<?mode?>`` PI has been rethought and using it for adjustments
   no longer works on a global basis, but changes will not affect outer
@@ -923,6 +929,13 @@ News
 
 * Add an ``?include?`` directive for the `Assignments`_ section.
 
+0.9.4
+-----
+
+* ``<?mode?>`` changed again: it is now possible to add, subtract or
+  assign the modes described in `About.Filter`_, and mode changes can be
+  unlimitedly stacked (upon each other).
+
 Thanks
 ======
 
@@ -945,6 +958,10 @@ Add a Markdown compatible syntax block.
 
 With automatic parapraphs too many flushs occur, and tagsoup joining is
 not yet implemented.
+
+Expander should not carry state: this was done to avoid creation of
+rather useless Ctx objects, but this decision was false, it is not
+a clean way of doing things.
 
 The convertion phase can be parallelized without much (in fact almost
 no) effort; add a special ``MAXJOBS`` or similar special ``config.rc``
