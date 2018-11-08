@@ -46,7 +46,7 @@ our $UPDATE = 'w42-update.sh';
 ##  --  >8  --  8<  --  ##
 
 # includes {{{
-use diagnostics -verbose;
+#use diagnostics -verbose;
 use strict;
 use warnings;
 
