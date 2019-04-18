@@ -412,7 +412,7 @@ sub checksum_path{
    # Handle a complete(d!) ASSIGNMENTS line
    sub handle_assignment{
       my ($ctx, $ctxmode, $line) = @_;
-      unless($line =~ /^([-\w]+)\s*(\?)?(@)?(\+)?=\s*(.+?)$/){
+      unless($line =~ /^([-\w]+)\s*(\?)?(@)?(\+)?=\s*(.*)$/){
          ::e($ctx, 'Ignoring non-interpretable assignment line:', $line);
          return
       }

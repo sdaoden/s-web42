@@ -280,11 +280,13 @@ H
 # Variable
 tcase 'Assignments: variable, 1' 864-w42-atsm \
 'X = one
+Y =
+z =    
 <?begin?>
-<?X?>
+<?X?>a<?Y?>b<?z?>c
 <?end?>' \
 \
-'one
+'oneabc
 ' \
 \
 ''

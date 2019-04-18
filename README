@@ -879,6 +879,11 @@ News
   which mattered for false use cases where the reverting ``<?mode %?>``
   had been forgotten.
 
+0.9.1
+-----
+
+* We support variables with empty values in the assignment block.
+
 Thanks
 ======
 
