@@ -1401,7 +1401,7 @@ jpivar:     $self->_pi_var($pi, $valarr)
             goto jleave
          }
       }elsif($i != @$valarr){
-         ::e($self->ctx, "$pi takes " . $i . ' argument(s)');
+         ::e($self->ctx, "$pi takes " . $i . ' argument(s), has ' . @$valarr);
          goto jleave
       }
 

@@ -620,7 +620,7 @@ tcase 'undef' 0003-w42-atsm \
 \
 '' \
 \
-"ERROR 'test-0003-w42-atsm':10: undef takes 1 argument(s)
+"ERROR 'test-0003-w42-atsm':10: undef takes 1 argument(s), has 0
 ERROR 'test-0003-w42-atsm':12: undef: cannot undef builtin PI (variable): undef
 ERROR 'test-0003-w42-atsm':14: undef: no such variable: def2
 ERROR 'test-0003-w42-atsm':16: undef: no such variable: defx2
@@ -664,10 +664,10 @@ tcase 'lref/lreft/href/hreft' 0004-w42-atsm \
 <a href="nope" title="FreeBSD">"a"<em title="SUB">FreeBSD</em>"u"</a>
 ' \
 \
-"ERROR 'test-0004-w42-atsm':18: lref takes 1 argument(s)
-ERROR 'test-0004-w42-atsm':19: lreft takes 2 argument(s)
-ERROR 'test-0004-w42-atsm':20: href takes 1 argument(s)
-ERROR 'test-0004-w42-atsm':21: hreft takes 2 argument(s)
+"ERROR 'test-0004-w42-atsm':18: lref takes 1 argument(s), has 2
+ERROR 'test-0004-w42-atsm':19: lreft takes 2 argument(s), has 3
+ERROR 'test-0004-w42-atsm':20: href takes 1 argument(s), has 2
+ERROR 'test-0004-w42-atsm':21: hreft takes 2 argument(s), has 3
 "
 
 ## }}}
