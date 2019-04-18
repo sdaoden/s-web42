@@ -1599,7 +1599,8 @@ jleave:
       ## @/defa/auto-vivified (array handling .)
       ## (Auto-vivification has been handled by _expand_pis(), array exists.)
       if(!@$valarr){
-         ::e($self->ctx, "$pi is an array and requires arguments");
+         ::e($self->ctx, "$pi is an array and requires arguments")
+            unless @$v == 1;
          goto jleave
       }
       my $i = shift @$valarr;

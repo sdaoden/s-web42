@@ -882,7 +882,8 @@ News
 0.9.1
 -----
 
-* We support variables with empty values in the assignment block.
+* Add support for variables with empty values in the assignment block,
+  as well as for empty arrays.
 
 Thanks
 ======

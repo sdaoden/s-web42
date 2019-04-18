@@ -481,11 +481,11 @@ BEEF @= dead
 tcase 'def/defa/defx' 0001-w42-atsm \
 '<?begin?>
 
-<?def def1<><p>def1-cont<>ent</p>?>
+<?def def0<>?><?defa defa0<>?><?def def1<><p>def1-cont<>ent</p>?>
 <?defa defa1<><p>defa1-c1<>defa1-c2</p>?>
 <?defx defx1<><p>defx1-c1</p><><p>defx1-c2</p><><p>defx1-c3</p>?>
 
-<?def1?>
+a<?def0?>b<?def0?>ca<?defa0?>b<?defa0?>c<?def1?>
 <?defa1 0?>
 <?defa1 1?>
 <?defx1 defx1-arg1<>defx1-arg2?>
@@ -539,7 +539,7 @@ REE<?def reeval1<><^def reeval2<>reeval-output-ok^><^reeval2^><^undef reeval2^>?
 <?NOW_ALOCAL push<>this is a builtin variable and cannot be modified?>
 <?end?>' \
 \
-'<p>def1-cont<>ent</p>
+'abcabc<p>def1-cont<>ent</p>
 <p>defa1-c1
 defa1-c2</p>
 <p>defx1-c1</p>defx1-arg1<p>defx1-c2</p>defx1-arg2<p>defx1-c3</p>
