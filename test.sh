@@ -1785,6 +1785,7 @@ Third dd.</p></dd></dl>
 	echo > ./config.rc \
 'PERL = <?perl?>require Cwd; print "${BEGIN}<?FILE?><", Cwd->getcwd, ">${END}"\
 <?perl end?>
+FILE =   -should-not-be-seen-  
 TOPMENU @= {TOP}'
 
 	echo \
@@ -1820,9 +1821,10 @@ FILE = (32)
 	printf 'Jo-Ho-Ho' > l1/l2/l3/f3
 
 	tcase 'FINALLY: deep dirhier' 4221-w42 \
-'<?begin?>START<?include l1/f1?>END<?end?>' \
+'FILE = -no-no-
+<?begin?>START<?FILE?><?include l1/f1?>END<?end?>' \
 \
-"START\
+"START-no-no-\
 (11)<${CWD}>\
 (21)<${CWD}>\
 (31)<${CWD}>\
