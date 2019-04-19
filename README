@@ -885,6 +885,9 @@ News
 * Add support for variables with empty values in the assignment block,
   as well as for empty arrays.
 
+* Improve recursive expansion of <^> constructs within normal PIs.
+  Especially handy for arrays.
+
 Thanks
 ======
 

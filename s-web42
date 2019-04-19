@@ -1188,16 +1188,16 @@ jupsums:
    }
 
    SymObj::sym_create(SymObj::NONE, {
-      _ctx => undef,       # Ctx object we're exploding
-      _mode => 0,          # ->ctx->mode
-      _dumper => undef,    # Output (+ AUTOPAR/TAGJOIN/WSNORM hdl.) ::Dumper
-      _recursion => [],    # For <?PAIR?> support, recursion-awareness
-      _data => [],         # Expanded line data, intermediate storage
-      _rest_data => undef, # Line data for re-evaluation
-      _seen_line => 0,     # Seen any line data?
-      _discard => 0,       # Discard data, don't output (?ifdef? etc.)
-      _ifdefs => [],       # Ifdef:: stack
-      _seen_end => 0,      # Seen <?end?>?
+      _ctx => undef, # Ctx object we're exploding
+      _mode => 0, # ->ctx->mode
+      _dumper => undef, # Output (+ AUTOPAR/TAGJOIN/WSNORM hdl.) ::Dumper
+      _recursion => [], # For <?PAIR?> support, recursion-awareness
+      _data => [], # Expanded line data, intermediate storage
+      _reeval_data => undef, # Line data for re-evaluation (to expand <^ to <?)
+      _seen_line => 0, # Seen any line data?
+      _discard => 0, # Discard data, don't output (?ifdef? etc.)
+      _ifdefs => [], # Ifdef:: stack
+      _seen_end => 0, # Seen <?end?>?
       _data_condome => undef # ?perl?/?sh? intermediate layer (see _emit())
    });
 
@@ -1219,7 +1219,7 @@ jupsums:
       }else{
          while(defined(my $l = $self->ctx->readline_full)){
             $self->dumper->seen_empties if $self->ctx->empties_seen;
-            last if $self->_expand_pis($l)->seen_end
+            last if $self->_expand_pis($l, 0)->seen_end
          }
          Expander::Ifdef::check_ctx(scalar $self->ifdefs, $self->ctx)
       }
@@ -1324,18 +1324,34 @@ jleave_keeplen:
    # }}}
 
    sub _expand_pis{ # {{{
-      my ($self, $l) = @_;
+      my ($self, $l, $doreeval) = @_;
 
+jdorest:
       while($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/){
-         $self->_add_data($1)->ctx->line($l = defined $4 ? $4 : '');
-         my $pi = $2;
+         my ($nl, $pi, $valarr, $rest) = ($1, $2, $3, $4);
+
+         if(!$doreeval){
+            $l = $nl
+         }else{
+            my $i = length $nl;
+            _pi_reeval(\$nl);
+            if($nl =~ /(?:.*?)<\?(?:[-\w]+)(?:\s+(.+?))?\?>(?:.*)/){
+               $l = $nl . substr($l, $i); # XXX Expensive! (Strlist; regex?)
+               next
+            }
+            $l = $nl
+         }
+
+         $self->_add_data($l)->ctx->line($l = $rest);
          next if $self->discard && !exists $ALWAYS_REEVAL_PIS{$pi};
-         my $valarr = defined $3 ? [split '<>', $3, -1] : [];
+
+         $valarr = defined $valarr ? [split '<>', $valarr, -1] : [];
+         $rest = '' unless defined $rest;
 
          if(exists $PIS{$pi}){
-            $self->_pi_comm($pi, $valarr)
+            return $self if $self->_pi_comm($pi, $valarr)->seen_end
          }elsif(exists $self->ctx->pivars->{$pi}){
-jpivar:     $self->_pi_var($pi, $valarr)
+jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
          }elsif(exists $IGNORE_PIS{$pi}){
             $self->_add_data('<?' . $pi . (defined $3 ? " $3" : '') . '?>')
          }elsif(@$valarr >= 2 && ($valarr->[0] eq 'unshift' ||
@@ -1351,19 +1367,34 @@ jpivar:     $self->_pi_var($pi, $valarr)
          # Integrate expanded content so that it gets re-evaluated, which is
          # necessary since it may contain PIs itself
          $l = $self->ctx->line;
-         if(defined(my $reeval = $self->rest_data)){
-            $reeval =~ s/<\^>/<>/g;
-            $reeval =~ s/<\^/<\?/g;
-            $reeval =~ s/\^>/\?>/g;
-            $l = $reeval . $l;
-            $self->rest_data(undef)
+         if(defined(my $reeval = $self->reeval_data)){
+            $self->reeval_data(undef);
+            _pi_reeval(\$reeval);
+            $l = $reeval . $l; # XXX Expensive! (Strlist; regex?)
          }
       }
 
-      $self->_add_data($l) if $l;
-      $self->_endl if $self->ctx->seen_endl;
+      if($doreeval && $l){
+         _pi_reeval(\$l);
+         $self->ctx->line($l);
+         goto jdorest if $l =~ /(?:.*?)<\?(?:[-\w]+)(?:\s+(.+?))?\?>(?:.*)/;
+      }
+
+      if($l){
+         $self->_add_data($l);
+         $self->ctx->line('')
+      }
+
+      $self->_endl if(!$doreeval && $self->ctx->seen_endl);
       $self
    } # }}}
+
+   sub _pi_reeval{
+      my ($d) = @_;
+      $$d =~ s/<\^>/<>/g;
+      $$d =~ s/<\^/<\?/g;
+      $$d =~ s/\^>/\?>/g
+   }
 
    sub _pi_comm{ # {{{
       my ($self, $pi, $valarr) = @_;
@@ -1451,7 +1482,7 @@ jpivar:     $self->_pi_var($pi, $valarr)
          $ws = $self->ctx->pivars->{WWW_SUFFIX} if $pi;
          $ws = '' unless defined $ws;
          $i = '<a href="' . $i . '">' . $wp . $i . $ws . '</a>';
-         $self->rest_data($i)
+         $self->reeval_data($i)
       }elsif($pi eq 'hreft' || $pi eq 'lreft'){
          $pi = ($pi eq 'hreft');
          my ($wp, $ws, $t, $tm);
@@ -1464,7 +1495,7 @@ jpivar:     $self->_pi_var($pi, $valarr)
          $t = Expander::Markup::attribute($self->ctx, $tm);
          $i = '<a href="' . $i . '" title="' . $t . '">' .
                $wp . $tm . $ws . '</a>';
-         $self->rest_data($i)
+         $self->reeval_data($i)
       }elsif($pi eq 'pre' || $pi eq 'xpre' || $pi eq 'xcdata'){
          if($i){
             $self->_end_recursion;
@@ -1575,7 +1606,7 @@ jleave:
          if(@$valarr){
             ::e($self->ctx, "$pi does not take any argument(s)")
          }else{
-            $self->rest_data($v)
+            $self->reeval_data($v)
          }
          goto jleave
       }
@@ -1591,7 +1622,12 @@ jleave:
                push @dat, $_ if length;
                push @dat, shift @$valarr if @$valarr
             }
-            $self->rest_data(join '', @dat) if @dat
+            if(@dat){
+               $v = join '', @dat;
+               $pi = $self->ctx->line;
+               $self->_expand_pis($v, 1);
+               $self->ctx->line($pi . $self->ctx->line);
+            }
          }
          goto jleave
       }
@@ -1617,7 +1653,7 @@ jleave:
             goto jleave
          }
          $i = $v->[$i];
-         $self->rest_data($i) if length $i;
+         $self->reeval_data($i) if length $i;
          goto jleave
       }elsif($i eq 'loop'){
          if(@$valarr > 2){
@@ -1633,14 +1669,21 @@ jleave:
             push @dat, $_ if length;
             push @dat, $post if defined $post
          }
-         $self->rest_data(join '', @dat) if @dat
+         if(@dat){
+            $i = join '', @dat;
+            $pi = $self->ctx->line;
+            $self->_expand_pis($i, 1);
+            $self->ctx->line($pi . $self->ctx->line);
+         }
       }elsif($i eq 'unshift' || $i eq 'push' || $i eq 'shift' ||
             $i eq 'pop' || $i eq 'undef-empty'){
          if(exists $PIVars::builtin->{$pi}){
             ::e($self->ctx, "$pi: cannot modify builtin PI (variable) via $i")
          }elsif($i eq 'unshift'){
+# FIXME join <>??
             unshift @$v, join('<>', @$valarr)
          }elsif($i eq 'push'){
+# FIXME join <>??
             push @$v, join('<>', @$valarr)
          }elsif($i eq 'shift' || $i eq 'pop'){
             if(@$v == 0){

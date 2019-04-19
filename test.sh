@@ -1363,8 +1363,7 @@ tcase 'MarkLo expansion (disable mode: m)' 0042-w42-ats \
 '' \
 \
 'START<tt>t{e}st</tt><tt>tt</tt><em>em</em><strong>strong</strong><u>u</u><em>I <strong>really <u>{love}</u> you</strong>, baby!</em>END
-<a name="xname"></a><a href="http://plan9.bell-labs.com/plan9/">http://plan9.bell-labs.com/plan9/</a>
-' \
+<a name="xname"></a><a href="http://plan9.bell-labs.com/plan9/">http://plan9.bell-labs.com/plan9/</a>' \
 \
 "ERROR 'test-0042-w42-ats':2: MarkLo: \\\\b not closed (missing right brace)
 "
