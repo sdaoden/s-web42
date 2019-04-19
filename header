@@ -6,7 +6,7 @@
 <?fi?>
 <?ifndef HOMEPAGE?>
  <?ifndef HOME?>
-  <?def HOME<>index.html?>
+  <?def HOME<><^TOPDIR^>index.html?>
  <?fi?>
  <?TOPMENU unshift<>\
   <a class="_home" href="<^HOME^>" title="Homepage">Home</a>?>
@@ -53,13 +53,13 @@
 <meta name="Date" content="<?MODTIME_SLOCAL?>" />\
 \
 <meta name="viewport" content="width=device-width, initial-scale=1" />\
-<link rel="stylesheet" type="text/css" href="style.css" />\
+<link rel="stylesheet" type="text/css" href="<?TOPDIR?>style.css" />\
 <?ifdef STYLE_INJECT?>\
  <style type="text/css">/* <![CDATA[ */\
  <?STYLE_INJECT?>/* ]]> */</style>\
 <?fi?>\
 \
-<script type="text/javascript" src="script.js"></script>\
+<script type="text/javascript" src="<?TOPDIR?>script.js"></script>\
 <?ifdef SCRIPT_INJECT?>\
  <script type="text/javascript">/* <![CDATA[ */\
  <?SCRIPT_INJECT?>/* ]]> */</script>\

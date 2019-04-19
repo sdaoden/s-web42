@@ -23,7 +23,8 @@ PTOP_NAVI   = <div class="_topdown"><p><a class="_topdownmove" \
             title="Page-Bottom">&darr;</a></p></div>
 
 # Navigation menu for *header*
-TOPMENU @= <?lreft disccopy.html<>Imprint/Disclaimer?>
+TOPDIR =
+TOPMENU @= <?lreft <^TOPDIR^>disccopy.html<>Imprint/Disclaimer?>
 
 # Navigation menu for *footer*
 # *footer* unshifts this *last* BOTMENU @= <?NAVI_PTOP?>
