@@ -394,6 +394,7 @@ sub checksum_path{
    our $builtin = {
       COMPRESS => '',
       IGNORE_MODTIME => 0,
+      WHITELIST => '',
       # Include these for overwrite checks
       MODTIME_AUTC => [1972, 6, 25, 4, 42, 0, 'UTC'],
       MODTIME_ALOCAL => [1972, 6, 25, 5, 42, 0, '+0100'],
@@ -666,7 +667,10 @@ jresetarr:  $pivars->{$key} = []
 
          ::xpanic("Can't opendir '$i': $^E") unless opendir DH, $i;
          $i = [grep {
-            -f "$i/$_" && substr($_, 0, 1) ne '.' && $_ ne $HOOK
+            -f "$i/$_" && $_ ne $HOOK &&
+               (substr($_, 0, 1) ne '.' ||
+                $PIVars::outermost->{WHITELIST} =~
+                  /(^|[[:space:]])$_($|[[:space:]])/);
          } readdir DH];
          closedir DH; # xxx err hdl
 

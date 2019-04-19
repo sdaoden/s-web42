@@ -136,9 +136,10 @@ parse the tree therein.  An existent per-directory hook is run at that
 point, and before deeper levels of the hierarchy are entered.  Note
 that the directory entries ``SCCS``, ``CVS`` and anything which starts
 with a dot (thus also ``.git`` and ``.RCS``) are completely ignored
-by S-Web42.  It is not possible to savely create directories on the
-fly except in deeper, not yet parsed hierarchy levels below the current
-directory, too.
+by S-Web42, except that files may be included when placed in the
+`WHITELIST`_ variable of ``config.rc``.  It is not possible to savely
+create directories on the fly except in deeper, not yet parsed hierarchy
+levels below the current directory, too.
 
 .. note::
    S-Web42 won't handle paths with embedded quotation marks, i.e.,
@@ -486,6 +487,11 @@ _`IGNORE_MODTIME`
    It set, causes file modification times to be ignored when deciding
    whether a file has to be updated or not.  Maybe necessary if
    ``git(1)`` is used as a source code control system.
+
+_`WHITELIST`
+   **Only recognized in config.rc**.
+   A set of file globs of files to include in the output even if they
+   would be normally ignored, eg, because they start with a dot.
 
 _`MODTIME_AUTC`, _`MODTIME_ALOCAL`, _`MODTIME_SUTC`, _`MODTIME_SLOCAL`
    **Readonly**.
@@ -891,6 +897,8 @@ News
   prefix for URLs, so that an entire site can be driven with a single
   template instance.
 
+* We no longer ignore files starting with a dot when they are placed in
+  the new WHITELIST variable of ``config.rc``.
 
 Thanks
 ======
