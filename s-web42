@@ -1330,6 +1330,7 @@ jleave_keeplen:
    sub _expand_pis{ # {{{
       my ($self, $l, $doreeval) = @_;
 
+      $self->ctx->line($l);
 jdorest:
       while($l =~ /(.*?)<\?([-\w]+)(?:\s+(.+?))?\?>(.*)/){
          my ($nl, $pi, $valarr, $rest) = ($1, $2, $3, $4);
@@ -1339,11 +1340,11 @@ jdorest:
          }else{
             my $i = length $nl;
             _pi_reeval(\$nl);
-            if($nl =~ /(?:.*?)<\?(?:[-\w]+)(?:\s+(.+?))?\?>(?:.*)/){
-               $l = $nl . substr($l, $i); # XXX Expensive! (Strlist; regex?)
-               next
-            }
-            $l = $nl
+         if($nl =~ /(?:.*?)<\?(?:[-\w]+)(?:\s+(.+?))?\?>(?:.*)/){
+            $l = $nl . substr($l, $i); # XXX Expensive! (Strlist; regex?)
+            next
+         }
+         $l = $nl
          }
 
          $self->_add_data($l)->ctx->line($l = $rest);
@@ -1610,7 +1611,9 @@ jleave:
          if(@$valarr){
             ::e($self->ctx, "$pi does not take any argument(s)")
          }else{
-            $self->reeval_data($v)
+            $pi = $self->ctx->line;
+            $self->_expand_pis($v, 1);
+            $self->ctx->line($pi . $self->ctx->line)
          }
          goto jleave
       }

@@ -630,7 +630,13 @@ ERROR 'test-0003-w42-atsm':16: undef: no such variable: defx2
 ## lref,lreft, href,hreft {{{
 
 tcase 'lref/lreft/href/hreft' 0004-w42-atsm \
-'<?begin?>
+'
+PATH = ../
+THIS = <?lref ../da?>
+THIS2 = <?lref <^PATH^>da?>
+THIST = <?lreft dubi://du/../da<>dudadadu?>
+THIST2 = <?lreft dubi://du/<^PATH^>da<>dudadadu?>
+<?begin?>
 
 <?lref http://www.netbsd.org?>
 <?lreft http://www.netbsd.org<><em>NetBSD</em>?>
@@ -652,6 +658,9 @@ tcase 'lref/lreft/href/hreft' 0004-w42-atsm \
 <?href a<>b?>
 <?hreft a<>b<>c?>
 
+<?THIS?><?THIS2?>
+<?THIST?>
+<?THIST2?>
 <?end?>' \
 \
 '<a href="http://www.netbsd.org">http://www.netbsd.org</a>
@@ -662,12 +671,15 @@ tcase 'lref/lreft/href/hreft' 0004-w42-atsm \
 <a href="http://www.freebsd.org" title="FreeBSD"><strong>WWW!</strong>FreeBSD</a>
 <a href="nope">"a"nope"u"</a>
 <a href="nope" title="FreeBSD">"a"<em title="SUB">FreeBSD</em>"u"</a>
+<a href="../da">../da</a><a href="../da">../da</a>
+<a href="dubi://du/../da" title="dudadadu">dudadadu</a>
+<a href="dubi://du/../da" title="dudadadu">dudadadu</a>
 ' \
 \
-"ERROR 'test-0004-w42-atsm':18: lref takes 1 argument(s), has 2
-ERROR 'test-0004-w42-atsm':19: lreft takes 2 argument(s), has 3
-ERROR 'test-0004-w42-atsm':20: href takes 1 argument(s), has 2
-ERROR 'test-0004-w42-atsm':21: hreft takes 2 argument(s), has 3
+"ERROR 'test-0004-w42-atsm':24: lref takes 1 argument(s), has 2
+ERROR 'test-0004-w42-atsm':25: lreft takes 2 argument(s), has 3
+ERROR 'test-0004-w42-atsm':26: href takes 1 argument(s), has 2
+ERROR 'test-0004-w42-atsm':27: hreft takes 2 argument(s), has 3
 "
 
 ## }}}
