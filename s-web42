@@ -1340,11 +1340,11 @@ jdorest:
          }else{
             my $i = length $nl;
             _pi_reeval(\$nl);
-         if($nl =~ /(?:.*?)<\?(?:[-\w]+)(?:\s+(.+?))?\?>(?:.*)/){
-            $l = $nl . substr($l, $i); # XXX Expensive! (Strlist; regex?)
-            next
-         }
-         $l = $nl
+            if($nl =~ /(?:.*?)<\?(?:[-\w]+)(?:\s+(.+?))?\?>(?:.*)/){
+               $l = $nl . substr($l, $i); # XXX Expensive! (Strlist; regex?)
+               next
+            }
+            $l = $nl
          }
 
          $self->_add_data($l)->ctx->line($l = $rest);
