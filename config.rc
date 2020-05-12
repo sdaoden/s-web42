@@ -8,19 +8,19 @@ WWW_PREFIX = <strong class="_web" title="WEB!">&infin;</strong>&nbsp;
 
 ## Example navigation for interaction with example header/footer
 
-NAVI_UP     = &uArr;
-NAVI_FIRST  = &lArr;
-NAVI_LAST   = &rArr;
-NAVI_PREV   = &larr;
-NAVI_NEXT   = &rarr;
-NAVI_PTOP   = <a class="_top" href="#_top" title="Page-Top">&uarr;</a>
+NAVI_UP = &uArr;
+NAVI_FIRST = &lArr;
+NAVI_LAST = &rArr;
+NAVI_PREV = &larr;
+NAVI_NEXT = &rarr;
+NAVI_PTOP = <a class="_top" href="#_top" title="Page-Top">&uarr;</a>
 
 # <?PTOP_NAVI?> can then be used in between sections or whatever on
 # a page to go to the top and bottom of the page (if desired)
-PTOP_NAVI   = <div class="_topdown"><p><a class="_topdownmove" \
-            href="#_top" title="Page-Top">&uarr;</a>&nbsp;&nbsp;\
-            <a class="_topdownmove" href="#_bottom" \
-            title="Page-Bottom">&darr;</a></p></div>
+PTOP_NAVI = <div class="_topdown"><p><a class="_topdownmove" \
+      href="#_top" title="Page-Top">&uarr;</a>&nbsp;&nbsp;\
+      <a class="_topdownmove" href="#_bottom" \
+      title="Page-Bottom">&darr;</a></p></div>
 
 # Navigation menu for *header*
 TOPDIR =
@@ -31,21 +31,21 @@ TOPMENU @= <?lreft <^TOPDIR^>disccopy.html<>Imprint/Disclaimer?>
 
 ## Contact information
 
-AUTHOR         = Your Name
-AUTHOR_AND_EMAIL     = Your Name &lt;YOUR@MAIL&gt;
+AUTHOR = Your Name
+AUTHOR_AND_EMAIL = Your Name &lt;YOUR@MAIL&gt;
 AUTHOR_AND_EMAIL_RAW = Your Name, YOUR@MAIL
-WEB            = YOUR-WEB-ADDRESS
-MAIL           = YOUR@MAIL
-COPY_DATE_SPEC = 1972 - 2019
+WEB = YOUR-WEB-ADDRESS
+MAIL = YOUR@MAIL
+COPY_DATE_SPEC = 1972 - 2020
 
-## Don't touch the rest directly, use file-local assignments instead
+## Do not touch the rest directly, use file-local assignments instead
 
-#SCCSID         = I like original SCCS
-#TITLE          = undef
-#DESC           = undef
-#KEYWORDS       = undef
-#STYLE_INJECT   = undef
-#SCRIPT_INJECT  = undef
-#HEAD_INJECT    =
+#SCCSID = I like original SCCS
+#TITLE = undef
+#DESC = undef
+#KEYWORDS = undef
+#STYLE_INJECT = undef
+#SCRIPT_INJECT = undef
+#HEAD_INJECT =
 
 # s-it-mode

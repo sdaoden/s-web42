@@ -8,7 +8,7 @@ TITLE = Qual - Some More
 HEADLINE = Qual
 DESC = A Poem
 KEYWORDS = Qual, Poems
-COPY_DATE_SPEC = 1997 - 2016
+COPY_DATE_SPEC = 1997 - 2020
 
 # If set, will be used as target files for navigation (header,footer)
 FIRST = .html
@@ -20,8 +20,8 @@ LAST = .html
 # instead (to non-empty); this MUST be set
 HOME = .html
 
-TOPMENU @= <?lreft xy.html<>Xy?>
-TOPMENU @= <?lreft disccopy.html<>Imprint and Disclaimer?>
+TOPMENU @= <?lreft <^TOPDIR^>xy.html<>Xy?>
+TOPMENU @= <?lreft <^TOPDIR^>disccopy.html<>Imprint and Disclaimer?>
 
 #STYLE_INJECT = 
 #SCRIPT_INJECT = 
