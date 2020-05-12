@@ -15,7 +15,7 @@ RC=--no-rc
 rm_file() {
 	# This does not work with Heirloom sh(1), even though the construct
 	# works as such; this was reproducable as long as i was tired to find
-	# the problem; let's just use printf(1) instead
+	# the problem; let us just use printf(1) instead
 	#: > "${1}"
 	printf '' > "${1}"
 }
@@ -815,8 +815,8 @@ yes.13
 9
 ' \
 \
-"ERROR 'test-0005-w42-atsm':109: ifn?def: was started here, but where's the <?fi?>?
-ERROR 'test-0005-w42-atsm':109: ifn?def: was started here, but where's the <?fi?>?
+"ERROR 'test-0005-w42-atsm':109: ifn?def: was started here, but where is the <?fi?>?
+ERROR 'test-0005-w42-atsm':109: ifn?def: was started here, but where is the <?fi?>?
 "
 
 ## }}}
@@ -1420,7 +1420,8 @@ boing bum tschak
 ## }}}
 ## Automatic paragraphs {{{
 
-tcase 'BAD (soup joining) but OK Automatic paragraphs (disable mode: a)' 0044-w42-t \
+tcase 'BAD (soup joining) but OK Automatic paragraphs (disable mode: a)' \
+   0044-w42-t \
 '<?begin?>
 1 no empties before.
 
@@ -1599,7 +1600,8 @@ Third dd.</p></dd>
 \
 ''
 
-tcase 'OK BUT BAD (soup joining) Automatic paragraphs (disable mode: a)' 0045-w42-t \
+tcase 'FAIL BUT ACCEPT (soup joining) Automatic paragraphs (disable mode: a)' \
+   0045-w42-t \
 '<?begin?>
 1 no empties before.
 

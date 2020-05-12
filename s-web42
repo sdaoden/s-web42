@@ -29,7 +29,7 @@ __EOT__
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-# MD5 is always available, SHA is not.  It's also faster, and sufficient.
+# MD5 is always available, SHA is not.  It is also faster, and sufficient.
 my $DIGEST = 'Digest::MD5';
 
 # Some file names
@@ -123,29 +123,29 @@ our %IGNORE_PIS = (xml => 0);
 # with 0 meaning no arguments and <0 meaning a variable amount; however,
 # treat the negated number as a minimum argument-count requirement
 our %PIS = (
-   def      => -2,   defa        => -2,   defx     => -2,
-   end      => 0,
-   href     => 1,    hreft       => 2,    lref     => 1,    lreft       => 2,
-   ifdef    => 1,    ifndef      => 1,    'else'   => 0,    fi          => 0,
-   include  => 1,    xinclude    => 1,    raw_include => 1, frank_include => 1,
-   mode     => 1,
-   perl     => 0,    xperl       => 0,    sh       => 0,    xsh         => 0,
-   'pi-if'  => -1,
-   pre      => 0,    xpre        => 0,    xcdata   => 0,
-   'undef'  => 1
+   def => -2, defa => -2, defx => -2,
+   end => 0,
+   href => 1, hreft => 2, lref => 1, lreft => 2,
+   ifdef => 1, ifndef => 1, 'else' => 0, fi => 0,
+   include => 1, xinclude => 1, raw_include => 1, frank_include => 1,
+   mode => 1,
+   perl => 0, xperl => 0, sh => 0, xsh => 0,
+   'pi-if' => -1,
+   pre => 0, xpre => 0, xcdata => 0,
+   'undef' => 1
 );
 our %MULTILINE_PIS = (
-   perl     => 0,    xperl       => 0,    sh       => 0,    xsh   => 0,
-   pre      => 0,    xpre        => 0,    xcdata   => 0
+   perl => 0, xperl => 0, sh => 0, xsh => 0,
+   pre => 0, xpre => 0, xcdata => 0
 );
 our %ALWAYS_REEVAL_PIS = (
-   ifdef    => 0,    ifndef      => 0,    'else'   => 0,    fi    => 0,
-   end      => 0
+   ifdef => 0, ifndef => 0, 'else' => 0, fi => 0,
+   end => 0
 );
 # }}}
 
 sub main_fun{ # {{{
-   # Don't check for the 'a' and 'A' subflags of -C, but only I/O related ones
+   # Do not check for the 'a' and 'A' subflags of -C, but only I/O related ones
    print STDERR <<__EOT__ if !(${^UNICODE} & 0x5FF) && ${^UTF8LOCALE};
 
 WARNING WARNING WARNING
@@ -215,9 +215,9 @@ __EOT__
 
    # Read the global $CONFIG
    if(-f $CONFIG && !$NO_RC){
-      Ctx->new(mode => &Ctx::MODE_CONFIGRC, sumup => $CONFIG)
-         ->open->read_assignments->close;
-      if(length(my $a = $PIVars::outermost->{COMPRESS})){
+      Ctx->new(mode => &Ctx::MODE_CONFIGRC, sumup => $CONFIG
+         )->open->read_assignments->close;
+      if(length(my $a = $PIVars::outermost->{COMPRESS}) > 0){
          xpanic('COMPRESS can only be set to one of ' .
             join(', ', keys %COMPRESS)) unless exists $COMPRESS{$a};
          eval "require $COMPRESS{$a}"
@@ -230,7 +230,7 @@ __EOT__
       my $dird = undef;
       if(length $eo){
          my $cf = Filter::classify_filename($eo);
-         xe("File '$eo' doesn't seem to be an expandable S-Web42 file!")
+         xe("File '$eo' does not seem to be an expandable S-Web42 file!")
             unless exists $cf->{EXPANDABLE};
          $m = $cf->{FILTERS} | &Ctx::MODE_OUTFH if exists $cf->{FILTERS};
          my ($dn, $i, $bn);
@@ -241,8 +241,8 @@ __EOT__
          $m |= &Ctx::MODE_INFH;
          $eo = 'STDIN'
       }
-      Ctx->new(mode => $m, chdird => $dird, incdird => $dird, sumup => $eo)
-         ->full_expand_lifecycle;
+      Ctx->new(mode => $m, chdird => $dird, incdird => $dird, sumup => $eo
+         )->full_expand_lifecycle;
       goto jEXIT
    }
 
@@ -308,34 +308,34 @@ jEXIT:
 END{
    return unless $DELETE_OK;
    my $stale = 0;
-   if(-f $TMP_WORK){ ++$stale unless unlink $TMP_WORK }
-   if(-f $TMP_UPDATE){ ++$stale unless unlink $TMP_UPDATE }
+   if(-f $TMP_WORK) {++$stale unless unlink $TMP_WORK}
+   if(-f $TMP_UPDATE) {++$stale unless unlink $TMP_UPDATE}
    xe('Could not remove all temporary files') if $stale
 }
 
 sub xpanic{
    print STDERR 'PANIC: ', shift, "\n";
-   while(@_ != 0){ print STDERR 'PANIC ++ ', shift, "\n" };
+   while(@_ != 0) {print STDERR 'PANIC ++ ', shift, "\n"};
    exit 21
 }
 sub panic{
    my $ctx = shift;
    print STDERR "PANIC '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
-   while(@_ != 0){ print STDERR 'PANIC ++ ', shift, "\n" };
+   while(@_ != 0) {print STDERR 'PANIC ++ ', shift, "\n"};
    exit 21
 }
 
 sub xe{
    ++$ERRORS;
    print STDERR 'ERROR ', shift, "\n";
-   while(@_ != 0){ print STDERR 'ERROR ++ ', shift, "\n" };
+   while(@_ != 0) {print STDERR 'ERROR ++ ', shift, "\n"};
    1
 }
 sub e{
    ++$ERRORS;
    my $ctx = shift;
    print STDERR "ERROR '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
-   while(@_ != 0){ print STDERR 'ERROR ++ ', shift, "\n" };
+   while(@_ != 0) {print STDERR 'ERROR ++ ', shift, "\n"};
    1
 }
 
@@ -349,21 +349,21 @@ sub v{
    return unless $VERBOSE > 0;
    my $ctx = shift;
    print $LOGFH "V  '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
-   while(@_ != 0){ print $LOGFH 'V  ++ ', shift, "\n" };
+   while(@_ != 0) {print $LOGFH 'V  ++ ', shift, "\n"};
    1
 }
 
 sub xvv{
    return unless $VERBOSE > 1;
    print $LOGFH 'VV ', shift, "\n";
-   while(@_ != 0){ print $LOGFH 'VV ++ ', shift, "\n" };
+   while(@_ != 0) {print $LOGFH 'VV ++ ', shift, "\n"};
    1
 }
 sub vv{
    return unless $VERBOSE > 1;
    my $ctx = shift;
    print $LOGFH "VV '", $ctx->sumup, "':", $ctx->lineno, ': ', shift, "\n";
-   while(@_ != 0){ print $LOGFH 'VV ++ ', shift, "\n" };
+   while(@_ != 0) {print $LOGFH 'VV ++ ', shift, "\n"};
    1
 }
 
@@ -380,10 +380,9 @@ sub checksum_path{
       unless open F, '<', $path;
    binmode F;
    my ($cksum, $buf, $len) = (&$_digctor($DIGEST), '');
-   while(($len = read F, $buf, 1024 * 1024)){
-      $cksum->add($buf)
-   }
-   xe("Failed to close '$path' after checksum calculation: $^E") unless close F;
+   while(($len = read F, $buf, 1024 * 1024)) {$cksum->add($buf)}
+   xe("Failed to close '$path' after checksum calculation: $^E")
+      unless close F;
    $cksum->b64digest
 }
 # }}}
@@ -432,7 +431,8 @@ sub checksum_path{
          return
       }
       if(!($ctxmode & &Ctx::MODE_CONFIGRC) && exists $builtin->{$key}){
-         ::e($ctx, "Builtin PI variable can only be handled in $CONFIG", $line);
+         ::e($ctx, "Builtin PI variable can only be handled in $CONFIG",
+            $line);
          return
       }
       if(defined $noovw && exists $ctx->pivars->{$key}){
@@ -493,7 +493,9 @@ jresetarr:  $pivars->{$key} = []
          ($nau, $nal, $nsu, $nsl) = ('NOW_AUTC', 'NOW_ALOCAL', 'NOW_SUTC',
                'NOW_SLOCAL')
       }
-      sub __zpad{ ($_[0] < 10 ? '0' : '') . $_[0] }
+
+      sub __zpad {($_[0] < 10 ? '0' : '') . $_[0]}
+
       unless($HAVE_TIMEPIECE){
          $s = [gmtime $secs];
          $a[0] = $s->[5] + 1900;
@@ -530,6 +532,7 @@ jresetarr:  $pivars->{$key} = []
             }
             $r
          }
+
          $s = Time::Piece::gmtime($secs);
          $pivars->{$nau} = __fill(\@a, $s, 1);
          $pivars->{$nsu} = $s->datetime . ' UTC';
@@ -541,21 +544,21 @@ jresetarr:  $pivars->{$key} = []
 } # }}}
 
 {package Filter; # {{{
-   sub INTROWS(){ 1<<0 }   # Strip leading whitespace
-   sub COMMS(){ 1<<1 }     # Handle shell-style comments
-   sub ESCNLS(){ 1<<2 }    # Handle escaped newlines
-   sub WIPEEL(){ 1<<3 }    # Wipe empty lines
-   sub EXPPIS(){ 1<<4 }    # Expand PIs
-   sub AUTOPAR(){ 1<<5 }   # Automatic <p></p>
-   sub TAGJOIN(){ 1<<6 }   # Join together tagsoup
-   sub WSNORM(){ 1<<7 }    # Normalize whitespace
-   sub MARKLO(){ 1<<8 }    # Expand MarkLo
+   sub INTROWS() {1<<0} # Strip leading whitespace
+   sub COMMS() {1<<1} # Handle shell-style comments
+   sub ESCNLS() {1<<2} # Handle escaped newlines
+   sub WIPEEL() {1<<3} # Wipe empty lines
+   sub EXPPIS() {1<<4} # Expand PIs
+   sub AUTOPAR() {1<<5} # Automatic <p></p>
+   sub TAGJOIN() {1<<6} # Join together tagsoup
+   sub WSNORM() {1<<7} # Normalize whitespace
+   sub MARKLO() {1<<8} # Expand MarkLo
 
-   sub MAXSHIFT(){ 8 }
-   sub FILTER_MASK(){ (1<<(MAXSHIFT + 1)) - 1 }
+   sub MAXSHIFT() {8}
+   sub FILTER_MASK() {(1<<(MAXSHIFT + 1)) - 1}
 
-   sub ASSIGNMENTS_FILTERS(){ INTROWS | COMMS | ESCNLS | WIPEEL }
-   sub CONTENT_FILTERS(){ (1 << (MAXSHIFT + 1)) - 1 }
+   sub ASSIGNMENTS_FILTERS() {INTROWS | COMMS | ESCNLS | WIPEEL}
+   sub CONTENT_FILTERS() {(1 << (MAXSHIFT + 1)) - 1}
 
    sub classify_filename{
       my ($path) = @_;
@@ -613,7 +616,6 @@ jresetarr:  $pivars->{$key} = []
    our (@delete_nodes, @refresh_nodes) = ((), ());
 
    sub parse{
-      ::xv("Entering '$SITE' for first pass (hooks and directory detection)");
       sub __run1{
          my ($dnode, $outpath, $spath, $i) = (shift, shift);
          $spath = $dnode->source_path;
@@ -637,7 +639,7 @@ jresetarr:  $pivars->{$key} = []
             ::xe("Hook execution failed in '$spath'") if $? >> 8
          }
 
-         ::xpanic("Can't opendir '$spath': $^E") unless opendir DH, $spath;
+         ::xpanic("Cannot opendir '$spath': $^E") unless opendir DH, $spath;
          my @sdirs = grep{
             -d "$spath/$_" &&
             substr($_, 0, 1) ne '.' && $_ ne 'SCCS' && $_ ne 'CVS'
@@ -645,17 +647,17 @@ jresetarr:  $pivars->{$key} = []
          closedir DH; # xxx err hdl
 
          foreach(@sdirs){
-            ::xpanic("Can't handle paths with quotation marks: '$_'")
+            ::xpanic("Cannot handle paths with quotation marks: '$_'")
                if $_ =~ /['"]/;
             my $dn = Node::Dir->new(path => $_, parent => $dnode);
             __run1($dn, $outpath . '../')
          }
       }
-      __run1(Node::Dir->new(), '../');
 
+      ::xv("Entering '$SITE' for first pass (hooks and directory detection)");
+      __run1(Node::Dir->new(), '../');
       ::xpanic('Some hooks failed, bailing out') if $ERRORS;
 
-      ::xv("Entering '$SITE' for second pass (collecting file list)");
       sub __run2{
          my ($dnode, $lvl, $i) = (shift, (shift) + 1);
          $i = $dnode->source_path;
@@ -665,7 +667,7 @@ jresetarr:  $pivars->{$key} = []
             ::xvv("** <$SITE> **")
          }
 
-         ::xpanic("Can't opendir '$i': $^E") unless opendir DH, $i;
+         ::xpanic("Cannot opendir '$i': $^E") unless opendir DH, $i;
          $i = [grep {
             -f "$i/$_" && $_ ne $HOOK &&
                (substr($_, 0, 1) ne '.' ||
@@ -675,7 +677,7 @@ jresetarr:  $pivars->{$key} = []
          closedir DH; # xxx err hdl
 
          foreach my $e (@$i){
-            ::xpanic("Can't handle paths with quotation marks: '$e'")
+            ::xpanic("Cannot handle paths with quotation marks: '$e'")
                if $e =~ /['"]/;
             Node::File->new(path => $e, parent => $dnode);
             ::xvv((' ' x $lvl) . ' . ' . $dnode->files->path)
@@ -685,17 +687,18 @@ jresetarr:  $pivars->{$key} = []
             __run2($d, $lvl)
          }
       }
-      __run2($Node::root, -1);
 
+      ::xv("Entering '$SITE' for second pass (collecting file list)");
+      __run2($Node::root, -1);
       ::xpanic("Cannot traverse '$SITE' to collect file list, bailing out")
          if $ERRORS
    }
 
    sub inspect_tree{
+      our $ignmod;
+
       return unless defined $Node::root->files || defined $Node::root->dirs;
 
-      ::xv("Testing modification times/input checksums");
-      our $ignmod = $PIVars::outermost->{IGNORE_MODTIME};
       sub __traverse{
          my ($dnode) = @_;
          if($dnode->parent){
@@ -759,6 +762,9 @@ jupsums:
             __traverse($dn)
          }
       }
+
+      ::xv("Testing modification times/input checksums");
+      $ignmod = $PIVars::outermost->{IGNORE_MODTIME};
       __traverse($Node::root);
       ::xpanic("Failed some checksum queries in '$SITE', bailing out")
          if $ERRORS
@@ -766,13 +772,13 @@ jupsums:
 } # }}}
 
 {package Node; # {{{
-   sub STATE_NONE(){ 0 }
-   sub STATE_EXPANDABLE(){ 1<<1 } # Is an expandable file
-   sub STATE_DEL(){ 1<<2 }       # Has been deleted
-   sub STATE_KNOWN(){ 1<<3 }     # Cache database knew about entry
-   sub STATE_REFRESH(){ 1<<4 }   # Needs refresh
+   sub STATE_NONE() {0}
+   sub STATE_EXPANDABLE() {1<<1} # Is an expandable file
+   sub STATE_DEL() {1<<2} # Has been deleted
+   sub STATE_KNOWN() {1<<3} # Cache database knew about entry
+   sub STATE_REFRESH() {1<<4} # Needs refresh
 
-   sub STATE_CACHE_MASK(){ 0 }   # Flags transported through cache DB
+   sub STATE_CACHE_MASK() {0} # Flags transported through cache DB
 
    our $root = undef;
 
@@ -804,17 +810,17 @@ jupsums:
       _sibling => undef
    });
 
-   sub isdir{ exists $_[0]->{_dirs} }
-   sub isfile{ !exists $_[0]->{_dirs} }
+   sub isdir {exists $_[0]->{_dirs}}
+   sub isfile {!exists $_[0]->{_dirs}}
 
-   sub isexpandable{ $_[0]->state & STATE_EXPANDABLE }
-   sub isdel{ $_[0]->state & STATE_DEL }
-   sub isknown{ $_[0]->state & STATE_KNOWN }
-   sub isrefresh{ $_[0]->state & STATE_REFRESH }
+   sub isexpandable {$_[0]->state & STATE_EXPANDABLE}
+   sub isdel {$_[0]->state & STATE_DEL}
+   sub isknown {$_[0]->state & STATE_KNOWN}
+   sub isrefresh {$_[0]->state & STATE_REFRESH}
 
-   sub set_refresh{ ${$_[0]->__state} |= STATE_REFRESH; $_[0] }
-   sub unset_refresh{ ${$_[0]->__state} &= ~STATE_REFRESH; $_[0] }
-   sub state_for_cache{ ${$_[0]->__state} & STATE_CACHE_MASK }
+   sub set_refresh {${$_[0]->__state} |= STATE_REFRESH; $_[0]}
+   sub unset_refresh {${$_[0]->__state} &= ~STATE_REFRESH; $_[0]}
+   sub state_for_cache {${$_[0]->__state} & STATE_CACHE_MASK}
 
 {package Node::Dir;
    our @ISA = ('Node');
@@ -949,16 +955,8 @@ jupsums:
    }
 
    sub update{
-      ::xpanic("Failed to open '$TMP_WORK' for writing: $^E")
-         unless open CF, '>', $TMP_WORK;
-      ::xv("Creating new cache database");
-      sub __au{ ::xpanic("Failed to write to '$TMP_WORK': $^E") }
-      __au() unless print CF
-         '#S-Web42 cache database.', "\n",
-         '# Field separator is a single ASCII space (U+0020).', "\n",
-         '# Directories: ^/FLAGS PATH$', "\n",
-         '# Files: ^.FLAGS MODTIME IN:CKSUM_BASE64 OUT:CKSUM_BASE64 PATH$',
-         "\n";
+      sub __au {::xpanic("Failed to write to '$TMP_WORK': $^E")}
+
       sub __recur{
          my ($dn) = @_;
          if(defined $dn->parent){
@@ -977,15 +975,25 @@ jupsums:
             __recur($sdn)
          }
       }
+
+      ::xv("Creating new cache database");
+      ::xpanic("Failed to open '$TMP_WORK' for writing: $^E")
+         unless open CF, '>', $TMP_WORK;
+      __au() unless print CF
+         '#S-Web42 cache database.', "\n",
+         '# Field separator is a single ASCII space (U+0020).', "\n",
+         '# Directories: ^/FLAGS PATH$', "\n",
+         '# Files: ^.FLAGS MODTIME IN:CKSUM_BASE64 OUT:CKSUM_BASE64 PATH$',
+         "\n";
       __recur($Node::root);
       ::xe("Failed to close '$TMP_WORK'") unless close CF; # XXX ::xpanic?
 
-      ::xpanic("Can't rename '$CACHE' to '$CACHE_OLD': $^E.",
+      ::xpanic("Cannot rename '$CACHE' to '$CACHE_OLD': $^E.",
             'Busted.  File access rights ok?  Please fix and simply rerun.')
          if -f $CACHE && !rename $CACHE, $CACHE_OLD;
       if(!rename $TMP_WORK, $CACHE){
          $DELETE_OK = 0;
-         ::xpanic("Can't rename '$TMP_WORK' to '$CACHE': $^E.",
+         ::xpanic("Cannot rename '$TMP_WORK' to '$CACHE': $^E.",
             'Oooops!  S-Web42 will not delete temporary files, something is ' .
                'horribly wrong.',
             "Please do **copy** '$CACHE_OLD' to '$CACHE'.",
@@ -996,12 +1004,12 @@ jupsums:
 } # }}}
 
 {package Ctx; # {{{
-   sub MODE_INFH(){ 1 << (Filter::MAXSHIFT + 1) }
-   sub MODE_OUTFH(){ 1 << (Filter::MAXSHIFT + 2) }
-   sub MODE_CONFIGRC(){ 1 << (Filter::MAXSHIFT + 3) }
-   sub MODE_EMBED(){ 1 << (Filter::MAXSHIFT + 4) } # no ?begin?/?end?
+   sub MODE_INFH() {1 << (Filter::MAXSHIFT + 1)}
+   sub MODE_OUTFH() {1 << (Filter::MAXSHIFT + 2)}
+   sub MODE_CONFIGRC() {1 << (Filter::MAXSHIFT + 3)}
+   sub MODE_EMBED() {1 << (Filter::MAXSHIFT + 4)} # no ?begin?/?end?
 
-   sub MAXSHIFT(){ Filter::MAXSHIFT + 4 }
+   sub MAXSHIFT() {Filter::MAXSHIFT + 4}
 
    sub full_expand_lifecycle{
       my ($self) = @_;
@@ -1015,20 +1023,20 @@ jupsums:
    }
 
    SymObj::sym_create(SymObj::NONE, {
-      _outer => undef,     # <?include?> support (Expander:: recursion)
+      _outer => undef, # <?include?> support (Expander:: recursion)
       _mode => 0,
-      _chdird => undef,    # (opt) chdir(2) for ?EXEC? modes (outermost)
-      _incdird => undef,   # (opt) root path for ?include*?
-      _sumup => '',        # Input filename or mode description
-      _lineno => 0,        # Current input line number
-      _line => '',         # Current input line
-      _infh => undef,      # for reading
-      _outfh => undef,     # for writing
+      _chdird => undef, # (opt) chdir(2) for ?EXEC? modes (outermost)
+      _incdird => undef, # (opt) root path for ?include*?
+      _sumup => '', # Input filename or mode description
+      _lineno => 0, # Current input line number
+      _line => '', # Current input line
+      _infh => undef, # for reading
+      _outfh => undef, # for writing
       '%_pivars' => undef, # Ctx-local PIVars:: environment
-      _mtime => undef,     # Modification time (outermost level only)
+      _mtime => undef, # Modification time (outermost level only)
       _begin_line => undef, # <?begin?> line, if followed by content
-      _empties_seen => 0,  # No. of empty lines last readline() skipped
-      _seen_endl => 0      # Last readline_full() saw \s+$
+      _empties_seen => 0, # No. of empty lines last readline() skipped
+      _seen_endl => 0 # Last readline_full() saw \s+$
    }, sub{
       my $self = $_[0];
       my $curr = $self->outer;
@@ -1085,7 +1093,7 @@ jupsums:
 
    sub close{
       my $self = shift;
-      ::e($self, "Can't close file: $^E")
+      ::e($self, "Cannot close file: $^E")
          unless ($self->mode & MODE_INFH) || close $self->infh;
       ::vv($self, "Closed context");
       $self
@@ -1131,11 +1139,13 @@ jupsums:
       $af = $self->mode & Filter::FILTER_MASK;
       $self->empties_seen(0);
       my $ogoditisanewperl = 0;
+
       if(defined($nl = $self->begin_line)){
          $self->begin_line(undef);
          $self->seen_endl(1);
          $ogoditisanewperl = 1 #goto jumpin;
       }
+
       while($ogoditisanewperl || ($nl = readline $self->infh)){
          if(!$ogoditisanewperl){
             ++${$self->__lineno};
@@ -1159,6 +1169,7 @@ jupsums:
          last unless ($af & Filter::WIPEEL);
          ++${$self->__empties_seen}
       }
+
       if(!$l && !defined $nl){
          if($self->mode & MODE_EMBED){
             ${$self->__mode} &= ~MODE_EMBED;
@@ -1172,8 +1183,8 @@ jupsums:
 } # }}}
 
 {package Expander; # {{{
-   sub NL_FLUX(){ 1 << (Ctx::MAXSHIFT + 1) }
-   sub NL_FORCE(){ 1 << (Ctx::MAXSHIFT + 2) }
+   sub NL_FLUX() {1 << (Ctx::MAXSHIFT + 1)}
+   sub NL_FORCE() {1 << (Ctx::MAXSHIFT + 2)}
 
    sub explode{
       my $ctx = $_[0];
@@ -1188,18 +1199,19 @@ jupsums:
          $self->_endl
       }
       $self->dumper->terminate;
-      ::e($self->ctx, 'At EOF there are paired PIs open') if @{$self->recursion}
+      ::e($self->ctx, 'At EOF there are paired PIs open')
+         if @{$self->recursion}
    }
 
    SymObj::sym_create(SymObj::NONE, {
-      _ctx => undef, # Ctx object we're exploding
+      _ctx => undef, # Ctx object we are exploding
       _mode => 0, # ->ctx->mode
       _dumper => undef, # Output (+ AUTOPAR/TAGJOIN/WSNORM hdl.) ::Dumper
       _recursion => [], # For <?PAIR?> support, recursion-awareness
       _data => [], # Expanded line data, intermediate storage
       _reeval_data => undef, # Line data for re-evaluation (to expand <^ to <?)
       _seen_line => 0, # Seen any line data?
-      _discard => 0, # Discard data, don't output (?ifdef? etc.)
+      _discard => 0, # Discard data, do not output (?ifdef? etc.)
       _ifdefs => [], # Ifdef:: stack
       _seen_end => 0, # Seen <?end?>?
       _data_condome => undef # ?perl?/?sh? intermediate layer (see _emit())
@@ -1238,11 +1250,11 @@ jupsums:
       my ($self, $ctx, $mode, $epair) = @_;
       # Ensure we rant before perl(1) on deep recursion
       ::e($self->ctx, "Deep recursion warning: code is nested 100 times, " .
-         "maybe there's a loop?") if @{$self->recursion} >= 99 * 3;
+         "maybe there is a loop?") if @{$self->recursion} >= 99 * 3;
 
       $self->_emit->recursion($self->ctx, $self->mode,
          (exists $self->{__omode} ? $self->{__omode} : undef),
-         defined $epair ? $epair : '[Recursion was not opened via paired PI!]');
+         defined $epair ? $epair : '[Recursion was not opened via paired PI]');
       $self->ctx($ctx) if defined $ctx;
       if(defined $mode){
          my $om = $self->mode;
@@ -1274,7 +1286,7 @@ jupsums:
          my $om = $self->mode;
          $self->mode($self->ctx->mode($m));
          # If there is a change in WIPEEL and there was data on the line before
-         # the changing PI, don't forget to write the wanted separating newline
+         # the changing PI, do not forget to write wanted separating newline
          my $noel = ($om & Filter::WIPEEL);
          ${$self->__mode} |= NL_FORCE
             if (!$noel && $noel != ($m & Filter::WIPEEL) && $self->seen_line)
@@ -1412,7 +1424,7 @@ jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
                "$pi is a paired PI and only takes an optional 'end' argument");
             goto jleave
          }
-         # If this ends a paired PI, check it's a matching one
+         # If this ends a paired PI, check it is a matching one
          if(@$valarr == 1){
             $i = @{$self->recursion};
             if($i == 0){
@@ -1427,7 +1439,7 @@ jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
          }
       }elsif($i == 0){
          if(@$valarr != 0){
-            ::e($self->ctx, "$pi doesn't take any arguments");
+            ::e($self->ctx, "$pi does not take any arguments");
             goto jleave
          }
       }elsif($i < 0){
@@ -1518,7 +1530,8 @@ jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
             $self->_prepare_recursion(undef,
                (($self->mode & ~Filter::FILTER_MASK) | Filter::EXPPIS), $pi)
          }
-      }elsif($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' || $pi eq 'fi'){
+      }elsif($pi eq 'ifdef' || $pi eq 'ifndef' || $pi eq 'else' ||
+            $pi eq 'fi'){
          $self->_emit;
          $pi = Expander::Ifdef::handle_pi(scalar $self->ifdefs, $self->ctx,
                $pi, $i);
@@ -1537,9 +1550,9 @@ jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
          my $franky = ($pi eq 'frank_include');
          ($pi, $i) = $self->_expand_include_path($i);
          $self->_prepare_recursion($self->ctx, 0);
-         ::panic($self->ctx, "<?(raw|frank)_include?>: can't read '$i': $^E")
+         ::panic($self->ctx, "<?(raw|frank)_include?>: cannot read '$i': $^E")
             unless open RI, '<', $i;
-         # Use direct I/O if possible; we can't if redirection is active
+         # Use direct I/O if possible; we cannot if redirection is active
          if(defined ${$self->__data_condome}){
             foreach(readline RI){ # xxx readline errs?
                my $had = chomp;
@@ -1556,7 +1569,7 @@ jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
             }
             $self->dumper->direct_end
          }
-         ::panic($self->ctx, "<?(raw|frank)_include?>: can't close '$i': $^E")
+         ::panic($self->ctx, "<?(raw|frank)_include?>: cannot close '$i': $^E")
             unless close RI;
          $self->_end_recursion
       }elsif($pi eq 'perl' || $pi eq 'xperl' || $pi eq 'sh' || $pi eq 'xsh'){
@@ -1687,10 +1700,8 @@ jleave:
          if(exists $PIVars::builtin->{$pi}){
             ::e($self->ctx, "$pi: cannot modify builtin PI (variable) via $i")
          }elsif($i eq 'unshift'){
-# FIXME join <>??
             unshift @$v, join('<>', @$valarr)
          }elsif($i eq 'push'){
-# FIXME join <>??
             push @$v, join('<>', @$valarr)
          }elsif($i eq 'shift' || $i eq 'pop'){
             if(@$v == 0){
@@ -1808,7 +1819,7 @@ jset:    $l = $incdir . '/';
       my $eval_args_ar = join "\n", @{$self->data_condome};
       ${$self->__data_condome} = undef;
 
-      ::panic($self->ctx, "can't create communication for <?$type?>: " . $^E)
+      ::panic($self->ctx, "cannot create communication for <?$type?>: " . $^E)
          unless pipe RDC, WRP;
       my $pid = fork;
       ::panic($self->ctx, 'cannot create child process: ' . $^E)
@@ -1835,9 +1846,9 @@ jset:    $l = $incdir . '/';
          # Child
          ::panic($self->ctx, "child cannot perform chdir(2): $^E")
             if defined $self->ctx->chdird && !chdir $self->ctx->chdird;
-         ::panic($self->ctx, "child can't close input channel: $^E")
+         ::panic($self->ctx, "child cannot close input channel: $^E")
             unless close RDC;
-         ::panic($self->ctx, "child can't redirect output channel: $^E")
+         ::panic($self->ctx, "child cannot redirect output channel: $^E")
             unless open STDOUT, '>&=', fileno WRP;
          if($type eq 'perl' || $type eq 'xperl'){
             eval $eval_args_ar;
@@ -1853,13 +1864,13 @@ jset:    $l = $incdir . '/';
 
 {package Expander::Dumper; # {{{
    SymObj::sym_create(SymObj::NONE, {
-      _fh => undef,           # Output file handle
-      '?_mode' => 0,          # Filters of currently hold data
-      _expander => undef,     # Parent
-      _data => [],            # Expanded line data, intermediate storage
+      _fh => undef, # Output file handle
+      '?_mode' => 0, # Filters of currently hold data
+      _expander => undef, # Parent
+      _data => [], # Expanded line data, intermediate storage
       _delayed_data => undef, # With AUTOPAR, delay close tags: continuation
-      _delayed_ref => undef,  # Ditto: where to push end-tag
-      _seen_data => 0         # 1=yes, 2=ended with NL
+      _delayed_ref => undef, # Ditto: where to push end-tag
+      _seen_data => 0 # 1=yes, 2=ended with NL
    });
 
    sub terminate{
@@ -1948,7 +1959,7 @@ jset:    $l = $incdir . '/';
          }
       }
 jflush:
-      $self->_flush; # TODO MUCH TOO OFTEN! and if not, it doens't work!!
+      $self->_flush; # TODO MUCH TOO OFTEN! and if not, it does not work!!
       # Set the starting index of this new paragraph
       # Ensure to not track the empty array for the next line that put() may
       # have placed
@@ -2123,7 +2134,7 @@ jleave:
       my ($stack, $ctx) = @_;
       foreach my $self (@$stack){
          next unless $self->ctx == $ctx;
-         ::e($ctx, "ifn?def: was started here, but where's the <?fi?>?")
+         ::e($ctx, "ifn?def: was started here, but where is the <?fi?>?")
       }
    }
 
@@ -2169,7 +2180,7 @@ jleave:
    sub startup{
       if(length(my $a = $PIVars::outermost->{COMPRESS})){
          no strict 'refs';
-         $compress = ${COMPRESS{$a}}; # XXX perl bug? *{"${COMPRESS{$a}}::new"};
+         $compress = ${COMPRESS{$a}};# XXX perl bug? *{"${COMPRESS{$a}}::new"};
          $uncompress = $UNCOMPRESS{$a}
       }else{
          $compress = undef;
@@ -2189,7 +2200,7 @@ jleave:
       _footer();
       ::xpanic("Failed to close new shell archive '$TMP_UPDATE': $^E")
          unless close $fh;
-      ::xpanic("Can't rename '$TMP_UPDATE' to '$UPDATE': $^E.",
+      ::xpanic("Cannot rename '$TMP_UPDATE' to '$UPDATE': $^E.",
             'Busted.  File access rights ok?  Please fix and simply rerun.')
          unless rename $TMP_UPDATE, $UPDATE;
       ::xv("S-Web42 update archive finalized as '$UPDATE'")
@@ -2213,6 +2224,7 @@ jleave:
          $rawd = <F>;
          __ioerr() unless close F
       };
+
       if(defined $compress){
          my ($d, $comp);
          eval{ $comp = $compress->new(\$d) };
@@ -2223,6 +2235,7 @@ jleave:
          $comp->close;
          $rawd = $d
       }
+
       $rawd = MIME::Base64::encode($rawd);
       $rawd =~ s/^/X/mog;
       __ioerr() unless
@@ -2235,7 +2248,7 @@ jleave:
       __ioerr() unless print $fh <<__EOT__;
 #!/bin/sh -
 #@ This Website update archive has been created by S-Web42, which is
-# Copyright (c) 1997 - 2019 Steffen (Daode) Nurpmeso <steffen\@sdaoden.eu>.
+# Copyright (c) 1997 - 2020 Steffen (Daode) Nurpmeso <steffen\@sdaoden.eu>.
 #@ by means of the ISC license.
 #@ Except for the long output the archive may be easily examined via:
 #@   \$ grep '^[^X#]' w42-update.sh
@@ -2265,7 +2278,7 @@ mktpath() {
     { echo "Cannot 'mkdir -p \$TPATH'."; exit 1; }
 }
 cdtpath() {
-  cd "\$TPATH" || { echo "Can't cd to '\$TPATH'."; exit 1; }
+  cd "\$TPATH" || { echo "Cannot cd to '\$TPATH'."; exit 1; }
 }
 tmpexp() {
   cnt=1
