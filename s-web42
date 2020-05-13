@@ -1005,20 +1005,20 @@ jupsums:
 
 {package Ctx; # {{{
    sub MODE_INFH() {1 << (Filter::MAXSHIFT + 1)}
-   sub MODE_OUTFH() {1 << (Filter::MAXSHIFT + 2)}
+   sub MODE_OUTFH() {1 << (Filter::MAXSHIFT + 2)} # Out file-handle external
    sub MODE_CONFIGRC() {1 << (Filter::MAXSHIFT + 3)}
    sub MODE_EMBED() {1 << (Filter::MAXSHIFT + 4)} # no ?begin?/?end?
 
-   sub MAXSHIFT() {Filter::MAXSHIFT + 4}
+   sub _MODE_NEEDCLOSE() {1<< (Filter::MAXSHIFT + 5)}
+   sub _MODE_CTOR_MASK() {~_MODE_NEEDCLOSE}
+
+   sub MAXSHIFT() {Filter::MAXSHIFT + 5}
 
    sub full_expand_lifecycle{
       my ($self) = @_;
       $self->open;
       $self->read_assignments;
       Expander::explode($self);
-      ::e($self, "Failed to close '$TMP_WORK': $^E")
-         unless($self->outer || ($self->mode & MODE_OUTFH) ||
-            close $self->outfh);
       $self->close
    }
 
@@ -1040,6 +1040,9 @@ jupsums:
    }, sub{
       my $self = $_[0];
       my $curr = $self->outer;
+
+      ${$self->__mode} &= _MODE_CTOR_MASK;
+
       if($self->mode & MODE_CONFIGRC){
          $self->{_pivars} = $PIVars::outermost;
          return
@@ -1075,7 +1078,8 @@ jupsums:
       }else{
          $self->infh(*STDIN) unless $self->infh
       }
-      unless($self->mode & (MODE_OUTFH|MODE_CONFIGRC)){
+      unless($self->mode & (MODE_OUTFH | MODE_CONFIGRC)){
+         ${$self->__mode} |= _MODE_NEEDCLOSE;
          ::panic($self, "Failed to open '$TMP_WORK' for writing: $^E")
             unless open ${$self->__outfh}, '>', $TMP_WORK
       }else{
@@ -1093,8 +1097,10 @@ jupsums:
 
    sub close{
       my $self = shift;
-      ::e($self, "Cannot close file: $^E")
+      ::e($self, "Cannot close input file: $^E")
          unless ($self->mode & MODE_INFH) || close $self->infh;
+      ::e($self, "Cannot close output file: $^E")
+         if ($self->mode & _MODE_NEEDCLOSE) && !close $self->outfh;
       ::vv($self, "Closed context");
       $self
    }
