@@ -1133,7 +1133,7 @@ jupsums:
          $nl =~ /^\s*(.*?)(\\+)?\s*$/;
          next if !length $l && ($1 =~ /^#/ || !length $1);
          ($nl, $bno) = ($1, defined $2 ? length $2 : 0);
-         if(length $l){ $l .= $nl }else{ $l = $nl }
+         if(length $l) {$l .= $nl} else {$l = $nl}
          $l .= ('\\' x ($bno >> 1)) if $bno > 0;
          last unless $bno & 1
       }
@@ -1272,7 +1272,8 @@ jupsums:
          my $noel = ($mode & Filter::WIPEEL);
          ${$self->__mode} |= NL_FLUX
             if(defined $epair && !$noel && $noel != ($om & Filter::WIPEEL) &&
-               !$self->seen_line && !$self->ctx->line)
+               !$self->seen_line && (!defined $self->ctx->line ||
+                  length($self->ctx->line) == 0))
       }else{
          delete $self->{__omode}
       }
@@ -1304,9 +1305,9 @@ jupsums:
    # Intermediate data output layer {{{
    sub _add_data{
       my ($self, $dat) = @_;
-      goto jleave if !$dat || $self->discard;
+      goto jleave if length($dat) == 0 || $self->discard;
       $dat = _marklo_ex($self->ctx, $dat) if ($self->mode & Filter::MARKLO);
-      $self->seen_line(1) if $dat;
+      $self->seen_line(1) if defined $dat && length($dat) > 0;
       $self->data($dat);
 jleave:
       $self
@@ -1397,13 +1398,13 @@ jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
          }
       }
 
-      if($doreeval && $l){
+      if($doreeval && defined $l && length($l) > 0){
          _pi_reeval(\$l);
          $self->ctx->line($l);
          goto jdorest if $l =~ /(?:.*?)<\?(?:[-\w]+)(?:\s+(.+?))?\?>(?:.*)/;
       }
 
-      if($l){
+      if(defined $l && length($l) > 0){
          $self->_add_data($l);
          $self->ctx->line('')
       }
@@ -1953,7 +1954,7 @@ jset:    $l = $incdir . '/';
                $lda->[0]->[0] = $self->_delayed_have . '<hr />';
                goto jflush
             }
-            if($p){
+            if(defined $p && length($p) > 0){
                $lda->[0]->[0] = $i
             }else{
                $p = $self->_delayed_have . '<p>';
@@ -2033,14 +2034,16 @@ jleave:
    sub _delayed_join{
       my ($self, $tag) = @_;
       my $i = $self->{_delayed_data};
+      $i = undef unless defined $i && length($i) > 0;
       $self->{_delayed_data} = $tag;
       my $j = $self->{_delayed_ref};
       $self->{_delayed_ref} = undef;
-      if($i && $j && (!$tag || $tag ne $i)){
+
+      if(defined $i && defined $j && (!$tag || $tag ne $i)){
          push @$j, '@@</' . $i . '>';
          $i = undef
       }
-      if(!$i){
+      if(!defined $i){
          return '<' . $tag . '>'
       }
       return '</' . $i . '>' . '<' . $tag . '>' unless $tag eq $i;
@@ -2049,11 +2052,13 @@ jleave:
 
    sub _delayed_flush{
       my ($self) = @_;
-      if(my $i = $self->{_delayed_data}){
+      if(defined(my $i = $self->{_delayed_data})){
          $self->{_delayed_data} = undef;
-         my $da = scalar $self->data;
-         my $lda = scalar $da->[0];
-         unshift @$lda, ['</'.$i.'>']
+         if(length($i) > 0){
+            my $da = scalar $self->data;
+            my $lda = scalar $da->[0];
+            unshift @$lda, ['</'.$i.'>']
+         }
       }
       $self
    }
