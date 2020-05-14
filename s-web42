@@ -917,10 +917,10 @@ jupsums:
       my $ctx = Ctx->new(sumup => $CACHE);
       $ctx->open;
       my $dnode = $Node::root;
-      while(defined(my $l = $ctx->readline_assignments)){
+      while(defined(my $l = $ctx->readline_raw)){
          my $lim = ($l =~ /^\//) ? 2 : 5;
          my @e = split / /, substr($l, 1), $lim;
-         if(@e != $lim || grep{ !length } @e){
+         if(@e != $lim || grep {!length} @e){
             ::e($ctx, 'ignoring corrupted line!', $l);
             next
          }
@@ -1110,7 +1110,7 @@ jupsums:
       $saved_mode = $self->mode;
       return $self if $saved_mode & MODE_EMBED;
       $self->mode(Filter::ASSIGNMENTS_FILTERS);
-      while(defined($l = $self->readline_assignments)){
+      while(defined($l = $self->readline_raw)){
          if($l =~ /^<\?begin\?>(.*)$/){
             $self->begin_line($1 ? $1 : undef);
             last
@@ -1126,7 +1126,7 @@ jupsums:
       $self
    }
 
-   sub readline_assignments{
+   sub readline_raw{
       my ($self, $l, $nl, $bno) = (shift, '');
       while($nl = readline $self->infh){
          ++${$self->__lineno};
