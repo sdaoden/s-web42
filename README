@@ -94,7 +94,7 @@ arguments: one needs to use the very format shown above.
    on how to do that in a POSIX-compatible, Bourne or Korn shell.
 
    If S-Web42 detects that `perl(1)`_ does not use UTF-8 I/O even
-   though the users locale is UTF-8 aware it'll complain remarkably.
+   though the users locale is UTF-8 aware it will complain remarkably.
 
 WhatIs?
 =======
@@ -108,26 +108,26 @@ required for operation.
 
 Once invoked, the converter script ``s-web42`` requires the subdirectory
 ``site`` to exist in the current working directory, since that is used
-as the input tree.  It'll also assume it can use the filenames
+as the input tree.  It will also assume it can use the filenames
 ``cache.dat`` (the cache database), ``cache.old`` (database state
 before last run), and, temporarily, ``*.tmp`` in there.  The generated
 shell archive will always be ``w42-update.sh``, and it will not have
 any executable bits set.
 
 If the file ``config.rc`` is found in the working directory, and the
-``--no-rc`` command line option has not been used, it'll be read --
+``--no-rc`` command line option has not been used, it will be read --
 the `Assignments`_ of PI variables seen there will form the outermost
 context and will thus be inherited by all files under ``site`` (PIs
 can be overridden and undefined for anything *deeper* in the hierarchy
 only).  Here, and *only* here is it possible to specify some very
 `Special PI variables`_.
 
-The presence of a file ``hook`` is also recorded, and it'll be used
+The presence of a file ``hook`` is also recorded, and it will be used
 as a per-directory fallback hook in all those ``site`` subdirectories
-which don't provide their own.  The optional per-directory hooks can
+which do not provide their own.  The optional per-directory hooks can
 be used to create and/or modify the contents of the directory (and
 subdirectories and only) on the fly.  It is a fatal error if such a
-hook is not an executable program or if it doesn't exit successfully.
+hook is not an executable program or if it does not exit successfully.
 Hooks will be given one command line argument, and that is the current
 working directory from within which the hook is run.
 
@@ -138,11 +138,11 @@ that the directory entries ``SCCS``, ``CVS`` and anything which starts
 with a dot (thus also ``.git`` and ``.RCS``) are completely ignored
 by S-Web42, except that files may be included when placed in the
 `WHITELIST`_ variable of ``config.rc``.  It is not possible to savely
-create directories on the fly except in deeper, not yet parsed hierarchy
-levels below the current directory, too.
+create directories on the fly except in deeper, not yet parsed
+hierarchy levels below the current directory, too.
 
 .. note::
-   S-Web42 won't handle paths with embedded quotation marks, i.e.,
+   S-Web42 will not handle paths with embedded quotation marks, i.e.,
    neither ``"`` nor ``'`` characters may be used for directory- and
    filenames.  You should possibly be conservative about filenames in
    general, mostly in respect to embedded whitespace, as the implemented
@@ -173,7 +173,7 @@ Any file rebuild non-bitwise is then checksummed again, and will *only*
 be part of the result if the |checksum| of the rebuilt target is
 different from the checksum stored in the cache database, but not
 otherwise.  (The only exception to this rule is if the user uses the
-``--force-rebuild`` command line option, as that'll rebuild everything
+``--force-rebuild`` command line option, as that will rebuild everything
 from scratch.)
 
 So, what will the result look like?  One may be astonished, but the
@@ -183,11 +183,11 @@ be used to update a local mirror (``$ sh w42-update.sh --local
 TARGET-PATH``) or as a ``sftp(1)`` batchfile (``$ sh w42-update.sh
 --sftp TMP-PATH | sftp -b - user@host[:dir]; rm -rf TMP-PATH``).  In
 the latter case ``TMP-PATH`` must be some temporary path that can be
-used by the archive to unpack its contents therein (it'll issue a
+used by the archive to unpack its contents therein (it will issue a
 ``mkdir TMP-PATH``, i.e., create that directory as necessary).
 
 During operation, the generated shell archive will try to ignore any
-errors, continuing it's operation until all commands have been issued.
+errors, continuing its operation until all commands have been issued.
 E.g., in ``sftp(1)`` batch mode, the termination-on-error is suppressed
 by prefixing commands with a hyphen ``-``.  Any error, and some other
 informational messages will be logged to standard error, however.
@@ -200,16 +200,16 @@ from-scratch archive.
 On filenames and -content
 =========================
 
-S-Web42 doesn't look into files unless their name ends with a special
-suffix.  If that isn't seen, files will be treated as bins of undefined
+S-Web42 does not look into files unless their name ends with a special
+suffix.  If that is not seen, files will be treated as bins of undefined
 binary content and handled bitwise.  If, on the other hand, the filename
-ends with the suffix |fextre|, then it'll be subject to content
-filtering, as described in the rest of this document.  Let's inspect
+ends with the suffix |fextre|, then it will be subject to content
+filtering, as described in the rest of this document.  Let us inspect
 that cryptic expression:
 
 ``(.*?)``
-   S-Web42 doesn't care, simply name any file the way you want, with
-   or without a file extension.  It doesn't matter.
+   S-Web42 does not care, simply name any file the way you want, with
+   or without a file extension.  It does not matter.
 
 ``(-w42 ... )$`` -- S-Web42 filter trigger
    If, after the ignored part, the string ``-w42`` is seen, as in
@@ -232,10 +232,10 @@ that cryptic expression:
 (-new)? -- Forced rebuild trigger
    If the suffix ends with a trailing ``-new`` part, then both, the
    modification time and the files input checksum will not be used to
-   decide whether a file has been modified or not.  Instead it'll always
-   be rebuild, and the decision whether to include the file in the
-   result or not is based upon the checksum of the generated file.  A
-   filename example would be ``index.php-w42-x-new``.
+   decide whether a file has been modified or not.  Instead it will
+   always be rebuild, and the decision whether to include the file in
+   the result or not is based upon the checksum of the generated file.
+   A filename example would be ``index.php-w42-x-new``.
 
 Moreover, all files that are subject to S-Web42 content filtering (and
 ``config.rc`` but this is a special case in that S-Web42 will complain
@@ -253,7 +253,7 @@ About.Filter
 ------------
 
 These filter operations will be performed on the `Assignments`_ part
-of *all* *contexts* which are subject to filtering.  They'll also be
+of *all* *contexts* which are subject to filtering.  They will also be
 applied to the `Content`_ part unless the mode configuration suffix was
 ``-x`` or otherwise excluded these actions:
 
@@ -288,7 +288,7 @@ the mode configuration suffix was ``-x`` or otherwise excluded these
 actions:
 
 *Automatic paragraphs* (disable mode: ``a``)
-   If a textblock is surrounded by empty lines it'll be enclosed
+   If a textblock is surrounded by empty lines it will be enclosed
    in a ``<p></p>`` pair unless the block seems to be enclosed in
    a tag, or unless so-called "mode-switching" PIs are used within
    it.  I.e., no automatic paragraph will be provided for a otherwise
@@ -324,9 +324,9 @@ actions:
 
    Example::
 
-      == It's not a Wiki!
+      == It is not a Wiki!
 
-      You wouldn't believe what i saw:
+      You would not believe what i saw:
 
       * Cats
 
@@ -342,8 +342,8 @@ actions:
 
       =>
 
-      <h2>It's not a Wiki!</h2>
-      <p>You wouldn't believe what i saw:</p>
+      <h2>It is not a Wiki!</h2>
+      <p>You would not believe what i saw:</p>
       <ul><li><p>Cats</p></li><li><p>Mice</p></li><li><p>Birds</p></li></ul>
       <hr />
       <blockquote><p>Wow!</p><p>Or Wuff-Wuff!</p></blockquote>
@@ -370,8 +370,8 @@ actions:
    is reevaluated until no more expansion is possible.  *MarkLo*
    detection and expansion is neither performed across newline boundaries
    nor PI occurrences, and there is no possibility to escape *MarkLo*
-   expansion (e.g., via backslash escaping) except by turning it off
-   entirely.  It is possible to embed a closing brace by escaping it
+   expansion (via backslash escaping for example) except by turning it
+   off entirely.  It is possible to embed a closing brace by escaping it
    like that, however::
 
       \c{CONTENT} -> <tt>CONTENT</tt>
@@ -452,13 +452,6 @@ Content
 Everything in between the ``<?begin?>`` and ``<?end?>`` PIs is expanded
 and will thus produce real output.  Line content is recursively expanded
 until no further expansion is possible.
-
-.. note::
-   One should be aware that recursion applies whenever it occurs.
-   E.g., if an ``<?include?>`` context includes itself a context, then
-   this is performed recursively, without closing the first file
-   descriptor first.  Running S-Web42 may thus encounter resource
-   limits.
 
 Ignored
 -------
@@ -541,7 +534,7 @@ an empty tag ``<>``, the alias ``<^>`` has been provided for completeness
 sake.  See `def`_ and `defx`_ for examples.
 
 _`def`
-   Define a PI which expands to it's value part when used. ::
+   Define a PI which expands to its value part when used. ::
 
       <?def var1<>varcontent, may contain <em>tagsoup</em>?>
       <?def var2<>any <> content but PI start and end tags?>
@@ -682,7 +675,7 @@ _`include`, _`xinclude`, _`raw_include`, _`frank_include`
    .. note::
       If the path starts with a tilde ``~``, that will be replaced by
       the value of the environment variable ``HOME``.  Likewise, if
-      the path starts with a plus sign ``+``, then that'll be replaced
+      the path starts with a plus sign ``+``, then that will be replaced
       with the content of the environment variable ``WEB42INC``.  Note
       it is really that simple.
 
@@ -695,7 +688,7 @@ _`mode`
    on the fly; the required argument must either be ``%``, in which
    case the previously active mode is restored, or a combination of
    the filter mode configuration characters.  Mode changes are inherited
-   by deeper contexts, but they won't be propagated to outer ones.
+   by deeper contexts, but they will not be propagated to outer ones.
    Note that PI expansion mode cannot be disabled like that.  Be aware -
    you should really know what you are doing when you use this PI.
 
@@ -878,7 +871,7 @@ News
   archive.  (My performance increasement was pretty dramatical.)
 
 * The ``<?mode?>`` PI has been rethought and using it for adjustments
-  no longer works on a global basis, but changes won't affect outer
+  no longer works on a global basis, but changes will not affect outer
   *contexts*.
 
   Before that rewrite a long standing bug of ``<?mode?>`` had been fixed
@@ -917,7 +910,7 @@ the ``tz AT iana DOT org`` mailing list).
 Thanks to Dave Mitchell from perl-porters for giving the hint on
 backtracing that made the fancy recursive regular expression that is
 used for MarkLo proof against user syntax misses.  (I never use and
-don't really understand these super-fancy extended regular expressions
+do not really understand these super-fancy extended regular expressions
 beyond assertions, but remembered the example from the documentation
 and was too lazy to write the hand-driven recursive parser for that,
 so i tried it.)
