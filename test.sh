@@ -2,6 +2,7 @@
 #@ S-Web42 unit test
 
 trap "rm -rf ./test-*; exit" 0 1 2 15
+EDIFFS=
 
 errs=0
 terr() {
@@ -26,10 +27,19 @@ tcase() {
 	[ -n "${4}" ] && printf "${4}" > ./test-eout || rm_file ./test-eout
 	[ -n "${5}" ] && printf "${5}" > ./test-eerr || rm_file ./test-eerr
 	${WEB42} ${RC} --eo test-${2} > ./test-${tno}-out 2> ./test-${tno}-err
-	cmp -s ./test-${tno}-out ./test-eout
-	[ $? -ne 0 ] && o='OUT ' || o=
-	cmp -s ./test-${tno}-err ./test-eerr
-	[ $? -ne 0 ] && e='ERR ' || e=
+	o= e=
+	if cmp -s ./test-${tno}-out ./test-eout; then :; else
+		o='OUT '
+		[ -n "${EDIFFS}" ] &&
+			diff -u ./test-eout ./test-${tno}-out \
+				> ./.test-${tno}-out.diff
+	fi
+	if cmp -s ./test-${tno}-err ./test-eerr; then :; else
+		o='ERR '
+		[ -n "${EDIFFS}" ] &&
+			diff -u ./test-eerr ./test-${tno}-err \
+				> ./.test-${tno}-err.diff
+	fi
 	[ -z "${o}${e}" ] && echo "OK: ${tno} - ${1}" ||
 		terr ${tno} "${1}" "${o}${e}"
 }
