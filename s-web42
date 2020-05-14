@@ -1004,15 +1004,16 @@ jupsums:
 } # }}}
 
 {package Ctx; # {{{
-   sub MODE_INFH() {1 << (Filter::MAXSHIFT + 1)}
-   sub MODE_OUTFH() {1 << (Filter::MAXSHIFT + 2)} # Out file-handle external
-   sub MODE_CONFIGRC() {1 << (Filter::MAXSHIFT + 3)}
+   sub MODE_INFH() {1 << (Filter::MAXSHIFT + 1)} # In file-handle "external"
+   sub MODE_OUTFH() {1 << (Filter::MAXSHIFT + 2)} # Out file-handle "external"
+   sub MODE_CONFIGRC() {1 << (Filter::MAXSHIFT + 3)} # Access outermost PI lvl
    sub MODE_EMBED() {1 << (Filter::MAXSHIFT + 4)} # no ?begin?/?end?
+   sub MODE_ASSINC() {1<< (Filter::MAXSHIFT + 5)} # Assignments ?include?
 
-   sub _MODE_NEEDCLOSE() {1<< (Filter::MAXSHIFT + 5)}
+   sub _MODE_NEEDCLOSE() {1<< (Filter::MAXSHIFT + 6)} # We opened outfh
    sub _MODE_CTOR_MASK() {~_MODE_NEEDCLOSE}
 
-   sub MAXSHIFT() {Filter::MAXSHIFT + 5}
+   sub MAXSHIFT() {Filter::MAXSHIFT + 6}
 
    sub full_expand_lifecycle{
       my ($self) = @_;
@@ -1078,7 +1079,7 @@ jupsums:
       }else{
          $self->infh(*STDIN) unless $self->infh
       }
-      unless($self->mode & (MODE_OUTFH | MODE_CONFIGRC)){
+      unless($self->mode & (MODE_OUTFH | MODE_CONFIGRC | MODE_ASSINC)){
          ${$self->__mode} |= _MODE_NEEDCLOSE;
          ::panic($self, "Failed to open '$TMP_WORK' for writing: $^E")
             unless open ${$self->__outfh}, '>', $TMP_WORK
@@ -1106,22 +1107,44 @@ jupsums:
    }
 
    sub read_assignments{
-      my ($self, $l, $saved_mode) = (shift);
-      $saved_mode = $self->mode;
+      my ($self) = shift;
+
+      our $saved_mode = $self->mode;
       return $self if $saved_mode & MODE_EMBED;
-      $self->mode(Filter::ASSIGNMENTS_FILTERS);
-      while(defined($l = $self->readline_raw)){
-         if($l =~ /^<\?begin\?>(.*)$/){
-            $self->begin_line($1 ? $1 : undef);
-            last
+
+      sub __read{
+         my $self = shift;
+         my $l;
+
+         while(defined($l = $self->readline_raw)){
+            if($l =~ /^<\?begin\?>(.*)$/){
+               ::panic($self, '<?begin?> not allowed in ?include? recursion')
+                  if ($saved_mode & MODE_ASSINC) && defined $self->outer;
+               $self->begin_line(defined $1 && length($1) > 0 ? $1 : undef);
+               last
+            }elsif($l =~ /^\?include\?\s*=\s*(.+)\s*$/){
+               my $path = $self->expand_include_path($1);
+               my $ctx = Ctx->new(outer => $self, mode => ($self->mode |
+                     MODE_EMBED | MODE_OUTFH | MODE_ASSINC), sumup => $path);
+               $ctx->open;
+               __read($ctx);
+               $ctx->close;
+               next
+            }
+            PIVars::handle_assignment($self, ($saved_mode & MODE_CONFIGRC), $l)
          }
-         PIVars::handle_assignment($self, $saved_mode & MODE_CONFIGRC, $l)
+
+         return $l
       }
+
+      $self->mode(Filter::ASSIGNMENTS_FILTERS);
+      my $l = __read($self);
       $self->mode($saved_mode);
+
       if($saved_mode & MODE_CONFIGRC){
          ::v($self, "'$CONFIG' file contains non-Assignments") if defined $l
       }else{
-         ::e($self, 'Premature file exit before <?begin?>') unless defined $l
+         ::e($self, 'Premature file end before <?begin?>') unless defined $l
       }
       $self
    }
@@ -1185,6 +1208,32 @@ jupsums:
          }
       }
       $self->line($l)
+   }
+
+   sub expand_include_path{
+      my ($self, $path) = @_;
+      my $l = '';
+      my $incdir = $self->incdird;
+      $incdir = '.' unless defined $incdir;
+
+      if($path =~ /^~(.*)$/){
+         $incdir = $ENV{HOME} if $ENV{HOME};
+         goto jset
+      }elsif($path =~ /^\+(.*)$/){
+         $incdir = $ENV{WEB42INC} if $ENV{WEB42INC};
+jset:    $l = $incdir . '/';
+         $path = $l . $1
+      }else{
+         $path = File::Spec->catfile($incdir, $path);
+         $path = Cwd::realpath($path);
+         if(defined $path){
+            my ($dn, $i, $bn) = File::Spec->splitpath($path);
+            $incdir = File::Spec->catpath($dn, $i, '')
+         }else{
+            $path = $incdir = '' # ::panic()s later on, pass 'em up
+         }
+      }
+      ($incdir, $path)
    }
 } # }}}
 
@@ -1546,7 +1595,7 @@ jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
       }elsif($pi eq 'include' || $pi eq 'xinclude'){
          my $ctx = ($self->mode & ~(Ctx::MODE_INFH | Ctx::MODE_EMBED)) |
                ($pi eq 'xinclude' ? Ctx::MODE_EMBED : 0);
-         ($pi, $i) = $self->_expand_include_path($i);
+         ($pi, $i) = $self->ctx->expand_include_path($i);
          $ctx = Ctx->new(outer => $self->ctx, incdird => $pi,
                mode => $ctx, sumup => $i);
          $self->_prepare_recursion($ctx, $ctx->mode);
@@ -1555,7 +1604,7 @@ jpivar:     return $self if $self->_pi_var($pi, $valarr)->seen_end
          $ctx->close
       }elsif($pi eq 'raw_include' || $pi eq 'frank_include'){
          my $franky = ($pi eq 'frank_include');
-         ($pi, $i) = $self->_expand_include_path($i);
+         ($pi, $i) = $self->ctx->expand_include_path($i);
          $self->_prepare_recursion($self->ctx, 0);
          ::panic($self->ctx, "<?(raw|frank)_include?>: cannot read '$i': $^E")
             unless open RI, '<', $i;
@@ -1786,32 +1835,6 @@ jftail:
       recur(-1, \$res, \$dat)
    }
    # }}}
-
-   sub _expand_include_path{ # {{{
-      my ($self, $path) = @_;
-      my $l = '';
-      my $incdir = $self->ctx->incdird;
-      $incdir = '.' unless defined $incdir;
-
-      if($path =~ /^~(.*)$/){
-         $incdir = $ENV{HOME} if $ENV{HOME};
-         goto jset
-      }elsif($path =~ /^\+(.*)$/){
-         $incdir = $ENV{WEB42INC} if $ENV{WEB42INC};
-jset:    $l = $incdir . '/';
-         $path = $l . $1
-      }else{
-         $path = File::Spec->catfile($incdir, $path);
-         $path = Cwd::realpath($path);
-         if(defined $path){
-            my ($dn, $i, $bn) = File::Spec->splitpath($path);
-            $incdir = File::Spec->catpath($dn, $i, '')
-         }else{
-            $path = $incdir = '' # ::panic()s later on, pass 'em up
-         }
-      }
-      ($incdir, $path)
-   } # }}}
 
    sub _franky_quote{ # {{{
       my ($self, $line) = @_;

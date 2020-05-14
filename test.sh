@@ -485,6 +485,27 @@ BEEF @= dead
 "ERROR 'test-890-w42-atsm':8: BEEF: array assignment to non-array key
 "
 
+# ?include?
+printf 'ONE = 1\nTWO= 2 \n' > ./test-900-1
+printf 'THREE = 3\n   ?include?=./test-900-3\nFOUR=4\n' > ./test-900-2
+printf 'FIVE=5\n?include?=   ./test-900-4  \nSIX=6\n' > ./test-900-3
+echo 'SEVEN=7' > ./test-900-4
+
+tcase 'Assignments: ?include?, 1' 900-w42 \
+'#
+FIRST = 0
+?include? = ./test-900-1
+LAST = 9
+?include? = ./test-900-2
+<?begin?>\
+<?FIRST?>a<?ONE?>b<?TWO?>c<?THREE?>d<?FOUR?>e<?FIVE?><?SIX?><?SEVEN?><?LAST?>\
+<?end?>' \
+\
+'0a1b2c3d4e5679
+' \
+\
+''
+
 ## }}}
 ## def/defa/defx {{{
 

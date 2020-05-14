@@ -424,6 +424,7 @@ The content is prefixed by the (PI) variable assignment block. ::
    var5 ?@= conditional array assignment (if not yet defined)
    var5 @= append a member to the now anyway existent var5 array
    var6 = <em>markup</em><?def foo<>stupid example?><?foo?><?undef foo?>
+   ?include? = path
 
 All PI variables defined like that may contain any content, including
 complete PIs and markup.  There is no technical difference in between
@@ -445,6 +446,21 @@ as usual for XML processing.
    it.
 ``?@=``
    Push value onto array, but only if that is to be newly created.
+
+The ``?include?`` directive can be used to include assignment directives
+from other files, also recursively.  It is not allowed to start the
+`Content`_ section whilst doing so.
+
+   .. note::
+      If the path starts with a tilde ``~``, that will be replaced by
+      the value of the environment variable ``HOME``.  Likewise, if
+      the path starts with a plus sign ``+``, then that will be replaced
+      with the content of the environment variable ``WEB42INC``.  Note
+      it is really that simple.
+
+   .. note::
+      By **definition** there is really no notion of a "chroot".  One
+      may leave ``site`` absolutely or relatively, just as desired.
 
 Content
 -------
@@ -899,6 +915,11 @@ News
 * Improve recursive expansion of <^> constructs even further.
   This time with test case.  Should now just do fine everywhere, but
   i am very far out this perl code, on the other hand.
+
+0.9.3
+-----
+
+* Add an ``?include?`` directive for the `Assignments`_ section.
 
 Thanks
 ======
