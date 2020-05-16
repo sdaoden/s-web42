@@ -275,7 +275,7 @@ __EOT__
          my $i = $n->parent->source_path;
          Ctx->new(mode => $n->filters, chdird => $i, incdird => $i,
             sumup => $n->source_path)->full_expand_lifecycle;
-         $i = checksum_path($TMP_WORK);
+         $i = Checksum::for_path($TMP_WORK);
          # Site:: has set .ocksum to whatever made sense - we can use it here
          if($i eq $n->ocksum){
             $n->unset_refresh;
@@ -366,26 +366,32 @@ sub vv{
    while(@_ != 0) {print $LOGFH 'VV ++ ', shift, "\n"};
    1
 }
-
-my $_digctor;
-sub checksum_path{
-   # Alternatively always 'eval { $cksum = $DIGEST->new };' below.
-   do{
-      no strict 'refs';
-      $_digctor = *{"${DIGEST}::new"} unless defined $_digctor
-   };
-
-   my ($path) = @_;
-   xpanic("Failed to open '$path' for checksum calculation: $^E")
-      unless open F, '<', $path;
-   binmode F;
-   my ($cksum, $buf, $len) = (&$_digctor($DIGEST), '');
-   while(($len = read F, $buf, 1024 * 1024)) {$cksum->add($buf)}
-   xe("Failed to close '$path' after checksum calculation: $^E")
-      unless close F;
-   $cksum->b64digest
-}
 # }}}
+
+{package Checksum; # {{{
+   my $_digctor;
+
+   sub create_digest_ctx{
+      # Alternatively always 'eval { $cksum = $DIGEST->new };' below.
+      do{
+         no strict 'refs';
+         $_digctor = *{"${DIGEST}::new"} unless defined $_digctor
+      };
+      &$_digctor($DIGEST)
+   }
+
+   sub for_path{
+      my ($path) = @_;
+      xpanic("Failed to open '$path' for checksum calculation: $^E")
+         unless open F, '<', $path;
+      binmode F;
+      my ($cksum, $buf, $len) = (create_digest_ctx(), '');
+      while(($len = read F, $buf, 1024 * 1024)) {$cksum->add($buf)}
+      xe("Failed to close '$path' after checksum calculation: $^E")
+         unless close F;
+      $cksum->b64digest
+   }
+} # }}}
 
 {package PIVars; # {{{
    # The builtin PI-variables that can only be adjusted in $CONFIG, so give
@@ -724,7 +730,18 @@ jresetarr:  $pivars->{$key} = []
             # Sofar ->isrefresh transports users' force-rebuild desire..
             if(!$fn->isknown || $fn->isrefresh || $ignmod ||
                   $fn->modtime != $fn->cached_modtime){
-               $fn->icksum(::checksum_path($fn->source_path));
+               my $i;
+
+               if($fn->isexpandable){
+                  $i = $fn->parent->source_path;
+                  $i = Ctx->new(mode => $fn->filters, chdird => $i,
+                           incdird => $i, sumup => $fn->source_path
+                        )->unexpanded_checksum_lifecycle()
+               }else{
+                  $i = Checksum::for_path($fn->source_path)
+               }
+               $fn->icksum($i);
+
                if(!$fn->isknown || $fn->isrefresh){
                   ::xv(($fn->isknown ? 'Forced-rebuild: \'' : 'New file: \'') .
                      $fn->site_path . '\'')
@@ -734,7 +751,8 @@ jresetarr:  $pivars->{$key} = []
                }else{
                   if($VERBOSE){
                      if($ignmod){
-                        ::xvv('.. \'' .$fn->site_path. '\': checksum matches')
+                        ::xvv('.. \'' . $fn->site_path .
+                           '\': checksum matches')
                      }else{
                         ::xvv('.. \'' . $fn->site_path .
                            '\': modtime differs, but checksum matches')
@@ -1009,19 +1027,12 @@ jupsums:
    sub MODE_CONFIGRC() {1 << (Filter::MAXSHIFT + 3)} # Access outermost PI lvl
    sub MODE_EMBED() {1 << (Filter::MAXSHIFT + 4)} # no ?begin?/?end?
    sub MODE_ASSINC() {1<< (Filter::MAXSHIFT + 5)} # Assignments ?include?
+   sub MODE_CHECKSUM() {1<< (Filter::MAXSHIFT + 6)} # Input checksum run?
 
-   sub _MODE_NEEDCLOSE() {1<< (Filter::MAXSHIFT + 6)} # We opened outfh
+   sub _MODE_NEEDCLOSE() {1<< (Filter::MAXSHIFT + 7)} # We opened outfh
    sub _MODE_CTOR_MASK() {~_MODE_NEEDCLOSE}
 
-   sub MAXSHIFT() {Filter::MAXSHIFT + 6}
-
-   sub full_expand_lifecycle{
-      my ($self) = @_;
-      $self->open;
-      $self->read_assignments;
-      Expander::explode($self);
-      $self->close
-   }
+   sub MAXSHIFT() {Filter::MAXSHIFT + 7}
 
    SymObj::sym_create(SymObj::NONE, {
       _outer => undef, # <?include?> support (Expander:: recursion)
@@ -1037,7 +1048,8 @@ jupsums:
       _mtime => undef, # Modification time (outermost level only)
       _begin_line => undef, # <?begin?> line, if followed by content
       _empties_seen => 0, # No. of empty lines last readline() skipped
-      _seen_endl => 0 # Last readline_full() saw \s+$
+      _seen_endl => 0, # Last readline_full() saw \s+$
+      _cksumctx => undef # MODE_CHECKSUM: digest context
    }, sub{
       my $self = $_[0];
       my $curr = $self->outer;
@@ -1071,26 +1083,57 @@ jupsums:
       }
    });
 
+   sub unexpanded_checksum_lifecycle{
+      my ($self) = @_;
+      ${$self->__mode} |= MODE_CHECKSUM;
+      $self->open;
+      $self->read_assignments;
+      while(my $nl = readline $self->infh){
+         $self->cksumctx->add($nl)
+      }
+      $self->close;
+      $self->cksumctx->b64digest
+   }
+
+   sub full_expand_lifecycle{
+      my ($self) = @_;
+      $self->open;
+      $self->read_assignments;
+      Expander::explode($self);
+      $self->close
+   }
+
    sub open{
       my $self = shift;
+
       unless($self->mode & MODE_INFH){
          ::panic($self, "Failed to open for reading: $^E")
             unless open ${$self->__infh}, '<', $self->sumup
       }else{
          $self->infh(*STDIN) unless $self->infh
       }
-      unless($self->mode & (MODE_OUTFH | MODE_CONFIGRC | MODE_ASSINC)){
+
+      unless($self->mode & (MODE_OUTFH | MODE_CONFIGRC | MODE_ASSINC |
+            MODE_CHECKSUM)){
          ${$self->__mode} |= _MODE_NEEDCLOSE;
          ::panic($self, "Failed to open '$TMP_WORK' for writing: $^E")
             unless open ${$self->__outfh}, '>', $TMP_WORK
       }else{
          $self->outfh(*STDOUT) unless $self->outfh
       }
-      unless($self->outer || ($self->mode & MODE_CONFIGRC)){
-         $self->mtime((stat($self->infh))[9]);
-         PIVars::create_time_pis(scalar $self->pivars, $self->mtime);
-         PIVars::create_time_pis(scalar $self->pivars, undef)
+
+      unless($self->outer){
+         unless($self->mode & MODE_CONFIGRC){
+            $self->mtime((stat($self->infh))[9]);
+            PIVars::create_time_pis(scalar $self->pivars, $self->mtime);
+            PIVars::create_time_pis(scalar $self->pivars, undef)
+         }
+
+         if($self->mode & MODE_CHECKSUM){
+            $self->cksumctx(Checksum::create_digest_ctx())
+         }
       }
+
       ::vv($self, 'Opened context, mode: ' .
          Filter::filters_to_string($self->mode & Filter::FILTER_MASK));
       $self
@@ -1107,24 +1150,23 @@ jupsums:
    }
 
    sub read_assignments{
-      my ($self) = shift;
-
+      our $self = shift;
       our $saved_mode = $self->mode;
+
       return $self if $saved_mode & MODE_EMBED;
 
       sub __read{
-         my $self = shift;
+         my $xself = shift;
          my $l;
-
-         while(defined($l = $self->readline_raw)){
+         while(defined($l = $xself->readline_raw)){
             if($l =~ /^<\?begin\?>(.*)$/){
-               ::panic($self, '<?begin?> not allowed in ?include? recursion')
-                  if ($saved_mode & MODE_ASSINC) && defined $self->outer;
+               ::panic($xself, '<?begin?> not allowed in ?include? recursion')
+                  if ($saved_mode & MODE_ASSINC) && defined $xself->outer;
                $self->begin_line(defined $1 && length($1) > 0 ? $1 : undef);
                last
             }elsif($l =~ /^\?include\?\s*=\s*(.+)\s*$/){
                my $path = $self->expand_include_path($1);
-               my $ctx = Ctx->new(outer => $self, mode => ($self->mode |
+               my $ctx = Ctx->new(outer => $xself, mode => ($saved_mode |
                      MODE_EMBED | MODE_OUTFH | MODE_ASSINC), sumup => $path);
                $ctx->open;
                __read($ctx);
@@ -1132,12 +1174,13 @@ jupsums:
                next
             }
             PIVars::handle_assignment($self, ($saved_mode & MODE_CONFIGRC), $l)
+               unless ($saved_mode & MODE_CHECKSUM);
          }
-
          return $l
       }
 
-      $self->mode(Filter::ASSIGNMENTS_FILTERS);
+      $self->mode(($saved_mode & ~Filter::FILTER_MASK) |
+         Filter::ASSIGNMENTS_FILTERS);
       my $l = __read($self);
       $self->mode($saved_mode);
 
@@ -1150,12 +1193,14 @@ jupsums:
    }
 
    sub readline_raw{
-      my ($self, $l, $nl, $bno) = (shift, '');
-      while($nl = readline $self->infh){
+      my ($self, $l) = (shift, '');
+      while(my $nl = readline $self->infh){
          ++${$self->__lineno};
+         $self->cksumctx->add($nl) if ($self->mode & MODE_CHECKSUM);
          $nl =~ /^\s*(.*?)(\\+)?\s*$/;
          next if !length $l && ($1 =~ /^#/ || !length $1);
-         ($nl, $bno) = ($1, defined $2 ? length $2 : 0);
+         $nl = $1;
+         my $bno = defined $2 ? length $2 : 0;
          if(length $l) {$l .= $nl} else {$l = $nl}
          $l .= ('\\' x ($bno >> 1)) if $bno > 0;
          last unless $bno & 1

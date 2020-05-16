@@ -159,7 +159,7 @@ that matches |fextre|.
 
 S-Web42 assumes that a file is modified if its modification timestamp
 is different from that recorded in the cache database (but see
-`IGNORE_MODTIME`_) and if its |checksum| is different from the recorded
+`IGNORE_MODTIME`_), and if its |checksum| is different from the recorded
 one.  One can force rebuilding of S-Web42-filtered files on a per-file
 base by using a filename that includes the suffix ``-new``, as in
 ``index.html-w42-new`` -- neither modification time nor input checksums
@@ -168,8 +168,10 @@ will matter for such files, they will *always* be rebuild.
 .. note::
    Files included via the ``<?include?>`` PI are *not* checked, i.e.,
    no dependency tracking is performed.
+   The `Assignments`_ directive ``?include?`` will however be resolved
+   and thus affects the checksum that may cause file rebuilding.
 
-Any file rebuild non-bitwise is then checksummed again, and will *only*
+Any file rebuilt non-bitwise is then checksummed again, and will *only*
 be part of the result if the |checksum| of the rebuilt target is
 different from the checksum stored in the cache database, but not
 otherwise.  (The only exception to this rule is if the user uses the
