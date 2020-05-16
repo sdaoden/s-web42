@@ -1069,6 +1069,7 @@ jupsums:
          $self->mtime($curr->mtime);
          $self->chdird($curr->chdird);
          $self->incdird($curr->incdird) unless defined $self->incdird;
+         $self->cksumctx($curr->cksumctx);
          $curr = $curr->pivars
       }else{
          $curr = $PIVars::outermost
