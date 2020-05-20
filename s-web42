@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 require 5.008_001;
-my $SELF = 's-web42'; #@ One more option to manage your website.
+my $SELF = 's-web42';
+my $ABSTRACT = 'One more option to manage your website.';
 #@ Web       : https://www.sdaoden.eu/code.html
 #@ Git clone : https://git.sdaoden.eu/scm/s-web42.git
 #@ Git browse: https://git.sdaoden.eu/cgit/s-web42.git
@@ -11,12 +12,11 @@ my $SELF = 's-web42'; #@ One more option to manage your website.
 #@ "cache.dat" will be used as database to remember timestamps and checksums.
 #@ The generated "w42-update.sh" distributes the latest changes, iff any.
 #@ Please read the README for the complete documentation (:}
-my $VERSION = '0.9.3';
-my $COPYRIGHT =<<__EOT__;
-Copyright (c) 1997 - 2005, 2010,
-Copyright (c) 2012 - 2020 Steffen (Daode) Nurpmeso <steffen\@sdaoden.eu>.
-This software is provided under the terms of the ISC license.
-__EOT__
+#
+# Copyright (c) 1997 - 2005, 2010,
+#               2012 - 2020 Steffen (Daode) Nurpmeso <steffen@sdaoden.eu>.
+# SPDX-License-Identifier: ISC
+#
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
 # copyright notice and this permission notice appear in all copies.
@@ -28,6 +28,9 @@ __EOT__
 # WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+my $VERSION = '0.9.3';
+my $CONTACT = 'Steffen Nurpmeso <steffen@sdaoden.eu>';
 
 # MD5 is always available, SHA is not.  It is also faster, and sufficient.
 my $DIGEST = 'Digest::MD5';
@@ -166,13 +169,15 @@ __EOT__
 
    ## Commline
    sub _usage(){
-      print "$SELF ($VERSION)\n$COPYRIGHT\n",
-            "Synopsis:\n",
+      print "$SELF ($VERSION): $ABSTRACT\n",
+            "\n",
             "  s-web42 [-v[v]]\n",
             "  s-web42 [-v[v]] [--no-rc] --no-update-cache|--nuc\n",
             "  s-web42 [-v[v]] [--no-rc] --force-rebuild [--nuc]\n",
             "  s-web42 [-v[v]] [--no-rc] --expand-one|--eo\n",
-            "Please see the documentation for more.\n";
+            "\n",
+            ". Please see the documentation for more\n",
+            ". Bugs/Contact via $CONTACT\n";
       goto jEXIT
    }
 
