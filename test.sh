@@ -1813,6 +1813,38 @@ Third dd.</p></dd></dl>
 
 ## }}}
 
+## rec PIs with lref,lreft, href,hreft and marklo {{{
+
+tcase 'rec pi with lref/lreft/href/hreft and marklo' 0100-w42-ats \
+'
+PATH = ../
+HOPSA = \\b{dudadadu}
+THIS = <?lref ../da?>
+THIS2 = <?lref <^PATH^>da?>
+THIST = <?lreft dubi://du/../da<><^HOPSA^>?>
+THIST2 = <?lreft dubi://du/<^PATH^>da<>\\b{dudadadu}?>
+<?begin?>
+
+<?lreft http://www.netbsd.org<>\\i{NetBSD}?>
+<?def WWW_PREFIX<>\\b{WWW!}?><?def WWW_SUFFIX<>"u"?>
+<?hreft nope<>\\i{FreeBSD}?>
+
+<?THIS?><?THIS2?>
+<?THIST?>
+<?THIST2?>
+<?end?>' \
+\
+'<a href="http://www.netbsd.org" title="NetBSD"><em>NetBSD</em></a>
+<a href="nope" title="FreeBSD"><strong>WWW!</strong><em>FreeBSD</em>"u"</a>
+<a href="../da">../da</a><a href="../da">../da</a>
+<a href="dubi://du/../da" title=""><strong>dudadadu</strong></a>
+<a href="dubi://du/../da" title="dudadadu"><strong>dudadadu</strong></a>
+' \
+\
+''
+
+## }}}
+
 ## "Deep dirhier": (no) cross-file variables, incdir, chdir {{{
 
 (	WEB42=../s-web42 RC=
