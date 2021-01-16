@@ -4,7 +4,7 @@ my $SELF = 's-web42';
 my $ABSTRACT = 'One more option to manage your website.';
 #@ Web       : https://www.sdaoden.eu/code.html
 #@ Git clone : https://git.sdaoden.eu/scm/s-web42.git
-#@ Git browse: https://git.sdaoden.eu/cgit/s-web42.git
+#@ Git browse: https://git.sdaoden.eu/browse/s-web42.git
 #@ Requires  : S-SymObj >=v0.8.0 (from CPAN or visit the Web: link from above).
 #@ Use: in CWD "site/" is the source tree, (optional) executable "hook" will
 #@ act as a per directory hook for whatever user actions are to be performed,
@@ -14,7 +14,7 @@ my $ABSTRACT = 'One more option to manage your website.';
 #@ Please read the README for the complete documentation (:}
 #
 # Copyright (c) 1997 - 2005, 2010,
-#               2012 - 2020 Steffen (Daode) Nurpmeso <steffen@sdaoden.eu>.
+#               2012 - 2021 Steffen Nurpmeso <steffen@sdaoden.eu>.
 # SPDX-License-Identifier: ISC
 #
 # Permission to use, copy, modify, and/or distribute this software for any
