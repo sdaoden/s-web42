@@ -86,8 +86,8 @@ BEGIN{
         the PERL5LIB environment variable (see perlrun(1) manual):
 
           Either: $ perl -C -I/PATH/TO/SymObj.pm s-web42
-          Or    : $ PERL5LIB=/PATH/TO/SymObj.pm PERL5OPT=-C
-                : $ export PERL5LIB PERL5OPT
+          Or    : $ PERL5LIB=/PATH/TO/SymObj.pm
+                : $ export PERL5LIB
                 : $ s-web42
       PANIC PANIC PANIC
 

@@ -55,8 +55,8 @@ Synopsis
 
    perl -C -I/PATH/TO/SymObj.pm s-web42
 
-   PERL5OPT=-C PERL5LIB=/PATH/TO/SymObj.pm
-   export PERL5OPT PERL5LIB
+   PERL5LIB=/PATH/TO/SymObj.pm
+   export PERL5LIB
    s-web42
 
 Use ``--no-rc`` to suppress reading of an existent ``config.rc`` file.
@@ -84,17 +84,8 @@ arguments: one needs to use the very format shown above.
 
 .. note::
    S-Web42 is charset agnostic.  It reads and writes files, and simply
-   reuses the actual character encoding that `perl(1)`_ has chosen to
-   use.  It is therefore highly desirable to either use the ``-C``
-   command line option of `perl(1)`_ or to set the ``PERL5OPT``
-   environment variable to this value, because **only like that**
-   `perl(1)`_ tries to reflect the users locale settings in respect
-   to Unicode-awareness of its input and output!  Please see the
-   ``perlrun(1)`` manual for more documentation, and the above examples
-   on how to do that in a POSIX-compatible, Bourne or Korn shell.
-
-   If S-Web42 detects that `perl(1)`_ does not use UTF-8 I/O even
-   though the users locale is UTF-8 aware it will complain remarkably.
+   reuses the character encoding that the user placed in the
+   ``locale(7)`` environment, for example in ``LC_ALL``.
 
 WhatIs?
 =======
