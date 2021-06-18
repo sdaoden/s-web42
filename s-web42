@@ -29,7 +29,7 @@ my $ABSTRACT = 'One more option to manage your website.';
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-my $VERSION = '0.9.3';
+my $VERSION = '0.9.4';
 my $CONTACT = 'Steffen Nurpmeso <steffen@sdaoden.eu>';
 
 # MD5 is always available, SHA is not.  It is also faster, and sufficient.
@@ -53,6 +53,7 @@ our $UPDATE = 'w42-update.sh';
 use strict;
 use warnings;
 
+use POSIX qw(setlocale LC_ALL);
 use sigtrap qw(die normal-signals);
 
 require Cwd;
@@ -148,24 +149,7 @@ our %ALWAYS_REEVAL_PIS = (
 # }}}
 
 sub main_fun{ # {{{
-   # Do not check for the 'a' and 'A' subflags of -C, but only I/O related ones
-   print STDERR <<__EOT__ if !(${^UNICODE} & 0x5FF) && ${^UTF8LOCALE};
-
-WARNING WARNING WARNING
-  Perl detected an UTF-8 (Unicode) locale, but it does NOT use UTF-8 I/O!
-  It is very likely that this does not produce the results you desire!
-  You should either invoke perl(1) with the -C command line option, or
-  set a PERL5OPT environment variable, e.g., in a POSIX/Bourne/Korn shell:
-
-    EITHER: \$ perl -C s-web42
-    OR    : \$ PERL5OPT=-C; export PERL5OPT
-    (OR   : \$ PERL5OPT=-C s-web42)
-
-  Please read the perlrun(1) manual page for more on this topic.
-  S-Web42 will continue, but please remember that it is charset *agnostic*!
-WARNING WARNING WARNING
-
-__EOT__
+   setlocale(LC_ALL, "");
 
    ## Commline
    sub _usage(){
