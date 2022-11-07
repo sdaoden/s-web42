@@ -14,7 +14,7 @@ my $ABSTRACT = 'One more option to manage your website.';
 #@ Please read the README for the complete documentation (:}
 #
 # Copyright (c) 1997 - 2005, 2010,
-#               2012 - 2021 Steffen Nurpmeso <steffen@sdaoden.eu>.
+#               2012 - 2022 Steffen Nurpmeso <steffen@sdaoden.eu>.
 # SPDX-License-Identifier: ISC
 #
 # Permission to use, copy, modify, and/or distribute this software for any
@@ -2317,7 +2317,7 @@ jleave:
       __ioerr() unless print $fh <<__EOT__;
 #!/bin/sh -
 #@ This Website update archive has been created by S-Web42, which is
-# Copyright (c) 1997 - 2020 Steffen (Daode) Nurpmeso <steffen\@sdaoden.eu>.
+# Copyright (c) 1997 - 2022 Steffen Nurpmeso <steffen\@sdaoden.eu>.
 #@ by means of the ISC license.
 #@ Except for the long output the archive may be easily examined via:
 #@   \$ grep '^[^X#]' w42-update.sh
