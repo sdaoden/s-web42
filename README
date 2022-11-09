@@ -4,7 +4,7 @@ S-Web42
 :Author:    Steffen (Daode) Nurpmeso
 :Contact:   steffen@sdaoden.eu
 :Copyright: ISC license
-:Date:      1997 - 2005, 2010, 2012 - 2021
+:Date:      1997 - 2005, 2010, 2012 - 2022
 :Version:   0.9.4
 :Status:    Red and Hot!
 
@@ -920,6 +920,8 @@ News
 * Use POSIX::setlocale() instead of relying on PERL5OPT=-C.
   The latter roots in old habits originating in perl(1) evolution
   problems in the years 2002-3 (5.8.0 and 5.8.1).   Time to move on.
+
+* Back to tabulator coding style.  Use 120(+) columns, not 79.
 
 Thanks
 ======
