@@ -155,6 +155,9 @@ one.  One can force rebuilding of S-Web42-filtered files on a per-file
 base by using a filename that includes the suffix ``-new``, as in
 ``index.html-w42-new`` -- neither modification time nor input checksums
 will matter for such files, they will *always* be rebuild.
+Input checksum of S-Web42-filtered files means that the configuration
+and the `Assignments`_ part have been fully expanded, but anything
+thereafter is treated bitwise.
 
 .. note::
    Files included via the ``<?include?>`` PI are *not* checked, i.e.,
